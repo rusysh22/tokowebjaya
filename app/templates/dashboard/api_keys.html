@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+{% block title %}API Keys — Toko Web Jaya{% endblock %}
+{% block content %}
+<section class="bg-black min-h-[calc(100vh-4rem)] pt-24 pb-16">
+  <div class="container-main max-w-3xl">
+    <div class="flex items-center gap-3 mb-8">
+      <a href="/{{ locale }}/dashboard" class="text-gray-500 hover:text-white text-xs">← Dashboard</a>
+      <span class="text-gray-700">/</span>
+      <span class="text-xs text-white">API Keys</span>
+    </div>
+    <h1 class="heading-md text-white mb-2">API Keys</h1>
+    <p class="text-gray-500 text-sm mb-8">
+      {% if locale == 'id' %}
+        Gunakan API key untuk mengakses data Anda secara programatik. Base URL: <code class="text-neon font-mono">/api/v1</code>
+      {% else %}
+        Use API keys to access your data programmatically. Base URL: <code class="text-neon font-mono">/api/v1</code>
+      {% endif %}
+    </p>
+
+    <!-- New key banner (shown once after creation) -->
+    {% if new_key %}
+    <div class="border border-neon bg-neon/5 p-4 mb-8" x-data="{ copied: false }">
+      <div class="flex items-start gap-3">
+        <div class="text-neon text-lg">🔑</div>
+        <div class="flex-1 min-w-0">
+          <p class="text-sm font-semibold text-white mb-1">
+            {% if locale == 'id' %}API Key Baru Dibuat{% else %}New API Key Created{% endif %}
+          </p>
+          <p class="text-xs text-gray-400 mb-3">
+            {% if locale == 'id' %}Salin sekarang — key ini tidak akan ditampilkan lagi.{% else %}Copy now — this key will not be shown again.{% endif %}
+          </p>
+          <div class="flex items-center gap-2">
+            <code class="font-mono text-xs text-neon bg-black border border-gray-700 px-3 py-2 flex-1 overflow-x-auto whitespace-nowrap">{{ new_key }}</code>
+            <button @click="navigator.clipboard.writeText('{{ new_key }}'); copied = true; setTimeout(() => copied = false, 2000)"
+                    class="btn-secondary text-xs px-3 py-2 whitespace-nowrap">
+              <span x-show="!copied">{% if locale == 'id' %}Salin{% else %}Copy{% endif %}</span>
+              <span x-show="copied" class="text-neon">✓ Disalin!</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Create new key form -->
+    <div class="border border-gray-800 p-5 mb-8">
+      <h3 class="text-sm font-semibold text-white mb-4">
+        {% if locale == 'id' %}Buat API Key Baru{% else %}Create New API Key{% endif %}
+      </h3>
+      <form method="post" action="/{{ locale }}/dashboard/api-keys/create" class="flex flex-wrap gap-3 items-end">
+        <div class="flex-1 min-w-48">
+          <label class="block text-xs text-gray-500 mb-1.5">
+            {% if locale == 'id' %}Nama Key{% else %}Key Name{% endif %}
+          </label>
+          <input type="text" name="name" required placeholder="e.g. My App Integration"
+                 class="input text-sm w-full" />
+        </div>
+        <div class="w-36">
+          <label class="block text-xs text-gray-500 mb-1.5">Scope</label>
+          <select name="scope" class="input text-sm w-full">
+            {% for s in scopes %}
+            <option value="{{ s }}">{{ s | capitalize }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <button type="submit" class="btn-primary text-sm px-5 py-2.5">
+          {% if locale == 'id' %}Buat Key{% else %}Create Key{% endif %}
+        </button>
+      </form>
+    </div>
+
+    <!-- Active keys list -->
+    {% if keys %}
+    <div class="space-y-3">
+      {% for key in keys %}
+      <div class="border border-gray-800 p-4 flex items-center justify-between gap-4">
+        <div class="flex items-center gap-3 min-w-0">
+          <div class="w-8 h-8 bg-gray-900 border border-gray-700 flex items-center justify-center flex-shrink-0">
+            <span class="text-xs text-gray-400">🔑</span>
+          </div>
+          <div class="min-w-0">
+            <div class="text-white text-sm font-medium">{{ key.name }}</div>
+            <div class="text-gray-600 font-mono text-xs mt-0.5">{{ key.key_prefix }}••••••••</div>
+          </div>
+        </div>
+        <div class="flex items-center gap-4 flex-shrink-0">
+          <div class="text-right hidden sm:block">
+            <div class="text-xs text-gray-500 capitalize">{{ key.scope.value }}</div>
+            <div class="text-xs text-gray-700 mt-0.5">
+              {% if key.last_used_at %}
+                {{ key.last_used_at.strftime('%d %b %Y') }}
+              {% else %}
+                {% if locale == 'id' %}Belum dipakai{% else %}Never used{% endif %}
+              {% endif %}
+            </div>
+          </div>
+          <form method="post" action="/{{ locale }}/dashboard/api-keys/{{ key.id }}/revoke"
+                onsubmit="return confirm('{% if locale == 'id' %}Cabut API key ini?{% else %}Revoke this API key?{% endif %}')">
+            <button type="submit" class="text-xs text-red-500 hover:text-red-400 border border-red-900 hover:border-red-700 px-3 py-1.5 transition-colors">
+              {% if locale == 'id' %}Cabut{% else %}Revoke{% endif %}
+            </button>
+          </form>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="border border-gray-800 py-16 text-center">
+      <div class="text-3xl mb-3 opacity-30">🔑</div>
+      <p class="text-gray-600 text-sm">
+        {% if locale == 'id' %}Belum ada API key.{% else %}No API keys yet.{% endif %}
+      </p>
+    </div>
+    {% endif %}
+
+    <!-- API Docs quick reference -->
+    <div class="mt-10 border border-gray-800 p-5">
+      <h3 class="text-sm font-semibold text-white mb-4">Quick Reference</h3>
+      <div class="space-y-3 text-xs font-mono">
+        <div class="flex gap-3">
+          <span class="text-neon w-16 flex-shrink-0">GET</span>
+          <span class="text-gray-400">/api/v1/products</span>
+        </div>
+        <div class="flex gap-3">
+          <span class="text-neon w-16 flex-shrink-0">GET</span>
+          <span class="text-gray-400">/api/v1/products/{slug}</span>
+        </div>
+        <div class="flex gap-3">
+          <span class="text-neon w-16 flex-shrink-0">GET</span>
+          <span class="text-gray-400">/api/v1/orders</span>
+        </div>
+        <div class="flex gap-3">
+          <span class="text-neon w-16 flex-shrink-0">GET</span>
+          <span class="text-gray-400">/api/v1/subscriptions</span>
+        </div>
+      </div>
+      <div class="mt-4 bg-gray-950 border border-gray-800 p-3 rounded-none">
+        <p class="text-xs text-gray-500 mb-1">Example:</p>
+        <code class="text-xs text-neon">curl -H "Authorization: Bearer YOUR_KEY" /api/v1/products</code>
+      </div>
+    </div>
+
+  </div>
+</section>
+{% endblock %}

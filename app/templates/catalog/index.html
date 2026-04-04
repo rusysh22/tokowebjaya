@@ -1,0 +1,232 @@
+{% extends "base.html" %}
+
+{% block title %}{{ t(locale, 'catalog_title') }} — Toko Web Jaya{% endblock %}
+{% block meta_description %}{{ t(locale, 'catalog_subtitle') }}{% endblock %}
+{% block og_title %}{{ t(locale, 'catalog_title') }} — Toko Web Jaya{% endblock %}
+{% block og_description %}{{ t(locale, 'catalog_subtitle') }}{% endblock %}
+{% block twitter_title %}{{ t(locale, 'catalog_title') }} — Toko Web Jaya{% endblock %}
+{% block twitter_description %}{{ t(locale, 'catalog_subtitle') }}{% endblock %}
+
+{% block content %}
+
+<!-- Header -->
+<section class="bg-black border-b border-gray-800 py-16 pt-24">
+  <div class="container-main">
+    <div class="reveal">
+      <span class="text-label block mb-3">{{ t(locale, 'catalog_title') }}</span>
+      <h1 class="heading-lg text-white mb-3">{{ t(locale, 'catalog_subtitle') }}</h1>
+      <p class="text-gray-500 text-sm">
+        {{ total }} {% if locale == 'id' %}produk tersedia{% else %}products available{% endif %}
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- Filters + Grid -->
+<section class="section bg-black">
+  <div class="container-main">
+    <div class="flex flex-col lg:flex-row gap-8">
+
+      <!-- Sidebar filters -->
+      <aside class="lg:w-56 flex-shrink-0">
+        <form method="get" id="filter-form" class="space-y-6">
+
+          <!-- Search -->
+          <div>
+            <label class="text-label block mb-3">{% if locale == 'id' %}Cari{% else %}Search{% endif %}</label>
+            <div class="relative">
+              <input type="text" name="q" value="{{ q }}"
+                     placeholder="{% if locale == 'id' %}Nama produk...{% else %}Product name...{% endif %}"
+                     class="input pr-8 text-sm" />
+              {% if q %}
+              <a href="?{{ request.url.query | replace('q=' + q, '') }}" class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white">✕</a>
+              {% endif %}
+            </div>
+          </div>
+
+          <!-- Type filter -->
+          <div>
+            <label class="text-label block mb-3">{% if locale == 'id' %}Tipe{% else %}Type{% endif %}</label>
+            <div class="space-y-2">
+              <label class="flex items-center gap-2 cursor-pointer">
+                <input type="radio" name="type" value="" {% if not type_filter %}checked{% endif %}
+                       class="accent-neon" onchange="this.form.submit()" />
+                <span class="text-sm {% if not type_filter %}text-white{% else %}text-gray-400{% endif %}">
+                  {% if locale == 'id' %}Semua{% else %}All{% endif %}
+                </span>
+              </label>
+              {% for pt in product_types %}
+              <label class="flex items-center gap-2 cursor-pointer">
+                <input type="radio" name="type" value="{{ pt }}" {% if type_filter == pt %}checked{% endif %}
+                       class="accent-neon" onchange="this.form.submit()" />
+                <span class="text-sm {% if type_filter == pt %}text-white{% else %}text-gray-400{% endif %}">
+                  {{ pt | capitalize }}
+                </span>
+              </label>
+              {% endfor %}
+            </div>
+          </div>
+
+          <!-- Category filter -->
+          {% if categories %}
+          <div>
+            <label class="text-label block mb-3">Category</label>
+            <div class="space-y-2">
+              {% for cat in categories %}
+              <label class="flex items-center gap-2 cursor-pointer">
+                <input type="radio" name="category" value="{{ cat }}" {% if category_filter == cat %}checked{% endif %}
+                       class="accent-neon" onchange="this.form.submit()" />
+                <span class="text-sm text-gray-400">{{ cat }}</span>
+              </label>
+              {% endfor %}
+            </div>
+          </div>
+          {% endif %}
+
+          <!-- Sort -->
+          <div>
+            <label class="text-label block mb-3">{% if locale == 'id' %}Urutan{% else %}Sort{% endif %}</label>
+            <select name="sort" class="input text-sm bg-gray-900 w-full" onchange="this.form.submit()">
+              <option value="newest" {% if sort == 'newest' %}selected{% endif %}>
+                {% if locale == 'id' %}Terbaru{% else %}Newest{% endif %}
+              </option>
+              <option value="price_asc" {% if sort == 'price_asc' %}selected{% endif %}>
+                {% if locale == 'id' %}Harga: Rendah{% else %}Price: Low{% endif %}
+              </option>
+              <option value="price_desc" {% if sort == 'price_desc' %}selected{% endif %}>
+                {% if locale == 'id' %}Harga: Tinggi{% else %}Price: High{% endif %}
+              </option>
+            </select>
+          </div>
+
+          <!-- Submit on mobile -->
+          <button type="submit" class="btn-secondary w-full text-sm lg:hidden">
+            {% if locale == 'id' %}Terapkan Filter{% else %}Apply Filter{% endif %}
+          </button>
+        </form>
+      </aside>
+
+      <!-- Product grid -->
+      <div class="flex-1">
+        {% if products %}
+        <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
+          {% for product in products %}
+          <article class="card-neon group overflow-hidden reveal" data-tilt>
+
+            <!-- Cover -->
+            <a href="/{{ locale }}/product/{{ product.slug }}" class="block relative aspect-[16/9] bg-gray-800 overflow-hidden">
+              {% if product.cover_image %}
+                <img src="/static/uploads/products/images/{{ product.cover_image }}"
+                     alt="{{ product['name_' + locale] }}"
+                     class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                     loading="lazy" />
+              {% else %}
+                <div class="w-full h-full flex items-center justify-center">
+                  <span class="text-5xl opacity-20">📦</span>
+                </div>
+              {% endif %}
+              <div class="absolute top-3 left-3 flex gap-2">
+                <span class="badge-gray text-xs">{{ product.type.value }}</span>
+                {% if product.is_featured %}
+                  <span class="badge-neon text-xs">Featured</span>
+                {% endif %}
+              </div>
+              {% if product.preview_video %}
+              <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-black/50">
+                <div class="w-12 h-12 border-2 border-white flex items-center justify-center">
+                  <svg class="w-5 h-5 text-white ml-1" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M8 5v14l11-7z"/>
+                  </svg>
+                </div>
+              </div>
+              {% endif %}
+            </a>
+
+            <div class="p-5">
+              <a href="/{{ locale }}/product/{{ product.slug }}">
+                <h2 class="font-semibold text-white text-sm mb-2 group-hover:text-neon transition-colors duration-200 line-clamp-2 leading-snug">
+                  {{ product['name_' + locale] }}
+                </h2>
+              </a>
+
+              {% if product['short_desc_' + locale] %}
+              <p class="text-gray-500 text-xs leading-relaxed mb-4 line-clamp-2">
+                {{ product['short_desc_' + locale] }}
+              </p>
+              {% endif %}
+
+              <!-- Tags -->
+              {% if product.tags %}
+              <div class="flex flex-wrap gap-1 mb-4">
+                {% for tag in product.tags[:3] %}
+                  <span class="text-xs text-gray-600 border border-gray-800 px-2 py-0.5">{{ tag }}</span>
+                {% endfor %}
+              </div>
+              {% endif %}
+
+              <div class="flex items-center justify-between pt-3 border-t border-gray-800">
+                <div>
+                  {% if product.pricing_model.value in ['one_time', 'both'] and product.price_otf %}
+                    <div class="text-neon font-bold text-base">Rp {{ "{:,.0f}".format(product.price_otf) }}</div>
+                    <div class="text-gray-600 text-xs">{{ t(locale, 'price_otf') }}</div>
+                  {% elif product.pricing_model.value == 'subscription' and product.price_monthly %}
+                    <div class="text-neon font-bold text-base">Rp {{ "{:,.0f}".format(product.price_monthly) }}</div>
+                    <div class="text-gray-600 text-xs">{{ t(locale, 'per_month') }}</div>
+                  {% endif %}
+                </div>
+                <a href="/{{ locale }}/product/{{ product.slug }}" class="btn-primary text-xs py-2 px-4">
+                  {% if locale == 'id' %}Detail{% else %}View{% endif %}
+                </a>
+              </div>
+            </div>
+          </article>
+          {% endfor %}
+        </div>
+
+        <!-- Pagination -->
+        {% if total > per_page %}
+        <div class="flex items-center justify-center gap-2 mt-10">
+          {% if page > 1 %}
+            <a href="?page={{ page - 1 }}&type={{ type_filter }}&q={{ q }}&sort={{ sort }}"
+               class="px-4 py-2 border border-gray-700 text-sm text-gray-400 hover:border-neon hover:text-neon transition-colors">
+              ← {% if locale == 'id' %}Sebelumnya{% else %}Previous{% endif %}
+            </a>
+          {% endif %}
+
+          <span class="text-sm text-gray-600">{{ page }} / {{ (total // per_page) + (1 if total % per_page else 0) }}</span>
+
+          {% if page * per_page < total %}
+            <a href="?page={{ page + 1 }}&type={{ type_filter }}&q={{ q }}&sort={{ sort }}"
+               class="px-4 py-2 border border-gray-700 text-sm text-gray-400 hover:border-neon hover:text-neon transition-colors">
+              {% if locale == 'id' %}Berikutnya{% else %}Next{% endif %} →
+            </a>
+          {% endif %}
+        </div>
+        {% endif %}
+
+        {% else %}
+        <!-- Empty state -->
+        <div class="border border-gray-800 py-24 text-center">
+          <div class="text-5xl mb-4 opacity-30">🔍</div>
+          <h3 class="text-white font-semibold mb-2">
+            {% if locale == 'id' %}Produk tidak ditemukan{% else %}No products found{% endif %}
+          </h3>
+          <p class="text-gray-500 text-sm mb-6">
+            {% if q %}
+              {% if locale == 'id' %}Tidak ada produk untuk "{{ q }}"{% else %}No products for "{{ q }}"{% endif %}
+            {% else %}
+              {% if locale == 'id' %}Coba filter lain{% else %}Try different filters{% endif %}
+            {% endif %}
+          </p>
+          <a href="/{{ locale }}/catalog" class="btn-secondary text-sm">
+            {% if locale == 'id' %}Reset Filter{% else %}Reset Filters{% endif %}
+          </a>
+        </div>
+        {% endif %}
+      </div>
+
+    </div>
+  </div>
+</section>
+
+{% endblock %}

@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}{% if locale == 'id' %}Tentang Kami{% else %}About Us{% endif %} — Toko Web Jaya{% endblock %}
+{% block meta_description %}{% if locale == 'id' %}Kenali Toko Web Jaya — platform produk digital profesional untuk bisnis modern Indonesia.{% else %}Learn about Toko Web Jaya — a professional digital product platform for modern businesses.{% endif %}{% endblock %}
+{% block og_title %}{% if locale == 'id' %}Tentang Kami{% else %}About Us{% endif %} — Toko Web Jaya{% endblock %}
+{% block og_description %}{% if locale == 'id' %}Kenali Toko Web Jaya — platform produk digital profesional untuk bisnis modern Indonesia.{% else %}Learn about Toko Web Jaya — a professional digital product platform for modern businesses.{% endif %}{% endblock %}
+{% block twitter_title %}{% if locale == 'id' %}Tentang Kami{% else %}About Us{% endif %} — Toko Web Jaya{% endblock %}
+{% block twitter_description %}{% if locale == 'id' %}Kenali Toko Web Jaya — platform produk digital profesional untuk bisnis modern Indonesia.{% else %}Learn about Toko Web Jaya — a professional digital product platform for modern businesses.{% endif %}{% endblock %}
+{% block content %}
+<section class="min-h-[60vh] flex items-center bg-black border-b border-gray-800 pt-16">
+  <div class="container-main py-20">
+    <span class="text-label block mb-4">About</span>
+    <h1 class="heading-xl text-white mb-6 reveal">Toko Web Jaya</h1>
+    <p class="text-gray-400 text-lg max-w-2xl leading-relaxed reveal">
+      {% if locale == 'id' %}
+        Platform produk digital profesional untuk bisnis modern. Kami menyediakan e-book, kursus, software, template, dan layanan IT konsultasi.
+        <br/><br/>
+        <em class="text-gray-600">Dan sekali lagi — kami tidak menjual semen, pasir, atau bata.</em>
+      {% else %}
+        Professional digital product platform for modern businesses. We provide e-books, courses, software, templates, and IT consulting services.
+        <br/><br/>
+        <em class="text-gray-600">And once more — we do not sell cement, sand, or bricks.</em>
+      {% endif %}
+    </p>
+  </div>
+</section>
+{% endblock %}

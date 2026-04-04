@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+
+{% block title %}{% if locale == 'id' %}Daftar Akun{% else %}Create Account{% endif %} — Toko Web Jaya{% endblock %}
+{% block meta_description %}{% if locale == 'id' %}Buat akun baru di Toko Web Jaya dan akses produk digital profesional.{% else %}Create a new account at Toko Web Jaya and access professional digital products.{% endif %}{% endblock %}
+
+{% block content %}
+<section class="min-h-[calc(100vh-4rem)] flex items-center justify-center bg-black py-20">
+
+  <div class="absolute inset-0 opacity-[0.03]"
+       style="background-image: linear-gradient(#CAFF00 1px, transparent 1px), linear-gradient(90deg, #CAFF00 1px, transparent 1px); background-size: 48px 48px;">
+  </div>
+
+  <div class="relative z-10 w-full max-w-md px-4">
+
+    <div class="text-center mb-10">
+      <a href="/{{ locale }}/" class="inline-flex items-center gap-2 mb-6">
+        <div class="w-10 h-10 bg-neon flex items-center justify-center">
+          <span class="text-black font-black text-base">TW</span>
+        </div>
+        <span class="font-bold text-white text-lg">Toko Web Jaya</span>
+      </a>
+      <h1 class="heading-md text-white mt-4">
+        {% if locale == 'id' %}Buat Akun Baru{% else %}Create New Account{% endif %}
+      </h1>
+      <p class="text-gray-500 text-sm mt-2">
+        {% if locale == 'id' %}Daftar dengan email dan password{% else %}Register with email and password{% endif %}
+      </p>
+    </div>
+
+    {% if error %}
+    <div class="border border-red-800 bg-red-950/50 px-4 py-3 mb-6 text-sm text-red-400">
+      {% if error == 'email_taken' %}
+        {% if locale == 'id' %}Email sudah terdaftar. <a href="/{{ locale }}/login" class="underline">Masuk di sini</a>.{% else %}Email already registered. <a href="/{{ locale }}/login" class="underline">Sign in here</a>.{% endif %}
+      {% elif error == 'password_short' %}
+        {% if locale == 'id' %}Password minimal 8 karakter.{% else %}Password must be at least 8 characters.{% endif %}
+      {% elif error == 'use_google' %}
+        {% if locale == 'id' %}Email ini sudah terdaftar via Google.{% else %}This email is already registered via Google.{% endif %}
+      {% else %}
+        {% if locale == 'id' %}Terjadi kesalahan. Silakan coba lagi.{% else %}An error occurred. Please try again.{% endif %}
+      {% endif %}
+    </div>
+    {% endif %}
+
+    <div class="border border-gray-800 bg-gray-950 p-8">
+
+      <!-- Google OAuth option -->
+      <a href="/auth/google/login?next=/{{ locale }}/dashboard"
+         class="flex items-center justify-center gap-3 w-full border border-gray-700 bg-gray-900 hover:bg-gray-800 text-white font-medium text-sm py-3 px-6 transition-all duration-200 mb-6">
+        <svg class="w-4 h-4 flex-shrink-0" viewBox="0 0 24 24">
+          <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+          <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+          <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+          <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+        </svg>
+        {% if locale == 'id' %}Daftar dengan Google{% else %}Register with Google{% endif %}
+      </a>
+
+      <div class="relative mb-6">
+        <div class="absolute inset-0 flex items-center"><div class="w-full border-t border-gray-800"></div></div>
+        <div class="relative flex justify-center">
+          <span class="px-3 bg-gray-950 text-xs text-gray-600">
+            {% if locale == 'id' %}atau daftar dengan email{% else %}or register with email{% endif %}
+          </span>
+        </div>
+      </div>
+
+      <form method="POST" action="/auth/register" class="space-y-4">
+        <input type="hidden" name="locale" value="{{ locale }}" />
+
+        <div>
+          <label class="block text-xs text-gray-400 mb-1.5">
+            {% if locale == 'id' %}Nama Lengkap{% else %}Full Name{% endif %}
+          </label>
+          <input type="text" name="name" required
+                 value="{{ prefill_name or '' }}"
+                 placeholder="{% if locale == 'id' %}Nama Anda{% else %}Your Name{% endif %}"
+                 class="w-full bg-gray-900 border border-gray-700 text-white text-sm px-4 py-2.5 focus:outline-none focus:border-neon transition-colors" />
+        </div>
+
+        <div>
+          <label class="block text-xs text-gray-400 mb-1.5">Email</label>
+          <input type="email" name="email" required
+                 value="{{ prefill_email or '' }}"
+                 placeholder="you@example.com"
+                 class="w-full bg-gray-900 border border-gray-700 text-white text-sm px-4 py-2.5 focus:outline-none focus:border-neon transition-colors" />
+        </div>
+
+        <div>
+          <label class="block text-xs text-gray-400 mb-1.5">Password</label>
+          <input type="password" name="password" required minlength="8"
+                 placeholder="{% if locale == 'id' %}Minimal 8 karakter{% else %}At least 8 characters{% endif %}"
+                 class="w-full bg-gray-900 border border-gray-700 text-white text-sm px-4 py-2.5 focus:outline-none focus:border-neon transition-colors" />
+          <p class="text-xs text-gray-600 mt-1">
+            {% if locale == 'id' %}Minimal 8 karakter{% else %}Minimum 8 characters{% endif %}
+          </p>
+        </div>
+
+        <button type="submit" class="btn-primary w-full justify-center py-3 text-sm mt-2">
+          {% if locale == 'id' %}Daftar Sekarang{% else %}Create Account{% endif %}
+        </button>
+      </form>
+
+      <p class="text-center text-xs text-gray-600 mt-5">
+        {% if locale == 'id' %}Sudah punya akun?{% else %}Already have an account?{% endif %}
+        <a href="/{{ locale }}/login" class="text-neon hover:underline ml-1">
+          {% if locale == 'id' %}Masuk{% else %}Sign in{% endif %}
+        </a>
+      </p>
+    </div>
+
+    <div class="text-center mt-6">
+      <a href="/{{ locale }}/" class="text-sm text-gray-500 hover:text-white transition-colors">
+        ← {% if locale == 'id' %}Kembali ke Beranda{% else %}Back to Home{% endif %}
+      </a>
+    </div>
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Pembayaran Gagal — Toko Web Jaya{% endblock %}
+{% block content %}
+<section class="min-h-[calc(100vh-4rem)] bg-black pt-24 pb-16 flex items-center">
+  <div class="container-main max-w-lg text-center">
+    <div class="text-5xl mb-6">❌</div>
+    <h1 class="heading-md text-white mb-4">
+      {% if locale == 'id' %}Pembayaran Gagal{% else %}Payment Failed{% endif %}
+    </h1>
+    <p class="text-gray-500 text-sm mb-8">
+      {% if locale == 'id' %}
+        Transaksi tidak berhasil diproses. Silakan coba lagi atau pilih metode pembayaran lain.
+      {% else %}
+        Your transaction could not be processed. Please try again or choose a different payment method.
+      {% endif %}
+    </p>
+    <div class="flex gap-3 justify-center">
+      <a href="/{{ locale }}/catalog" class="btn-secondary text-sm">
+        {% if locale == 'id' %}Kembali ke Katalog{% else %}Back to Catalog{% endif %}
+      </a>
+      {% if order_id %}
+      <a href="/{{ locale }}/dashboard/orders" class="btn-ghost text-sm">
+        {% if locale == 'id' %}Lihat Pesanan{% else %}View Orders{% endif %}
+      </a>
+      {% endif %}
+    </div>
+  </div>
+</section>
+{% endblock %}

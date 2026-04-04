@@ -1,0 +1,122 @@
+{% extends "admin/base_admin.html" %}
+{% set admin_section = "invoices" %}
+{% block title %}Invoices — Admin Toko Web Jaya{% endblock %}
+{% block page_title %}Invoices{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+  <!-- Header -->
+  <div class="flex items-center justify-between">
+    <div>
+      <h2 class="text-lg font-bold text-white">All Invoices</h2>
+      <p class="text-gray-500 text-sm mt-0.5">{{ total }} total invoice</p>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <form method="get" class="flex flex-wrap gap-3">
+    <input type="text" name="q" value="{{ q }}" placeholder="Invoice # atau nama customer..."
+           class="input text-sm w-64" />
+    <select name="status" class="input text-sm w-40">
+      <option value="">Semua Status</option>
+      {% for s in invoice_statuses %}
+      <option value="{{ s }}" {% if status_filter == s %}selected{% endif %}>{{ s | capitalize }}</option>
+      {% endfor %}
+    </select>
+    <button type="submit" class="btn-secondary text-sm px-4 py-2">Filter</button>
+    {% if q or status_filter %}
+    <a href="/{{ locale }}/admin/invoices" class="btn-ghost text-sm px-4 py-2">Reset</a>
+    {% endif %}
+  </form>
+
+  <!-- Table -->
+  <div class="border border-gray-800 overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead class="bg-gray-950 border-b border-gray-800">
+          <tr>
+            {% for col in ['Invoice #', 'Customer', 'Order #', 'Amount', 'Status', 'Due Date', 'Paid Date', ''] %}
+            <th class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap">{{ col }}</th>
+            {% endfor %}
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-800">
+          {% if invoices %}
+            {% for inv in invoices %}
+            {% set order = inv.order %}
+            {% set customer = order.user if order else None %}
+            <tr class="hover:bg-gray-900/50">
+              <td class="px-4 py-3 font-mono text-xs text-neon">{{ inv.invoice_number }}</td>
+              <td class="px-4 py-3">
+                {% if customer %}
+                <div class="text-white text-xs font-medium">{{ customer.name }}</div>
+                <div class="text-gray-500 text-xs">{{ customer.email }}</div>
+                {% else %}
+                <span class="text-gray-600 text-xs">—</span>
+                {% endif %}
+              </td>
+              <td class="px-4 py-3 font-mono text-xs text-gray-400">
+                {{ order.order_number if order else '—' }}
+              </td>
+              <td class="px-4 py-3 text-xs font-semibold text-white whitespace-nowrap">
+                Rp {{ "{:,.0f}".format(inv.amount) }}
+              </td>
+              <td class="px-4 py-3">
+                {% set sc = {
+                  'paid': 'bg-green-950 text-green-400 border-green-800',
+                  'unpaid': 'bg-yellow-950 text-yellow-400 border-yellow-800',
+                  'overdue': 'bg-red-950 text-red-400 border-red-800',
+                  'cancelled': 'bg-gray-800 text-gray-500 border-gray-700'
+                } %}
+                <span class="badge text-xs {{ sc.get(inv.status.value, 'bg-gray-800 text-gray-400 border-gray-700') }}">
+                  {{ inv.status.value }}
+                </span>
+              </td>
+              <td class="px-4 py-3 text-xs text-gray-500 whitespace-nowrap">
+                {{ inv.due_date.strftime('%d %b %Y') }}
+              </td>
+              <td class="px-4 py-3 text-xs text-gray-500 whitespace-nowrap">
+                {{ inv.paid_date.strftime('%d %b %Y') if inv.paid_date else '—' }}
+              </td>
+              <td class="px-4 py-3">
+                {% if inv.pdf_path %}
+                <a href="/{{ locale }}/dashboard/invoices/{{ inv.id }}/download"
+                   class="text-xs text-neon hover:underline whitespace-nowrap" target="_blank">
+                  ↓ PDF
+                </a>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          {% else %}
+            <tr>
+              <td colspan="8" class="px-4 py-20 text-center text-gray-600 text-sm">
+                Belum ada invoice.
+              </td>
+            </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Pagination -->
+  {% if total > per_page %}
+  <div class="flex items-center justify-between text-sm">
+    <span class="text-gray-500 text-xs">
+      Showing {{ ((page-1)*per_page)+1 }}–{{ [page*per_page, total]|min }} of {{ total }}
+    </span>
+    <div class="flex gap-2">
+      {% if page > 1 %}
+      <a href="?page={{ page-1 }}&status={{ status_filter }}&q={{ q }}" class="btn-ghost text-xs px-3 py-1.5">← Prev</a>
+      {% endif %}
+      {% if page * per_page < total %}
+      <a href="?page={{ page+1 }}&status={{ status_filter }}&q={{ q }}" class="btn-ghost text-xs px-3 py-1.5">Next →</a>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

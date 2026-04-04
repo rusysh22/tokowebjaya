@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+{% block title %}{% if order.status.value == 'paid' %}Pembayaran Berhasil{% else %}Status Pembayaran{% endif %} — Toko Web Jaya{% endblock %}
+
+{% block content %}
+<section class="min-h-[calc(100vh-4rem)] bg-black flex items-center justify-center pt-16"
+         x-data="statusPoller('{{ order.status.value }}', '{{ order.id }}', '{{ locale }}')">
+  <div class="container-main max-w-lg text-center py-20">
+
+    <!-- PAID -->
+    <template x-if="status === 'paid'">
+      <div>
+        <div class="w-20 h-20 bg-neon flex items-center justify-center mx-auto mb-6">
+          <svg class="w-10 h-10 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+          </svg>
+        </div>
+        <h1 class="text-2xl font-bold text-white mb-4">
+          {% if locale == 'id' %}Pembayaran Berhasil!{% else %}Payment Successful!{% endif %}
+        </h1>
+        <p class="text-gray-400 mb-2">Order: <span class="text-white font-mono">{{ order.order_number }}</span></p>
+        <p class="text-gray-500 text-sm mb-8">
+          {% if locale == 'id' %}Invoice telah dikirim ke email Anda.{% else %}Invoice has been sent to your email.{% endif %}
+        </p>
+      </div>
+    </template>
+
+    <!-- PENDING — polling -->
+    <template x-if="status === 'pending'">
+      <div>
+        <div class="w-20 h-20 border-4 border-yellow-500 flex items-center justify-center mx-auto mb-6">
+          <svg class="w-8 h-8 text-yellow-500 animate-spin" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 22 6.477 22 12h-4z"></path>
+          </svg>
+        </div>
+        <h1 class="text-2xl font-bold text-white mb-4">
+          {% if locale == 'id' %}Menunggu Konfirmasi{% else %}Awaiting Confirmation{% endif %}
+        </h1>
+        <p class="text-gray-400 text-sm mb-2">
+          {% if locale == 'id' %}Pembayaran Anda sedang diverifikasi...{% else %}Your payment is being verified...{% endif %}
+        </p>
+        <p class="text-gray-700 text-xs mb-8" x-text="'Checking in ' + countdown + 's'"></p>
+      </div>
+    </template>
+
+    <!-- FAILED / CANCELLED -->
+    <template x-if="status === 'failed' || status === 'cancelled'">
+      <div>
+        <div class="w-20 h-20 border-4 border-red-600 flex items-center justify-center mx-auto mb-6">
+          <span class="text-3xl">✕</span>
+        </div>
+        <h1 class="text-2xl font-bold text-white mb-4">
+          {% if locale == 'id' %}Pembayaran Gagal{% else %}Payment Failed{% endif %}
+        </h1>
+        <p class="text-gray-400 text-sm mb-8">
+          {% if locale == 'id' %}Silakan coba lagi.{% else %}Please try again.{% endif %}
+        </p>
+      </div>
+    </template>
+
+    <div class="flex flex-wrap items-center justify-center gap-3 mt-4">
+      <template x-if="status === 'paid'">
+        <a :href="'/{{ locale }}/dashboard/orders/{{ order.id }}/receipt'" class="btn-primary">
+          {% if locale == 'id' %}Lihat Receipt{% else %}View Receipt{% endif %}
+        </a>
+      </template>
+      <a href="/{{ locale }}/dashboard/orders" class="btn-secondary">
+        {% if locale == 'id' %}Riwayat Pesanan{% else %}Order History{% endif %}
+      </a>
+      <a href="/{{ locale }}/catalog" class="text-xs text-gray-600 hover:text-white">
+        {% if locale == 'id' %}Lanjut Belanja{% else %}Continue Shopping{% endif %}
+      </a>
+    </div>
+
+  </div>
+</section>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+function statusPoller(initialStatus, orderId, locale) {
+  return {
+    status: initialStatus,
+    countdown: 5,
+    timer: null,
+
+    init() {
+      if (this.status === 'pending') {
+        this.startPolling();
+      }
+    },
+
+    startPolling() {
+      this.countdown = 5;
+      this.timer = setInterval(() => {
+        this.countdown--;
+        if (this.countdown <= 0) {
+          this.checkStatus();
+          this.countdown = 5;
+        }
+      }, 1000);
+    },
+
+    async checkStatus() {
+      try {
+        const resp = await fetch('/checkout/status/' + orderId);
+        const data = await resp.json();
+        this.status = data.status;
+
+        if (this.status !== 'pending') {
+          clearInterval(this.timer);
+        }
+      } catch (e) {
+        // silently ignore network errors, keep polling
+      }
+    },
+
+    destroy() {
+      if (this.timer) clearInterval(this.timer);
+    }
+  }
+}
+</script>
+{% endblock %}

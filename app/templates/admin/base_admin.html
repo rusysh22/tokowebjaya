@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="{{ locale }}" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}Admin — Toko Web Jaya{% endblock %}</title>
+  <meta name="robots" content="noindex, nofollow" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/static/css/main.css" />
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <script src="https://unpkg.com/htmx.org@2.0.4/dist/htmx.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+
+<body class="bg-black text-white font-sans antialiased" x-data="{ mobileSidebar: false }">
+
+  <div class="flex h-screen overflow-hidden">
+
+    <!-- Mobile sidebar overlay -->
+    <div x-show="mobileSidebar"
+         x-transition:enter="transition ease-out duration-200"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         @click="mobileSidebar = false"
+         class="fixed inset-0 bg-black/70 z-40 lg:hidden"></div>
+
+    <!-- Sidebar (desktop always visible, mobile drawer) -->
+    <div class="fixed lg:static inset-y-0 left-0 z-50 w-60 transform transition-transform duration-200 lg:translate-x-0"
+         :class="mobileSidebar ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'">
+      {% include "components/admin_sidebar.html" %}
+    </div>
+
+    <!-- Main content -->
+    <div class="flex-1 flex flex-col overflow-hidden">
+
+      <!-- Top bar -->
+      <header class="h-14 border-b border-gray-800 bg-black flex items-center justify-between px-4 lg:px-6 flex-shrink-0">
+        <div class="flex items-center gap-3">
+          <button @click="mobileSidebar = true" class="lg:hidden p-2 text-gray-400 hover:text-white">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+            </svg>
+          </button>
+          <h1 class="text-sm font-semibold text-white">{% block page_title %}Dashboard{% endblock %}</h1>
+        </div>
+        <div class="flex items-center gap-3">
+          <a href="/{{ locale }}/" target="_blank" class="btn-ghost text-xs py-1.5 px-3">
+            {% if locale == 'id' %}Lihat Website{% else %}View Site{% endif %}
+          </a>
+          <!-- Language toggle -->
+          <div class="flex items-center border border-gray-700 text-xs font-semibold overflow-hidden">
+            <a href="/id/admin" class="px-2.5 py-1.5 {% if locale == 'id' %}bg-neon text-black{% else %}text-gray-400 hover:text-white{% endif %}">ID</a>
+            <a href="/en/admin" class="px-2.5 py-1.5 {% if locale == 'en' %}bg-neon text-black{% else %}text-gray-400 hover:text-white{% endif %}">EN</a>
+          </div>
+        </div>
+      </header>
+
+      <!-- Page content -->
+      <main class="flex-1 overflow-y-auto p-4 lg:p-6">
+        {% block content %}{% endblock %}
+      </main>
+
+    </div>
+  </div>
+
+  <script src="/static/js/main.js"></script>
+  {% block extra_scripts %}{% endblock %}
+</body>
+</html>

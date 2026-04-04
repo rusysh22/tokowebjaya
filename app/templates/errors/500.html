@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+
+{% block title %}500 — Server Error | Toko Web Jaya{% endblock %}
+{% block meta_description %}Terjadi kesalahan pada server.{% endblock %}
+{% block og_title %}500 — Server Error{% endblock %}
+
+{% block content %}
+<section class="min-h-[calc(100vh-4rem)] flex items-center justify-center bg-black">
+
+  <!-- Grid background -->
+  <div class="absolute inset-0 opacity-[0.03]"
+       style="background-image: linear-gradient(#CAFF00 1px, transparent 1px), linear-gradient(90deg, #CAFF00 1px, transparent 1px); background-size: 48px 48px;">
+  </div>
+
+  <div class="relative z-10 text-center px-4 max-w-lg mx-auto">
+
+    <!-- Error code -->
+    <div class="text-[10rem] font-black leading-none text-gray-800 select-none mb-2">500</div>
+
+    <!-- Neon accent line -->
+    <div class="w-16 h-1 bg-neon mx-auto mb-8"></div>
+
+    <h1 class="heading-md text-white mb-4">
+      {% if locale == 'id' %}Kesalahan Server{% else %}Server Error{% endif %}
+    </h1>
+    <p class="text-gray-500 text-sm leading-relaxed mb-10">
+      {% if locale == 'id' %}
+        Terjadi kesalahan pada server kami. Tim teknis kami sudah diberitahu dan sedang menanganinya.
+        <br><br>
+        Silakan coba lagi dalam beberapa menit.
+      {% else %}
+        Something went wrong on our end. Our technical team has been notified and is working on it.
+        <br><br>
+        Please try again in a few minutes.
+      {% endif %}
+    </p>
+
+    <div class="flex flex-wrap items-center justify-center gap-4">
+      <a href="javascript:history.back()" class="btn-secondary px-8 py-3 text-sm">
+        {% if locale == 'id' %}Kembali{% else %}Go Back{% endif %}
+      </a>
+      <a href="/{{ locale }}/" class="btn-primary px-8 py-3 text-sm">
+        {% if locale == 'id' %}Ke Beranda{% else %}Home{% endif %}
+      </a>
+    </div>
+
+    {% if error_id %}
+    <p class="text-xs text-gray-700 mt-8">Error ID: {{ error_id }}</p>
+    {% endif %}
+
+  </div>
+</section>
+{% endblock %}

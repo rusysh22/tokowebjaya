@@ -1,0 +1,273 @@
+{% extends "base.html" %}
+
+{% block title %}{{ product['name_' + locale] }} — Toko Web Jaya{% endblock %}
+{% block meta_description %}{{ product['short_desc_' + locale] or product['description_' + locale] or '' }}{% endblock %}
+{% block meta_keywords %}{{ (product.tags or []) | join(', ') }}{% if product.category %}, {{ product.category }}{% endif %}, {{ product.type.value }}, toko web jaya{% endblock %}
+{% block og_type %}product{% endblock %}
+{% block og_title %}{{ product['name_' + locale] }} — Toko Web Jaya{% endblock %}
+{% block og_description %}{{ product['short_desc_' + locale] or product['description_' + locale] or '' }}{% endblock %}
+{% block og_image %}{% if product.cover_image %}{{ settings.BASE_URL }}/static/uploads/products/images/{{ product.cover_image }}{% else %}{{ settings.BASE_URL }}/static/og-default.png{% endif %}{% endblock %}
+{% block twitter_title %}{{ product['name_' + locale] }} — Toko Web Jaya{% endblock %}
+{% block twitter_description %}{{ product['short_desc_' + locale] or product['description_' + locale] or '' }}{% endblock %}
+{% block twitter_image %}{% if product.cover_image %}{{ settings.BASE_URL }}/static/uploads/products/images/{{ product.cover_image }}{% else %}{{ settings.BASE_URL }}/static/og-default.png{% endif %}{% endblock %}
+
+{% block content %}
+
+<section class="bg-black pt-24 pb-16 border-b border-gray-800">
+  <div class="container-main">
+
+    <!-- Breadcrumb -->
+    <nav class="text-xs text-gray-600 mb-8 flex items-center gap-2">
+      <a href="/{{ locale }}/" class="hover:text-white transition-colors">Home</a>
+      <span>/</span>
+      <a href="/{{ locale }}/catalog" class="hover:text-white transition-colors">{{ t(locale, 'catalog_title') }}</a>
+      <span>/</span>
+      <span class="text-gray-400">{{ product['name_' + locale] }}</span>
+    </nav>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
+
+      <!-- Left: Media -->
+      <div class="reveal">
+        <!-- Video / Cover -->
+        {% if product.preview_video %}
+        <div class="relative aspect-video bg-black border border-gray-800 overflow-hidden mb-4" x-data="{ playing: false }">
+          <video class="w-full h-full object-cover"
+                 data-src="/static/uploads/products/videos/{{ product.preview_video }}"
+                 controls
+                 poster="{% if product.cover_image %}/static/uploads/products/images/{{ product.cover_image }}{% endif %}">
+          </video>
+        </div>
+        {% elif product.cover_image %}
+        <div class="aspect-video bg-gray-900 border border-gray-800 overflow-hidden mb-4">
+          <img src="/static/uploads/products/images/{{ product.cover_image }}"
+               alt="{{ product['name_' + locale] }}"
+               class="w-full h-full object-cover" />
+        </div>
+        {% else %}
+        <div class="aspect-video bg-gray-900 border border-gray-800 flex items-center justify-center mb-4">
+          <span class="text-7xl opacity-20">📦</span>
+        </div>
+        {% endif %}
+
+        <!-- Features list -->
+        {% if product.features %}
+        <div class="border border-gray-800 p-5">
+          <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-4">
+            {% if locale == 'id' %}Yang Termasuk{% else %}What's Included{% endif %}
+          </h3>
+          <ul class="space-y-3">
+            {% for feature in product.features %}
+            <li class="flex items-start gap-3 text-sm text-gray-300">
+              <span class="w-5 h-5 bg-neon/10 border border-neon/30 flex items-center justify-center flex-shrink-0 mt-0.5">
+                <svg class="w-3 h-3 text-neon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+                </svg>
+              </span>
+              {{ feature }}
+            </li>
+            {% endfor %}
+          </ul>
+        </div>
+        {% endif %}
+      </div>
+
+      <!-- Right: Details & Purchase -->
+      <div class="reveal">
+
+        <!-- Type + Category -->
+        <div class="flex items-center gap-2 mb-4">
+          <span class="badge-gray text-xs">{{ product.type.value | upper }}</span>
+          {% if product.category %}
+            <span class="badge-gray text-xs">{{ product.category }}</span>
+          {% endif %}
+          {% if product.is_featured %}
+            <span class="badge-neon text-xs">Featured</span>
+          {% endif %}
+        </div>
+
+        <h1 class="heading-lg text-white mb-4">{{ product['name_' + locale] }}</h1>
+
+        {% if product['short_desc_' + locale] %}
+        <p class="text-gray-400 text-base leading-relaxed mb-6">{{ product['short_desc_' + locale] }}</p>
+        {% endif %}
+
+        {% if product.tags %}
+        <div class="flex flex-wrap gap-2 mb-6">
+          {% for tag in product.tags %}
+            <span class="text-xs text-gray-500 border border-gray-800 px-3 py-1">#{{ tag }}</span>
+          {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- Pricing card -->
+        <div class="border border-gray-800 bg-gray-950 p-6 mb-6"
+             x-data="{ billingCycle: '{% if product.pricing_model.value == 'both' %}otf{% elif product.pricing_model.value == 'subscription' %}monthly{% else %}otf{% endif %}' }">
+
+          {% if product.pricing_model.value == 'both' %}
+          <!-- Toggle OTF / Subscription -->
+          <div class="flex items-center gap-3 mb-5 pb-5 border-b border-gray-800">
+            <span class="text-xs font-semibold"
+                  :class="billingCycle === 'otf' ? 'text-white' : 'text-gray-500'">
+              {{ t(locale, 'price_otf') }}
+            </span>
+            <button type="button"
+                    @click="billingCycle = billingCycle === 'otf' ? 'monthly' : 'otf'"
+                    class="relative w-10 h-5 bg-gray-700 focus:outline-none flex-shrink-0">
+              <span class="absolute inset-y-0 left-0 w-5 h-5 bg-neon transform transition-transform"
+                    :class="billingCycle !== 'otf' ? 'translate-x-5' : 'translate-x-0'"></span>
+            </button>
+            <span class="text-xs font-semibold"
+                  :class="billingCycle !== 'otf' ? 'text-white' : 'text-gray-500'">
+              {{ t(locale, 'price_subscription') }}
+            </span>
+          </div>
+          {% endif %}
+
+          <!-- OTF Price -->
+          {% if product.price_otf and product.pricing_model.value in ['one_time', 'both'] %}
+          <div {% if product.pricing_model.value == 'both' %}x-show="billingCycle === 'otf'" x-cloak{% endif %}>
+            <div class="text-neon text-4xl font-black mb-1">Rp {{ "{:,.0f}".format(product.price_otf) }}</div>
+            <div class="text-gray-500 text-sm mb-5">{{ t(locale, 'price_otf') }} — {% if locale == 'id' %}bayar sekali, akses selamanya{% else %}pay once, access forever{% endif %}</div>
+            <a href="/{{ locale }}/checkout/{{ product.id }}?type=one_time" class="btn-primary w-full justify-center py-3.5 text-sm">
+              {{ t(locale, 'buy_now') }}
+            </a>
+          </div>
+          {% endif %}
+
+          <!-- Subscription Price -->
+          {% if product.price_monthly and product.pricing_model.value in ['subscription', 'both'] %}
+          <div {% if product.pricing_model.value == 'both' %}x-show="billingCycle !== 'otf'" x-cloak{% endif %}>
+
+            <!-- Harga -->
+            <div class="text-neon text-4xl font-black mb-1">
+              <span x-show="billingCycle === 'monthly' || billingCycle === 'otf'">Rp {{ "{:,.0f}".format(product.price_monthly) }}</span>
+              {% if product.price_yearly %}
+              <span x-show="billingCycle === 'yearly'" x-cloak>Rp {{ "{:,.0f}".format(product.price_yearly) }}</span>
+              {% endif %}
+            </div>
+
+            {% if product.price_yearly %}
+            <div class="flex items-center gap-3 mb-5">
+              <div class="flex border border-gray-700 overflow-hidden text-xs font-semibold">
+                <button type="button"
+                        @click="billingCycle = 'monthly'"
+                        class="px-3 py-1.5 transition-colors"
+                        :class="billingCycle === 'monthly' ? 'bg-neon text-black' : 'text-gray-400 hover:text-white'">
+                  {% if locale == 'id' %}Bulanan{% else %}Monthly{% endif %}
+                </button>
+                <button type="button"
+                        @click="billingCycle = 'yearly'"
+                        class="px-3 py-1.5 transition-colors"
+                        :class="billingCycle === 'yearly' ? 'bg-neon text-black' : 'text-gray-400 hover:text-white'">
+                  {% if locale == 'id' %}Tahunan{% else %}Yearly{% endif %}
+                  <span class="ml-1 text-green-400">-{{ ((1 - product.price_yearly / (product.price_monthly * 12)) * 100) | int }}%</span>
+                </button>
+              </div>
+              <span class="text-gray-500 text-xs"
+                    x-text="billingCycle === 'yearly' ? '/{{ t(locale, 'per_year') }}' : '/{{ t(locale, 'per_month') }}'"></span>
+            </div>
+            {% else %}
+              <div class="text-gray-500 text-sm mb-5">/ {{ t(locale, 'per_month') }}</div>
+            {% endif %}
+
+            <a :href="billingCycle === 'yearly'
+                       ? '/{{ locale }}/checkout/{{ product.id }}?type=subscription&cycle=yearly'
+                       : '/{{ locale }}/checkout/{{ product.id }}?type=subscription&cycle=monthly'"
+               class="btn-primary w-full justify-center py-3.5 text-sm">
+              {{ t(locale, 'subscribe') }}
+            </a>
+          </div>
+          {% endif %}
+
+          <!-- Login notice -->
+          {% if not current_user %}
+          <p class="text-xs text-gray-600 mt-4 text-center">
+            {% if locale == 'id' %}
+              <a href="/{{ locale }}/login" class="text-neon hover:underline">Masuk</a> untuk melanjutkan pembelian
+            {% else %}
+              <a href="/{{ locale }}/login" class="text-neon hover:underline">Sign in</a> to proceed with purchase
+            {% endif %}
+          </p>
+          {% endif %}
+        </div>
+
+        <!-- Meta info -->
+        <div class="space-y-2 text-xs text-gray-500 border border-gray-800 p-4">
+          <div class="flex justify-between">
+            <span>{% if locale == 'id' %}Tipe{% else %}Type{% endif %}</span>
+            <span class="text-gray-300">{{ product.type.value | capitalize }}</span>
+          </div>
+          {% if product.category %}
+          <div class="flex justify-between">
+            <span>Category</span>
+            <span class="text-gray-300">{{ product.category }}</span>
+          </div>
+          {% endif %}
+          <div class="flex justify-between">
+            <span>{% if locale == 'id' %}Pembayaran{% else %}Payment{% endif %}</span>
+            <span class="text-gray-300">Duitku / Mayar.id</span>
+          </div>
+          {% if product.download_file %}
+          <div class="flex justify-between">
+            <span>Download</span>
+            <span class="text-green-400">✓ {% if locale == 'id' %}Tersedia{% else %}Available{% endif %}</span>
+          </div>
+          {% endif %}
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Full description -->
+    {% if product['description_' + locale] %}
+    <div class="mt-16 max-w-3xl reveal">
+      <h2 class="heading-md text-white mb-6">
+        {% if locale == 'id' %}Deskripsi Produk{% else %}Product Description{% endif %}
+      </h2>
+      <div class="prose prose-invert prose-sm max-w-none text-gray-400 leading-relaxed">
+        {{ product['description_' + locale] | replace('\n', '<br>') | safe }}
+      </div>
+    </div>
+    {% endif %}
+
+  </div>
+</section>
+
+<!-- Related products -->
+{% if related %}
+<section class="section bg-gray-950 border-t border-gray-800">
+  <div class="container-main">
+    <h2 class="heading-md text-white mb-8 reveal">
+      {% if locale == 'id' %}Produk Serupa{% else %}Related Products{% endif %}
+    </h2>
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-5">
+      {% for p in related %}
+      <a href="/{{ locale }}/product/{{ p.slug }}" class="card-hover overflow-hidden group reveal">
+        <div class="aspect-video bg-gray-800 overflow-hidden">
+          {% if p.cover_image %}
+            <img src="/static/uploads/products/images/{{ p.cover_image }}"
+                 class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                 loading="lazy" alt="{{ p['name_' + locale] }}" />
+          {% else %}
+            <div class="w-full h-full flex items-center justify-center text-3xl opacity-20">📦</div>
+          {% endif %}
+        </div>
+        <div class="p-4">
+          <h3 class="text-sm font-medium text-white group-hover:text-neon transition-colors line-clamp-2 mb-2">
+            {{ p['name_' + locale] }}
+          </h3>
+          {% if p.price_otf %}
+          <div class="text-neon text-sm font-bold">Rp {{ "{:,.0f}".format(p.price_otf) }}</div>
+          {% elif p.price_monthly %}
+          <div class="text-neon text-sm font-bold">Rp {{ "{:,.0f}".format(p.price_monthly) }}<span class="text-gray-500 text-xs font-normal">{{ t(locale, 'per_month') }}</span></div>
+          {% endif %}
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endif %}
+
+{% endblock %}

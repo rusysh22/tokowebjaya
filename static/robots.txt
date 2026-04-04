@@ -1,0 +1,14 @@
+User-agent: *
+Allow: /
+
+# Block admin and private areas
+Disallow: /id/admin
+Disallow: /en/admin
+Disallow: /id/dashboard
+Disallow: /en/dashboard
+Disallow: /auth/
+Disallow: /api/
+Disallow: /checkout/callback/
+Disallow: /checkout/status/
+
+Sitemap: https://tokowebjaya.com/sitemap.xml

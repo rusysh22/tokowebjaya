@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}{{ t(locale, 'dashboard_subscriptions') }} — Toko Web Jaya{% endblock %}
+{% block content %}
+<section class="bg-black min-h-[calc(100vh-4rem)] pt-24 pb-16">
+  <div class="container-main max-w-3xl">
+    <div class="flex items-center gap-3 mb-8">
+      <a href="/{{ locale }}/dashboard" class="text-gray-500 hover:text-white text-xs">← Dashboard</a>
+      <span class="text-gray-700">/</span>
+      <span class="text-xs text-white">{{ t(locale, 'dashboard_subscriptions') }}</span>
+    </div>
+    <h1 class="heading-md text-white mb-8">{{ t(locale, 'dashboard_subscriptions') }}</h1>
+
+    {% if subscriptions %}
+    <div class="space-y-4">
+      {% for sub in subscriptions %}
+      <div class="border {% if sub.status.value == 'active' %}border-gray-700{% else %}border-gray-800{% endif %} p-5">
+        <div class="flex items-start justify-between mb-3">
+          <div>
+            <h3 class="text-white font-semibold text-sm">
+              {{ sub.product['name_' + locale] if sub.product else '—' }}
+            </h3>
+            <p class="text-gray-500 text-xs mt-1">
+              {{ sub.billing_cycle.value | capitalize }} —
+              {% if locale == 'id' %}Mulai{% else %}Started{% endif %}: {{ sub.started_at.strftime('%d %b %Y') }}
+            </p>
+          </div>
+          {% set sc = {'active':'badge-neon','cancelled':'bg-gray-800 text-gray-500 border border-gray-700','expired':'bg-red-950 text-red-400 border border-red-800','past_due':'bg-orange-950 text-orange-400 border border-orange-800'} %}
+          <span class="{{ sc.get(sub.status.value, 'badge-gray') }} badge text-xs">{{ sub.status.value }}</span>
+        </div>
+
+        {% if sub.status.value == 'active' %}
+        <div class="flex items-center justify-between text-xs text-gray-500 mb-4">
+          <span>
+            {% if locale == 'id' %}Tagihan berikutnya{% else %}Next billing{% endif %}:
+            <span class="text-white">{{ sub.next_billing_date.strftime('%d %b %Y') }}</span>
+          </span>
+        </div>
+        <form method="post" action="/{{ locale }}/dashboard/subscriptions/{{ sub.id }}/cancel"
+              onsubmit="return confirm('{% if locale == 'id' %}Batalkan langganan ini?{% else %}Cancel this subscription?{% endif %}')">
+          <button type="submit" class="text-xs text-red-500 hover:text-red-400 border border-red-900 hover:border-red-700 px-4 py-2 transition-colors">
+            {% if locale == 'id' %}Batalkan Langganan{% else %}Cancel Subscription{% endif %}
+          </button>
+        </form>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="border border-gray-800 py-20 text-center">
+      <div class="text-4xl mb-4 opacity-30">🔄</div>
+      <p class="text-gray-500 text-sm mb-6">
+        {% if locale == 'id' %}Belum ada langganan aktif.{% else %}No active subscriptions.{% endif %}
+      </p>
+      <a href="/{{ locale }}/catalog?pricing=subscription" class="btn-secondary text-sm">
+        {% if locale == 'id' %}Lihat Produk Berlangganan{% else %}Browse Subscription Products{% endif %}
+      </a>
+    </div>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

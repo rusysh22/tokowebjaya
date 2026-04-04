@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+
+{% block title %}{% if locale == 'id' %}Verifikasi Email{% else %}Verify Email{% endif %} — Toko Web Jaya{% endblock %}
+
+{% block content %}
+<section class="min-h-[calc(100vh-4rem)] flex items-center justify-center bg-black py-20">
+
+  <div class="absolute inset-0 opacity-[0.03]"
+       style="background-image: linear-gradient(#CAFF00 1px, transparent 1px), linear-gradient(90deg, #CAFF00 1px, transparent 1px); background-size: 48px 48px;">
+  </div>
+
+  <div class="relative z-10 w-full max-w-md px-4">
+
+    <div class="text-center mb-10">
+      <div class="w-16 h-16 bg-neon/10 border border-neon/30 flex items-center justify-center mx-auto mb-6">
+        <svg class="w-8 h-8 text-neon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+        </svg>
+      </div>
+      <h1 class="heading-md text-white">
+        {% if locale == 'id' %}Verifikasi Email Anda{% else %}Verify Your Email{% endif %}
+      </h1>
+      <p class="text-gray-500 text-sm mt-3 leading-relaxed">
+        {% if locale == 'id' %}
+          Kami mengirimkan kode 6 digit ke<br>
+          <span class="text-white font-medium">{{ email or 'email Anda' }}</span>
+        {% else %}
+          We sent a 6-digit code to<br>
+          <span class="text-white font-medium">{{ email or 'your email' }}</span>
+        {% endif %}
+      </p>
+    </div>
+
+    {% if resent %}
+    <div class="border border-green-800 bg-green-950/50 px-4 py-3 mb-6 text-sm text-green-400">
+      {% if locale == 'id' %}Kode baru telah dikirim ke email Anda.{% else %}A new code has been sent to your email.{% endif %}
+    </div>
+    {% endif %}
+
+    {% if error %}
+    <div class="border border-red-800 bg-red-950/50 px-4 py-3 mb-6 text-sm text-red-400">
+      {% if error == 'expired' %}
+        {% if locale == 'id' %}Kode OTP sudah kadaluarsa. Minta kode baru.{% else %}OTP code has expired. Request a new code.{% endif %}
+      {% elif error == 'invalid' %}
+        {% if locale == 'id' %}Kode tidak valid. Periksa dan coba lagi.{% else %}Invalid code. Check and try again.{% endif %}
+      {% elif error == 'locked' %}
+        {% if locale == 'id' %}Terlalu banyak percobaan. Minta kode baru.{% else %}Too many attempts. Request a new code.{% endif %}
+      {% elif error == 'not_verified' %}
+        {% if locale == 'id' %}Email belum diverifikasi. Masukkan kode yang dikirim.{% else %}Email not verified. Enter the code we sent.{% endif %}
+      {% else %}
+        {% if locale == 'id' %}Terjadi kesalahan. Silakan coba lagi.{% else %}An error occurred. Please try again.{% endif %}
+      {% endif %}
+    </div>
+    {% endif %}
+
+    <div class="border border-gray-800 bg-gray-950 p-8">
+      <form method="POST" action="/auth/verify-email" class="space-y-5">
+        <input type="hidden" name="email" value="{{ email or '' }}" />
+        <input type="hidden" name="locale" value="{{ locale }}" />
+
+        <div>
+          <label class="block text-xs text-gray-400 mb-1.5">
+            {% if locale == 'id' %}Kode OTP (6 digit){% else %}OTP Code (6 digits){% endif %}
+          </label>
+          <input type="text" name="otp" required
+                 maxlength="6" pattern="\d{6}"
+                 placeholder="000000"
+                 class="w-full bg-gray-900 border border-gray-700 text-white text-2xl font-mono text-center tracking-[0.5em] px-4 py-3 focus:outline-none focus:border-neon transition-colors"
+                 autocomplete="one-time-code" inputmode="numeric" />
+        </div>
+
+        <button type="submit" class="btn-primary w-full justify-center py-3 text-sm">
+          {% if locale == 'id' %}Verifikasi{% else %}Verify{% endif %}
+        </button>
+      </form>
+
+      <div class="mt-5 pt-5 border-t border-gray-800 text-center">
+        <p class="text-xs text-gray-600 mb-3">
+          {% if locale == 'id' %}Tidak menerima kode?{% else %}Didn't receive the code?{% endif %}
+        </p>
+        <form method="POST" action="/auth/resend-otp">
+          <input type="hidden" name="email" value="{{ email or '' }}" />
+          <input type="hidden" name="purpose" value="verify" />
+          <input type="hidden" name="locale" value="{{ locale }}" />
+          <button type="submit" class="text-neon text-sm hover:underline">
+            {% if locale == 'id' %}Kirim Ulang Kode{% else %}Resend Code{% endif %}
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <div class="text-center mt-6">
+      <a href="/{{ locale }}/login" class="text-sm text-gray-500 hover:text-white transition-colors">
+        ← {% if locale == 'id' %}Kembali ke Login{% else %}Back to Login{% endif %}
+      </a>
+    </div>
+  </div>
+</section>
+{% endblock %}

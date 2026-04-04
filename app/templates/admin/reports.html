@@ -1,0 +1,201 @@
+{% extends "admin/base_admin.html" %}
+{% set admin_section = "reports" %}
+{% block title %}Reports — Admin Toko Web Jaya{% endblock %}
+{% block page_title %}Reports{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+  <!-- Header + period filter -->
+  <div class="flex items-center justify-between flex-wrap gap-4">
+    <div>
+      <h2 class="text-lg font-bold text-white">Revenue Reports</h2>
+      <p class="text-gray-500 text-sm mt-0.5">Analytics & revenue overview</p>
+    </div>
+    <div class="flex gap-2">
+      {% for p, label in [('7','7 Hari'),('30','30 Hari'),('90','90 Hari'),('365','1 Tahun')] %}
+      <a href="?period={{ p }}"
+         class="px-3 py-1.5 text-xs font-semibold border transition-colors duration-150
+                {% if period == p %}bg-neon text-black border-neon{% else %}border-gray-700 text-gray-400 hover:text-white hover:border-gray-500{% endif %}">
+        {{ label }}
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Summary stats -->
+  <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+    {% set stats = [
+      {'label': 'Total Revenue', 'value': 'Rp ' + "{:,.0f}".format(total_revenue), 'icon': '💰', 'color': 'text-neon'},
+      {'label': 'Orders Paid', 'value': total_orders, 'icon': '🧾', 'color': 'text-white'},
+      {'label': 'New Customers', 'value': new_customers, 'icon': '👤', 'color': 'text-white'},
+      {'label': 'Active Subs', 'value': active_subs, 'icon': '🔄', 'color': 'text-white'},
+    ] %}
+    {% for s in stats %}
+    <div class="border border-gray-800 bg-gray-950 p-5">
+      <div class="text-2xl mb-2">{{ s.icon }}</div>
+      <div class="text-xl font-bold {{ s.color }}">{{ s.value }}</div>
+      <div class="text-gray-500 text-xs mt-1">{{ s.label }}</div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- Revenue chart -->
+  <div class="border border-gray-800 bg-gray-950 p-5">
+    <h3 class="text-sm font-semibold text-white mb-5">Revenue Over Time</h3>
+    {% if revenue_rows %}
+    <div class="relative h-64">
+      <canvas id="revenueChart"></canvas>
+    </div>
+    {% else %}
+    <div class="h-40 flex items-center justify-center text-gray-600 text-sm">
+      Tidak ada data untuk periode ini.
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Bottom grid: by type + top products -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+    <!-- Revenue by product type -->
+    <div class="border border-gray-800 bg-gray-950 p-5">
+      <h3 class="text-sm font-semibold text-white mb-4">Revenue by Product Type</h3>
+      {% if revenue_by_type %}
+      <div class="relative h-52 mb-4">
+        <canvas id="typeChart"></canvas>
+      </div>
+      <div class="space-y-2">
+        {% for r in revenue_by_type %}
+        <div class="flex items-center justify-between text-xs">
+          <span class="text-gray-400 capitalize">{{ r.type }}</span>
+          <div class="text-right">
+            <span class="text-white font-semibold">Rp {{ "{:,.0f}".format(r.total) }}</span>
+            <span class="text-gray-600 ml-2">({{ r.count }} orders)</span>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="h-40 flex items-center justify-center text-gray-600 text-sm">Tidak ada data.</div>
+      {% endif %}
+    </div>
+
+    <!-- Top products -->
+    <div class="border border-gray-800 bg-gray-950 p-5">
+      <h3 class="text-sm font-semibold text-white mb-4">Top Products</h3>
+      {% if top_products %}
+      <div class="space-y-3">
+        {% for p in top_products %}
+        <div class="flex items-center gap-3">
+          <span class="text-xs text-gray-600 w-5 text-right">{{ loop.index }}</span>
+          <div class="flex-1 min-w-0">
+            <div class="text-xs text-white font-medium truncate">
+              {{ p.name_id if locale == 'id' else p.name_en }}
+            </div>
+            <div class="text-xs text-gray-500">{{ p.orders }} orders</div>
+          </div>
+          <div class="text-xs font-semibold text-neon whitespace-nowrap">
+            Rp {{ "{:,.0f}".format(p.revenue) }}
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="h-40 flex items-center justify-center text-gray-600 text-sm">Tidak ada data.</div>
+      {% endif %}
+    </div>
+
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  // Revenue over time chart
+  {% if revenue_rows %}
+  const revenueCtx = document.getElementById('revenueChart');
+  if (revenueCtx) {
+    new Chart(revenueCtx, {
+      type: 'line',
+      data: {
+        labels: {{ revenue_rows | map(attribute='day') | list | tojson }},
+        datasets: [{
+          label: 'Revenue (Rp)',
+          data: {{ revenue_rows | map(attribute='total') | list | tojson }},
+          borderColor: '#CAFF00',
+          backgroundColor: 'rgba(202, 255, 0, 0.08)',
+          borderWidth: 2,
+          pointBackgroundColor: '#CAFF00',
+          pointRadius: 3,
+          fill: true,
+          tension: 0.4,
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: ctx => 'Rp ' + ctx.raw.toLocaleString('id-ID')
+            }
+          }
+        },
+        scales: {
+          x: {
+            ticks: { color: '#6b7280', font: { size: 11 } },
+            grid: { color: '#1f2937' }
+          },
+          y: {
+            ticks: {
+              color: '#6b7280',
+              font: { size: 11 },
+              callback: v => 'Rp ' + (v/1000000).toFixed(1) + 'jt'
+            },
+            grid: { color: '#1f2937' }
+          }
+        }
+      }
+    });
+  }
+  {% endif %}
+
+  // Revenue by type doughnut chart
+  {% if revenue_by_type %}
+  const typeCtx = document.getElementById('typeChart');
+  if (typeCtx) {
+    const typeColors = ['#CAFF00','#a3e635','#4ade80','#34d399','#22d3ee','#818cf8'];
+    new Chart(typeCtx, {
+      type: 'doughnut',
+      data: {
+        labels: {{ revenue_by_type | map(attribute='type') | list | tojson }},
+        datasets: [{
+          data: {{ revenue_by_type | map(attribute='total') | list | tojson }},
+          backgroundColor: typeColors.slice(0, {{ revenue_by_type | length }}),
+          borderWidth: 0,
+          hoverOffset: 6,
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        cutout: '65%',
+        plugins: {
+          legend: {
+            position: 'bottom',
+            labels: { color: '#9ca3af', font: { size: 11 }, padding: 12 }
+          },
+          tooltip: {
+            callbacks: {
+              label: ctx => ctx.label + ': Rp ' + ctx.raw.toLocaleString('id-ID')
+            }
+          }
+        }
+      }
+    });
+  }
+  {% endif %}
+</script>
+{% endblock %}

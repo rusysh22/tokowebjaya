@@ -1,0 +1,419 @@
+{% extends "base.html" %}
+
+{% block title %}Toko Web Jaya — {{ t(locale, 'hero_title') }}{% endblock %}
+{% block meta_description %}{{ t(locale, 'hero_subtitle') }}{% endblock %}
+{% block meta_keywords %}{% if locale == 'id' %}produk digital, ebook, kursus online, software, template, toko web jaya, platform digital indonesia{% else %}digital products, ebook, online course, software, template, toko web jaya, digital platform{% endif %}{% endblock %}
+{% block og_title %}Toko Web Jaya — {{ t(locale, 'hero_title') }}{% endblock %}
+{% block og_description %}{{ t(locale, 'hero_subtitle') }}{% endblock %}
+{% block twitter_title %}Toko Web Jaya — {{ t(locale, 'hero_title') }}{% endblock %}
+{% block twitter_description %}{{ t(locale, 'hero_subtitle') }}{% endblock %}
+
+{% block content %}
+
+<!-- ===== HERO ===== -->
+<section class="relative min-h-screen flex items-center bg-black overflow-hidden">
+
+  <!-- Grid background pattern -->
+  <div class="absolute inset-0 opacity-[0.04]"
+       style="background-image: linear-gradient(#CAFF00 1px, transparent 1px), linear-gradient(90deg, #CAFF00 1px, transparent 1px); background-size: 48px 48px;">
+  </div>
+
+  <!-- Corner accent -->
+  <div class="absolute top-0 right-0 w-[400px] h-[400px] bg-neon opacity-5 blur-[120px] pointer-events-none"></div>
+  <div class="absolute bottom-0 left-0 w-[300px] h-[300px] bg-neon opacity-3 blur-[100px] pointer-events-none"></div>
+
+  <div class="container-main relative z-10 py-32">
+    <div class="max-w-4xl">
+
+      <!-- Label -->
+      <div class="inline-flex items-center gap-2 border border-neon/30 bg-neon/5 px-4 py-2 mb-8 reveal">
+        <span class="w-1.5 h-1.5 bg-neon rounded-full animate-pulse"></span>
+        <span class="text-label">
+          {% if locale == 'id' %}Platform Produk Digital #1{% else %}#1 Digital Product Platform{% endif %}
+        </span>
+      </div>
+
+      <!-- Heading -->
+      <h1 class="heading-xl text-white mb-6 reveal" style="animation-delay: 0.1s">
+        {{ t(locale, 'hero_title') }}
+      </h1>
+
+      <p class="text-gray-400 text-lg sm:text-xl max-w-2xl leading-relaxed mb-10 reveal" style="animation-delay: 0.2s">
+        {{ t(locale, 'hero_subtitle') }}
+      </p>
+
+      <!-- CTAs -->
+      <div class="flex flex-wrap items-center gap-4 reveal" style="animation-delay: 0.3s">
+        <a href="/{{ locale }}/catalog" class="btn-primary px-8 py-4 text-sm">
+          {{ t(locale, 'hero_cta_primary') }}
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/>
+          </svg>
+        </a>
+        <a href="/{{ locale }}/solutions" class="btn-secondary px-8 py-4 text-sm">
+          {{ t(locale, 'hero_cta_secondary') }}
+        </a>
+      </div>
+
+      <!-- Stats row -->
+      <div class="flex flex-wrap items-center gap-8 mt-16 pt-8 border-t border-gray-800 reveal" style="animation-delay: 0.4s">
+        <div>
+          <div class="text-3xl font-bold text-white" data-counter data-target="200">0</div>
+          <div class="text-xs text-gray-500 mt-1 tracking-wide">
+            {% if locale == 'id' %}Produk Digital{% else %}Digital Products{% endif %}
+          </div>
+        </div>
+        <div class="w-px h-8 bg-gray-800"></div>
+        <div>
+          <div class="text-3xl font-bold text-white" data-counter data-target="1500">0</div>
+          <div class="text-xs text-gray-500 mt-1 tracking-wide">
+            {% if locale == 'id' %}Pelanggan Aktif{% else %}Active Customers{% endif %}
+          </div>
+        </div>
+        <div class="w-px h-8 bg-gray-800"></div>
+        <div>
+          <div class="text-3xl font-bold text-white" data-counter data-target="99">0</div>
+          <div class="text-xs text-gray-500 mt-1 tracking-wide">
+            {% if locale == 'id' %}% Uptime{% else %}% Uptime{% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Floating product cards (decorative) -->
+  <div class="absolute right-8 top-1/2 -translate-y-1/2 hidden xl:flex flex-col gap-4 opacity-60">
+    <div class="w-56 card p-4 animate-float" style="animation-delay: 0s">
+      <div class="w-full h-24 bg-gray-800 mb-3 skeleton"></div>
+      <div class="h-3 bg-gray-700 w-3/4 mb-2"></div>
+      <div class="h-3 bg-gray-800 w-1/2"></div>
+    </div>
+    <div class="w-56 card p-4 animate-float" style="animation-delay: 0.5s">
+      <div class="w-full h-24 bg-gray-800 mb-3 skeleton"></div>
+      <div class="h-3 bg-gray-700 w-2/3 mb-2"></div>
+      <div class="h-3 bg-gray-800 w-1/3"></div>
+    </div>
+    <div class="w-56 card p-4 animate-float" style="animation-delay: 1s">
+      <div class="w-full h-24 bg-gray-800 mb-3 skeleton"></div>
+      <div class="h-3 bg-gray-700 w-4/5 mb-2"></div>
+      <div class="h-3 bg-gray-800 w-2/5"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== MARQUEE TICKER ===== -->
+<div class="bg-neon border-y border-neon py-3 overflow-hidden">
+  <div class="flex animate-marquee whitespace-nowrap select-none">
+    {% set items = ["E-Book", "Online Course", "Software", "Template", "IT Consulting", "Web Development", "Digital Products", "Subscription"] %}
+    {% for _ in range(4) %}
+      {% for item in items %}
+        <span class="text-black font-semibold text-sm mx-8 tracking-wide">{{ item }}</span>
+        <span class="text-black/40 text-sm mx-2">✦</span>
+      {% endfor %}
+    {% endfor %}
+  </div>
+</div>
+
+<!-- ===== FEATURES ===== -->
+<section class="section bg-black border-b border-gray-800">
+  <div class="container-main">
+    <div class="text-center mb-16 reveal">
+      <span class="text-label block mb-3">
+        {% if locale == 'id' %}Kenapa Pilih Kami{% else %}Why Choose Us{% endif %}
+      </span>
+      <h2 class="heading-lg text-white">
+        {% if locale == 'id' %}Semua yang Bisnis Anda Butuhkan{% else %}Everything Your Business Needs{% endif %}
+      </h2>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-px bg-gray-800">
+      {% set features = [
+        {
+          "icon": "📦",
+          "title_id": "Produk Digital Siap Pakai",
+          "title_en": "Ready-to-Use Digital Products",
+          "desc_id": "E-book, kursus, software, dan template berkualitas tinggi yang langsung bisa digunakan.",
+          "desc_en": "High-quality e-books, courses, software, and templates ready for immediate use."
+        },
+        {
+          "icon": "💳",
+          "title_id": "Pembayaran Otomatis",
+          "title_en": "Automated Payments",
+          "desc_id": "Checkout, invoice, dan subscription billing semuanya otomatis. Zero manual work.",
+          "desc_en": "Checkout, invoicing, and subscription billing fully automated. Zero manual work."
+        },
+        {
+          "icon": "🔄",
+          "title_id": "Manajemen Subscription",
+          "title_en": "Subscription Management",
+          "desc_id": "Kelola langganan bulanan dan tahunan dengan mudah. Renew, cancel, upgrade — semua self-service.",
+          "desc_en": "Manage monthly and annual subscriptions effortlessly. Renew, cancel, upgrade — all self-service."
+        },
+        {
+          "icon": "📊",
+          "title_id": "Dashboard Admin Lengkap",
+          "title_en": "Full Admin Dashboard",
+          "desc_id": "Monitor KPI, transaksi, dan laporan penjualan dalam satu panel yang bersih.",
+          "desc_en": "Monitor KPIs, transactions, and sales reports in one clean panel."
+        },
+        {
+          "icon": "🧾",
+          "title_id": "Invoice PDF Otomatis",
+          "title_en": "Automatic PDF Invoices",
+          "desc_id": "Setiap transaksi menghasilkan invoice PDF profesional yang dikirim langsung ke email.",
+          "desc_en": "Every transaction generates a professional PDF invoice sent directly to email."
+        },
+        {
+          "icon": "🔐",
+          "title_id": "Login Google (OAuth2)",
+          "title_en": "Google Login (OAuth2)",
+          "desc_id": "Sign in cepat dan aman dengan akun Google. Tidak perlu password tambahan.",
+          "desc_en": "Fast and secure sign-in with your Google account. No extra passwords needed."
+        }
+      ] %}
+
+      {% for feature in features %}
+      <div class="bg-black p-8 group hover:bg-gray-900 transition-colors duration-300 reveal">
+        <div class="text-3xl mb-5">{{ feature.icon }}</div>
+        <h3 class="heading-sm text-white mb-3 group-hover:text-neon transition-colors duration-300">
+          {{ feature['title_' + locale] }}
+        </h3>
+        <p class="text-gray-500 text-sm leading-relaxed">{{ feature['desc_' + locale] }}</p>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<!-- ===== PRODUCTS PREVIEW ===== -->
+<section class="section bg-gray-950">
+  <div class="container-main">
+    <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-12 reveal">
+      <div>
+        <span class="text-label block mb-3">{{ t(locale, 'catalog_title') }}</span>
+        <h2 class="heading-lg text-white">
+          {% if locale == 'id' %}Produk Unggulan{% else %}Featured Products{% endif %}
+        </h2>
+      </div>
+      <a href="/{{ locale }}/catalog" class="btn-secondary text-sm shrink-0">
+        {% if locale == 'id' %}Lihat Semua{% else %}View All{% endif %}
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/>
+        </svg>
+      </a>
+    </div>
+
+    {% if featured_products %}
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+      {% for product in featured_products %}
+      <article class="card-neon group overflow-hidden reveal" data-tilt>
+        <!-- Cover image -->
+        <div class="relative aspect-[16/9] bg-gray-800 overflow-hidden">
+          {% if product.cover_image %}
+            <img src="/static/uploads/products/images/{{ product.cover_image }}"
+                 alt="{{ product['name_' + locale] }}"
+                 class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                 loading="lazy" />
+          {% else %}
+            <div class="w-full h-full flex items-center justify-center bg-gray-800">
+              <span class="text-4xl opacity-30">📦</span>
+            </div>
+          {% endif %}
+          <!-- Type badge -->
+          <div class="absolute top-3 left-3">
+            <span class="badge-gray text-xs">{{ product.type.value | upper }}</span>
+          </div>
+        </div>
+
+        <div class="p-6">
+          <h3 class="font-semibold text-white text-base mb-2 group-hover:text-neon transition-colors duration-200 line-clamp-2">
+            {{ product['name_' + locale] }}
+          </h3>
+          <p class="text-gray-500 text-sm leading-relaxed mb-4 line-clamp-2">
+            {{ product['short_desc_' + locale] or product['description_' + locale] or '' }}
+          </p>
+
+          <div class="flex items-center justify-between">
+            <div>
+              {% if product.pricing_model.value == 'subscription' %}
+                <span class="text-neon font-bold text-lg">
+                  Rp {{ "{:,.0f}".format(product.price_monthly) }}
+                </span>
+                <span class="text-gray-500 text-xs">{{ t(locale, 'per_month') }}</span>
+              {% elif product.price_otf %}
+                <span class="text-neon font-bold text-lg">
+                  Rp {{ "{:,.0f}".format(product.price_otf) }}
+                </span>
+              {% elif product.price_monthly %}
+                <span class="text-neon font-bold text-lg">
+                  Rp {{ "{:,.0f}".format(product.price_monthly) }}
+                </span>
+                <span class="text-gray-500 text-xs">{{ t(locale, 'per_month') }}</span>
+              {% endif %}
+            </div>
+            <a href="/{{ locale }}/product/{{ product.slug }}" class="btn-primary text-xs py-2 px-4">
+              {% if locale == 'id' %}Detail{% else %}View{% endif %}
+            </a>
+          </div>
+        </div>
+      </article>
+      {% endfor %}
+    </div>
+    {% else %}
+    <!-- Empty state -->
+    <div class="text-center py-20 border border-gray-800 reveal">
+      <p class="text-gray-500 text-sm">
+        {% if locale == 'id' %}Produk segera hadir.{% else %}Products coming soon.{% endif %}
+      </p>
+    </div>
+    {% endif %}
+  </div>
+</section>
+
+<!-- ===== HUMOR SECTION ===== -->
+<section class="section bg-neon">
+  <div class="container-main">
+    <div class="max-w-3xl mx-auto text-center reveal">
+      <div class="text-6xl mb-6">🧱</div>
+      <h2 class="heading-lg text-black mb-6">{{ t(locale, 'humor_title') }}</h2>
+      <p class="text-black/70 text-base sm:text-lg leading-relaxed mb-10 max-w-2xl mx-auto">
+        {{ t(locale, 'humor_body') }}
+      </p>
+      <a href="/{{ locale }}/catalog" class="inline-flex items-center gap-2 bg-black text-white px-8 py-4 font-semibold text-sm hover:bg-gray-900 transition-colors duration-200 active:scale-95">
+        {{ t(locale, 'humor_cta') }}
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/>
+        </svg>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ===== HOW IT WORKS ===== -->
+<section class="section bg-black border-b border-gray-800">
+  <div class="container-main">
+    <div class="text-center mb-16 reveal">
+      <span class="text-label block mb-3">
+        {% if locale == 'id' %}Cara Kerja{% else %}How It Works{% endif %}
+      </span>
+      <h2 class="heading-lg text-white">
+        {% if locale == 'id' %}Tiga Langkah Mudah{% else %}Three Simple Steps{% endif %}
+      </h2>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+      {% set steps = [
+        {"num": "01", "title_id": "Pilih Produk", "title_en": "Choose a Product",
+         "desc_id": "Jelajahi katalog dan temukan produk digital yang sesuai kebutuhan bisnis Anda.",
+         "desc_en": "Browse the catalog and find the digital product that fits your business needs."},
+        {"num": "02", "title_id": "Checkout & Bayar", "title_en": "Checkout & Pay",
+         "desc_id": "Pilih metode pembayaran via Duitku atau Mayar.id. Proses aman dan instan.",
+         "desc_en": "Choose payment via Duitku or Mayar.id. Secure and instant processing."},
+        {"num": "03", "title_id": "Akses Langsung", "title_en": "Instant Access",
+         "desc_id": "Invoice dikirim otomatis ke email. Produk langsung bisa diakses atau didownload.",
+         "desc_en": "Invoice sent automatically to email. Product immediately accessible or downloadable."},
+      ] %}
+
+      {% for step in steps %}
+      <div class="reveal relative">
+        {% if not loop.last %}
+        <div class="hidden md:block absolute top-8 left-full w-full h-px bg-gray-800 z-0 -translate-x-1/2"></div>
+        {% endif %}
+        <div class="relative z-10">
+          <div class="text-5xl font-black text-gray-800 mb-4">{{ step.num }}</div>
+          <h3 class="heading-sm text-white mb-3">{{ step['title_' + locale] }}</h3>
+          <p class="text-gray-500 text-sm leading-relaxed">{{ step['desc_' + locale] }}</p>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<!-- ===== SOLUTIONS ===== -->
+<section class="section bg-gray-950 border-b border-gray-800">
+  <div class="container-main">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+      <div class="reveal">
+        <span class="text-label block mb-4">
+          {% if locale == 'id' %}Layanan Solusi{% else %}Solution Services{% endif %}
+        </span>
+        <h2 class="heading-lg text-white mb-6">
+          {% if locale == 'id' %}Lebih dari Sekedar Produk{% else %}More Than Just Products{% endif %}
+        </h2>
+        <p class="text-gray-400 leading-relaxed mb-8">
+          {% if locale == 'id' %}
+            Kami juga menyediakan layanan konsultasi IT, integrasi sistem, dan pembuatan website profesional.
+            Tim ahli kami siap membantu bisnis Anda tumbuh secara digital.
+          {% else %}
+            We also provide IT consulting, system integration, and professional website development.
+            Our expert team is ready to help your business grow digitally.
+          {% endif %}
+        </p>
+        <ul class="space-y-3 mb-8">
+          {% set services = [
+            {"id": "Konsultasi IT & Strategi Digital", "en": "IT Consulting & Digital Strategy"},
+            {"id": "Integrasi Sistem & API", "en": "System & API Integration"},
+            {"id": "Pembuatan Website Profesional", "en": "Professional Website Development"},
+            {"id": "Setup Infrastruktur Cloud", "en": "Cloud Infrastructure Setup"},
+          ] %}
+          {% for service in services %}
+          <li class="flex items-center gap-3 text-sm text-gray-400">
+            <span class="w-5 h-5 bg-neon/10 border border-neon/30 flex items-center justify-center flex-shrink-0">
+              <svg class="w-3 h-3 text-neon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+              </svg>
+            </span>
+            {{ service[locale] }}
+          </li>
+          {% endfor %}
+        </ul>
+        <a href="/{{ locale }}/solutions" class="btn-secondary">
+          {% if locale == 'id' %}Lihat Semua Layanan{% else %}View All Services{% endif %}
+        </a>
+      </div>
+
+      <!-- Visual block -->
+      <div class="reveal">
+        <div class="grid grid-cols-2 gap-4">
+          {% for i in range(4) %}
+          <div class="card p-6 {% if i == 1 %}border-neon{% endif %}">
+            <div class="w-8 h-8 bg-gray-800 mb-4"></div>
+            <div class="h-3 bg-gray-700 w-4/5 mb-2"></div>
+            <div class="h-3 bg-gray-800 w-3/5 mb-2"></div>
+            <div class="h-3 bg-gray-800 w-2/5"></div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== CTA FINAL ===== -->
+<section class="section bg-black">
+  <div class="container-main">
+    <div class="border border-gray-800 p-12 lg:p-20 text-center reveal">
+      <h2 class="heading-lg text-white mb-6">
+        {% if locale == 'id' %}Siap Mulai?{% else %}Ready to Start?{% endif %}
+      </h2>
+      <p class="text-gray-400 text-lg max-w-xl mx-auto mb-10">
+        {% if locale == 'id' %}
+          Bergabung dengan ribuan pengguna yang sudah mempercayai Toko Web Jaya untuk kebutuhan digital mereka.
+        {% else %}
+          Join thousands of users who already trust Toko Web Jaya for their digital needs.
+        {% endif %}
+      </p>
+      <div class="flex flex-wrap items-center justify-center gap-4">
+        <a href="/{{ locale }}/login" class="btn-primary px-10 py-4">
+          {% if locale == 'id' %}Mulai Gratis{% else %}Get Started Free{% endif %}
+        </a>
+        <a href="/{{ locale }}/catalog" class="btn-secondary px-10 py-4">
+          {% if locale == 'id' %}Lihat Katalog{% else %}Browse Catalog{% endif %}
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
+
+{% endblock %}

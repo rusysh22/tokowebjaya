@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}{{ t(locale, 'dashboard_orders') }} — Toko Web Jaya{% endblock %}
+{% block content %}
+<section class="bg-black min-h-[calc(100vh-4rem)] pt-24 pb-16">
+  <div class="container-main">
+    <div class="flex items-center gap-3 mb-8">
+      <a href="/{{ locale }}/dashboard" class="text-gray-500 hover:text-white text-xs">← Dashboard</a>
+      <span class="text-gray-700">/</span>
+      <span class="text-xs text-white">{{ t(locale, 'dashboard_orders') }}</span>
+    </div>
+    <h1 class="heading-md text-white mb-8">{{ t(locale, 'dashboard_orders') }}</h1>
+    <div class="border border-gray-800">
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead class="bg-gray-950 border-b border-gray-800">
+            <tr>
+              {% for col in ['Order #', 'Produk' if locale=='id' else 'Product', 'Tipe' if locale=='id' else 'Type', 'Amount', 'Status', 'Tanggal' if locale=='id' else 'Date', ''] %}
+              <th class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">{{ col }}</th>
+              {% endfor %}
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-800">
+            {% if orders %}
+              {% for o in orders %}
+              <tr class="hover:bg-gray-900/50">
+                <td class="px-4 py-3 font-mono text-xs text-gray-400">{{ o.order_number }}</td>
+                <td class="px-4 py-3 text-xs text-white">{{ o.product['name_' + locale] if o.product else '—' }}</td>
+                <td class="px-4 py-3 text-xs text-gray-500 capitalize">{{ o.type.value.replace('_',' ') }}</td>
+                <td class="px-4 py-3 text-xs font-medium text-white">Rp {{ "{:,.0f}".format(o.amount) }}</td>
+                <td class="px-4 py-3">
+                  {% set sc={'paid':'bg-green-950 text-green-400 border-green-800','pending':'bg-yellow-950 text-yellow-400 border-yellow-800','failed':'bg-red-950 text-red-400 border-red-800','cancelled':'bg-gray-800 text-gray-500 border-gray-700'} %}
+                  <span class="badge text-xs {{ sc.get(o.status.value,'') }}">{{ o.status.value }}</span>
+                </td>
+                <td class="px-4 py-3 text-xs text-gray-500">{{ o.created_at.strftime('%d %b %Y') }}</td>
+                <td class="px-4 py-3">
+                  {% if o.status.value == 'paid' %}
+                  <a href="/{{ locale }}/dashboard/orders/{{ o.id }}/receipt"
+                     class="text-xs text-neon hover:underline whitespace-nowrap">
+                    {% if locale == 'id' %}Lihat Receipt{% else %}View Receipt{% endif %}
+                  </a>
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            {% else %}
+              <tr><td colspan="7" class="px-4 py-16 text-center text-gray-600 text-sm">{% if locale=='id' %}Belum ada pesanan.{% else %}No orders yet.{% endif %}</td></tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

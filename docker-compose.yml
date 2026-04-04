@@ -1,0 +1,88 @@
+services:
+
+  # ─── PostgreSQL ──────────────────────────────────────────────────────────────
+  db:
+    image: postgres:16-alpine
+    container_name: twj_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: openpg
+      POSTGRES_PASSWORD: openpgpwd
+      POSTGRES_DB: tokowebjaya
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
+    networks:
+      - evolution_api_server_default
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U openpg -d tokowebjaya"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ─── Web App ─────────────────────────────────────────────────────────────────
+  web:
+    build: .
+    container_name: twj_web
+    restart: unless-stopped
+    ports:
+      - "7777:7777"
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql://openpg:openpgpwd@db:5432/tokowebjaya
+      REDIS_URL: redis://rocdesk_redis:6379/0
+    volumes:
+      - ./static/uploads:/app/static/uploads
+    networks:
+      - evolution_api_server_default
+    depends_on:
+      db:
+        condition: service_healthy
+    command: >
+      sh -c "alembic upgrade head &&
+             uvicorn app.main:app --host 0.0.0.0 --port 7777"
+
+  # ─── Celery Worker ───────────────────────────────────────────────────────────
+  celery_worker:
+    build: .
+    container_name: twj_celery_worker
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql://openpg:openpgpwd@db:5432/tokowebjaya
+      REDIS_URL: redis://rocdesk_redis:6379/0
+    volumes:
+      - ./static/uploads:/app/static/uploads
+    networks:
+      - evolution_api_server_default
+    depends_on:
+      db:
+        condition: service_healthy
+    command: celery -A app.tasks.celery_app:celery worker --loglevel=info --concurrency=2
+
+  # ─── Celery Beat (Scheduler) ─────────────────────────────────────────────────
+  celery_beat:
+    build: .
+    container_name: twj_celery_beat
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql://openpg:openpgpwd@db:5432/tokowebjaya
+      REDIS_URL: redis://rocdesk_redis:6379/0
+    networks:
+      - evolution_api_server_default
+    depends_on:
+      db:
+        condition: service_healthy
+    command: celery -A app.tasks.celery_app:celery beat --loglevel=info
+
+networks:
+  evolution_api_server_default:
+    external: true
+
+volumes:
+  postgres_data:

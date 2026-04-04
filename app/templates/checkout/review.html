@@ -1,0 +1,227 @@
+{% extends "base.html" %}
+{% block title %}Checkout — {{ product['name_' + locale] }}{% endblock %}
+
+{% block content %}
+<section class="min-h-[calc(100vh-4rem)] bg-black pt-24 pb-16">
+  <div class="container-main max-w-3xl">
+
+    <div class="text-xs text-gray-600 mb-8 flex items-center gap-2">
+      <a href="/{{ locale }}/catalog" class="hover:text-white">{{ t(locale, 'catalog_title') }}</a>
+      <span>/</span>
+      <a href="/{{ locale }}/product/{{ product.slug }}" class="hover:text-white">{{ product['name_' + locale] }}</a>
+      <span>/</span>
+      <span class="text-gray-400">Checkout</span>
+    </div>
+
+    <h1 class="heading-md text-white mb-8 reveal">
+      {% if locale == 'id' %}Ringkasan Pesanan{% else %}Order Summary{% endif %}
+    </h1>
+
+    <div class="grid grid-cols-1 lg:grid-cols-5 gap-6">
+
+      <!-- Order details -->
+      <div class="lg:col-span-3 space-y-4 reveal">
+
+        <!-- Product card -->
+        <div class="border border-gray-800 bg-gray-950 p-5 flex gap-4">
+          {% if product.cover_image %}
+            <img src="/static/uploads/products/images/{{ product.cover_image }}"
+                 class="w-20 h-14 object-cover flex-shrink-0 bg-gray-800" alt="" />
+          {% else %}
+            <div class="w-20 h-14 bg-gray-800 flex items-center justify-center flex-shrink-0 text-2xl opacity-30">📦</div>
+          {% endif %}
+          <div>
+            <div class="text-white font-semibold text-sm mb-1">{{ product['name_' + locale] }}</div>
+            <div class="badge-gray text-xs mb-2">{{ product.type.value }}</div>
+            <div class="text-xs text-gray-500">
+              {% if order_type == 'subscription' %}
+                {{ t(locale, 'price_subscription') }} — {{ billing_cycle | capitalize }}
+              {% else %}
+                {{ t(locale, 'price_otf') }}
+              {% endif %}
+            </div>
+          </div>
+        </div>
+
+        <!-- Customer info -->
+        <div class="border border-gray-800 bg-gray-950 p-5">
+          <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">
+            {% if locale == 'id' %}Informasi Pembeli{% else %}Buyer Information{% endif %}
+          </h3>
+          <div class="flex items-center gap-3">
+            {% if current_user.avatar_url %}
+              <img src="{{ current_user.avatar_url }}" class="w-10 h-10 rounded-full" alt="" />
+            {% else %}
+              <div class="w-10 h-10 bg-gray-700 flex items-center justify-center font-bold">
+                {{ current_user.name[0] | upper }}
+              </div>
+            {% endif %}
+            <div>
+              <div class="text-white text-sm font-medium">{{ current_user.name }}</div>
+              <div class="text-gray-500 text-xs">{{ current_user.email }}</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Pay button -->
+        <div class="border border-gray-800 bg-gray-950 p-5" x-data="checkoutPop()">
+          <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-4">
+            {% if locale == 'id' %}Pembayaran{% else %}Payment{% endif %}
+          </h3>
+
+          <!-- Duitku branding -->
+          <div class="flex items-center gap-2 mb-5 p-3 border border-gray-800 bg-black">
+            <div class="flex items-center gap-2 flex-1">
+              <span class="text-white text-sm font-semibold">Secured by</span>
+              <span class="text-neon font-black text-sm">duitku</span>
+            </div>
+            <div class="text-xs text-gray-600">VA · QRIS · CC · E-Wallet</div>
+          </div>
+
+          <!-- Error message -->
+          <div x-show="error" x-cloak class="mb-4 border border-red-900 bg-red-950/30 p-3 text-red-400 text-xs" x-text="error"></div>
+
+          <button @click="openPop()"
+                  :disabled="loading"
+                  class="btn-primary w-full py-4 justify-center disabled:opacity-50 disabled:cursor-not-allowed">
+            <span x-show="!loading">
+              {% if locale == 'id' %}Bayar Sekarang{% else %}Pay Now{% endif %}
+              <svg class="w-4 h-4 inline ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/>
+              </svg>
+            </span>
+            <span x-show="loading" class="flex items-center gap-2">
+              <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 22 6.477 22 12h-4z"></path>
+              </svg>
+              {% if locale == 'id' %}Memproses...{% else %}Processing...{% endif %}
+            </span>
+          </button>
+
+          <p class="text-xs text-gray-600 mt-3 text-center">
+            {% if locale == 'id' %}
+              Pilih metode pembayaran di popup yang muncul. Invoice dikirim ke email.
+            {% else %}
+              Choose your payment method in the popup. Invoice sent to your email.
+            {% endif %}
+          </p>
+        </div>
+      </div>
+
+      <!-- Price summary -->
+      <div class="lg:col-span-2 reveal">
+        <div class="border border-gray-800 bg-gray-950 p-5 sticky top-24">
+          <div class="flex items-center justify-between mb-5">
+            <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-widest">
+              {% if locale == 'id' %}Ringkasan Harga{% else %}Price Summary{% endif %}
+            </h3>
+            <!-- Currency toggle -->
+            <div class="flex items-center border border-gray-700 overflow-hidden text-xs font-semibold">
+              {% for cur in supported_currencies %}
+              <a href="?type={{ order_type }}&cycle={{ billing_cycle }}&currency={{ cur }}"
+                 class="px-2.5 py-1 transition-colors {% if currency == cur %}bg-neon text-black{% else %}text-gray-500 hover:text-white{% endif %}">
+                {{ cur }}
+              </a>
+              {% endfor %}
+            </div>
+          </div>
+
+          <div class="space-y-3 pb-4 border-b border-gray-800 text-sm">
+            <div class="flex justify-between">
+              <span class="text-gray-400">
+                {% if locale == 'id' %}Harga{% else %}Price{% endif %}
+              </span>
+              <span class="text-white">{{ pricing.formatted }}</span>
+            </div>
+            {% if pricing.vat_rate > 0 %}
+            <div class="flex justify-between">
+              <span class="text-gray-500 text-xs">PPN {{ (pricing.vat_rate * 100) | int }}%</span>
+              <span class="text-gray-400 text-xs">+ {{ format_price(pricing.vat_amount, currency) }}</span>
+            </div>
+            {% endif %}
+          </div>
+
+          <div class="flex justify-between mt-4">
+            <span class="font-semibold text-white">Total</span>
+            <div class="text-right">
+              <div class="text-neon font-black text-xl">{{ pricing.formatted_total }}</div>
+              {% if currency != 'IDR' %}
+              <div class="text-gray-600 text-xs mt-0.5">≈ Rp {{ "{:,.0f}".format(pricing.amount_idr) }}</div>
+              {% endif %}
+            </div>
+          </div>
+
+          {% if pricing.vat_rate > 0 %}
+          <div class="mt-4 text-xs text-gray-600 border border-gray-800 p-2.5">
+            {% if locale == 'id' %}Harga sudah termasuk PPN 11%.{% else %}Price includes 11% VAT (PPN).{% endif %}
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}
+
+{% block extra_scripts %}
+<!-- Duitku Pop.js -->
+<script src="https://app-sandbox.duitku.com/lib/js/duitku.js"></script>
+
+<script>
+function checkoutPop() {
+  return {
+    loading: false,
+    error: '',
+
+    async openPop() {
+      this.loading = true;
+      this.error = '';
+
+      try {
+        const resp = await fetch('/{{ locale }}/checkout/{{ product.id }}/create-payment', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            order_type: '{{ order_type }}',
+            billing_cycle: '{{ billing_cycle }}',
+            currency: '{{ currency }}',
+          })
+        });
+
+        const data = await resp.json();
+
+        if (!resp.ok || !data.payment_url) {
+          this.error = data.detail || '{% if locale == "id" %}Gagal membuat pembayaran. Coba lagi.{% else %}Failed to create payment. Please try again.{% endif %}';
+          this.loading = false;
+          return;
+        }
+
+        // Open Duitku Pop
+        const reference = data.reference;
+        const self = this;
+        window.checkout.process(reference, {
+          successEvent: function(result) {
+            window.location.href = '/{{ locale }}/checkout/return/' + data.order_id;
+          },
+          pendingEvent: function(result) {
+            window.location.href = '/{{ locale }}/checkout/return/' + data.order_id;
+          },
+          errorEvent: function(result) {
+            self.error = '{% if locale == "id" %}Pembayaran gagal. Silakan coba lagi.{% else %}Payment failed. Please try again.{% endif %}';
+            self.loading = false;
+          },
+          closeEvent: function() {
+            self.loading = false;
+          }
+        });
+
+      } catch (e) {
+        this.error = '{% if locale == "id" %}Terjadi kesalahan. Coba lagi.{% else %}An error occurred. Please try again.{% endif %}';
+        this.loading = false;
+      }
+    }
+  }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,236 @@
+{% extends "admin/base_admin.html" %}
+{% set admin_section = "products" %}
+
+{% block title %}{% if product %}Edit Produk{% else %}Tambah Produk{% endif %} — Admin{% endblock %}
+{% block page_title %}{% if product %}{% if locale == 'id' %}Edit Produk{% else %}Edit Product{% endif %}{% else %}{% if locale == 'id' %}Tambah Produk Baru{% else %}Add New Product{% endif %}{% endif %}{% endblock %}
+
+{% block content %}
+
+{% set action_url = "/" + locale + "/admin/products/" + (product.id | string) + "/edit" if product else "/" + locale + "/admin/products/new" %}
+
+<form method="post" action="{{ action_url }}" enctype="multipart/form-data"
+      x-data="{ pricingModel: '{{ product.pricing_model.value if product else 'one_time' }}' }"
+      class="max-w-4xl space-y-6">
+
+  <!-- Section: Basic Info -->
+  <div class="border border-gray-800 p-6">
+    <h2 class="text-sm font-semibold text-white mb-5 pb-3 border-b border-gray-800">
+      {% if locale == 'id' %}Informasi Dasar{% else %}Basic Information{% endif %}
+    </h2>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+
+      {% if not product %}
+      <div class="md:col-span-2">
+        <label class="block text-xs font-medium text-gray-400 mb-2">Slug <span class="text-red-500">*</span></label>
+        <input type="text" name="slug" required placeholder="contoh-nama-produk"
+               class="input" pattern="[a-z0-9\-]+" title="Hanya huruf kecil, angka, dan tanda hubung" />
+        <p class="text-xs text-gray-600 mt-1">URL: /catalog/<strong>slug-anda</strong></p>
+      </div>
+      {% endif %}
+
+      <div>
+        <label class="block text-xs font-medium text-gray-400 mb-2">Nama (Bahasa Indonesia) <span class="text-red-500">*</span></label>
+        <input type="text" name="name_id" required value="{{ product.name_id if product else '' }}" class="input" />
+      </div>
+      <div>
+        <label class="block text-xs font-medium text-gray-400 mb-2">Name (English) <span class="text-red-500">*</span></label>
+        <input type="text" name="name_en" required value="{{ product.name_en if product else '' }}" class="input" />
+      </div>
+
+      <div>
+        <label class="block text-xs font-medium text-gray-400 mb-2">Short Description (ID)</label>
+        <input type="text" name="short_desc_id" value="{{ product.short_desc_id or '' if product else '' }}"
+               class="input" maxlength="200" />
+      </div>
+      <div>
+        <label class="block text-xs font-medium text-gray-400 mb-2">Short Description (EN)</label>
+        <input type="text" name="short_desc_en" value="{{ product.short_desc_en or '' if product else '' }}"
+               class="input" maxlength="200" />
+      </div>
+
+      <div>
+        <label class="block text-xs font-medium text-gray-400 mb-2">Deskripsi (ID)</label>
+        <textarea name="description_id" rows="5" class="input resize-y">{{ product.description_id or '' if product else '' }}</textarea>
+      </div>
+      <div>
+        <label class="block text-xs font-medium text-gray-400 mb-2">Description (EN)</label>
+        <textarea name="description_en" rows="5" class="input resize-y">{{ product.description_en or '' if product else '' }}</textarea>
+      </div>
+    </div>
+  </div>
+
+  <!-- Section: Type & Pricing -->
+  <div class="border border-gray-800 p-6">
+    <h2 class="text-sm font-semibold text-white mb-5 pb-3 border-b border-gray-800">
+      {% if locale == 'id' %}Tipe & Harga{% else %}Type & Pricing{% endif %}
+    </h2>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+      <div>
+        <label class="block text-xs font-medium text-gray-400 mb-2">Tipe Produk <span class="text-red-500">*</span></label>
+        <select name="type" required class="input bg-gray-900">
+          {% for pt in product_types %}
+          <option value="{{ pt }}" {% if product and product.type.value == pt %}selected{% endif %}>{{ pt | capitalize }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div>
+        <label class="block text-xs font-medium text-gray-400 mb-2">Pricing Model <span class="text-red-500">*</span></label>
+        <select name="pricing_model" required class="input bg-gray-900"
+                @change="pricingModel = $event.target.value">
+          {% for pm in pricing_models %}
+          <option value="{{ pm }}" {% if product and product.pricing_model.value == pm %}selected{% elif pm == 'one_time' and not product %}selected{% endif %}>
+            {{ pm | replace('_', ' ') | capitalize }}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div>
+        <label class="block text-xs font-medium text-gray-400 mb-2">Status</label>
+        <select name="status" class="input bg-gray-900">
+          {% for ps in product_statuses %}
+          <option value="{{ ps }}" {% if product and product.status.value == ps %}selected{% elif ps == 'draft' and not product %}selected{% endif %}>
+            {{ ps | capitalize }}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- Price OTF -->
+      <div x-show="pricingModel === 'one_time' || pricingModel === 'both'">
+        <label class="block text-xs font-medium text-gray-400 mb-2">
+          {% if locale == 'id' %}Harga One-Time (Rp){% else %}One-Time Price (Rp){% endif %}
+        </label>
+        <input type="number" name="price_otf" min="0" step="1000"
+               value="{{ product.price_otf | int if product and product.price_otf else '' }}" class="input" />
+      </div>
+
+      <!-- Price Monthly -->
+      <div x-show="pricingModel === 'subscription' || pricingModel === 'both'">
+        <label class="block text-xs font-medium text-gray-400 mb-2">
+          {% if locale == 'id' %}Harga Bulanan (Rp){% else %}Monthly Price (Rp){% endif %}
+        </label>
+        <input type="number" name="price_monthly" min="0" step="1000"
+               value="{{ product.price_monthly | int if product and product.price_monthly else '' }}" class="input" />
+      </div>
+
+      <!-- Price Yearly -->
+      <div x-show="pricingModel === 'subscription' || pricingModel === 'both'">
+        <label class="block text-xs font-medium text-gray-400 mb-2">
+          {% if locale == 'id' %}Harga Tahunan (Rp){% else %}Yearly Price (Rp){% endif %}
+        </label>
+        <input type="number" name="price_yearly" min="0" step="1000"
+               value="{{ product.price_yearly | int if product and product.price_yearly else '' }}" class="input" />
+      </div>
+    </div>
+  </div>
+
+  <!-- Section: Media -->
+  <div class="border border-gray-800 p-6">
+    <h2 class="text-sm font-semibold text-white mb-5 pb-3 border-b border-gray-800">
+      Media & Files
+    </h2>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+
+      <!-- Cover Image -->
+      <div>
+        <label class="block text-xs font-medium text-gray-400 mb-2">
+          Cover Image <span class="text-gray-600">(JPG, PNG, WebP — max {{ settings.MAX_UPLOAD_SIZE_MB }}MB)</span>
+        </label>
+        {% if product and product.cover_image %}
+          <img src="/static/uploads/products/images/{{ product.cover_image }}"
+               class="w-full aspect-video object-cover mb-3 border border-gray-700" />
+        {% endif %}
+        <input type="file" name="cover_image" accept="image/*" class="input py-2 text-xs file:mr-3 file:py-1 file:px-3 file:border-0 file:bg-gray-700 file:text-white file:text-xs file:cursor-pointer" />
+      </div>
+
+      <!-- Preview Video -->
+      <div>
+        <label class="block text-xs font-medium text-gray-400 mb-2">
+          Preview Video <span class="text-gray-600">(MP4, WebM — max {{ settings.MAX_UPLOAD_SIZE_MB }}MB)</span>
+        </label>
+        {% if product and product.preview_video %}
+          <video controls class="w-full aspect-video mb-3 border border-gray-700 bg-black"
+                 data-src="/static/uploads/products/videos/{{ product.preview_video }}"></video>
+        {% endif %}
+        <input type="file" name="preview_video" accept="video/*" class="input py-2 text-xs file:mr-3 file:py-1 file:px-3 file:border-0 file:bg-gray-700 file:text-white file:text-xs file:cursor-pointer" />
+      </div>
+
+      <!-- Download File -->
+      <div>
+        <label class="block text-xs font-medium text-gray-400 mb-2">
+          Download File <span class="text-gray-600">(PDF, ZIP — max {{ settings.MAX_UPLOAD_SIZE_MB }}MB)</span>
+        </label>
+        {% if product and product.download_file %}
+          <div class="text-xs text-neon mb-3 font-mono truncate">{{ product.download_file }}</div>
+        {% endif %}
+        <input type="file" name="download_file" accept=".pdf,.zip,.docx,.xlsx" class="input py-2 text-xs file:mr-3 file:py-1 file:px-3 file:border-0 file:bg-gray-700 file:text-white file:text-xs file:cursor-pointer" />
+      </div>
+    </div>
+  </div>
+
+  <!-- Section: Metadata -->
+  <div class="border border-gray-800 p-6">
+    <h2 class="text-sm font-semibold text-white mb-5 pb-3 border-b border-gray-800">
+      Metadata
+    </h2>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+      <div>
+        <label class="block text-xs font-medium text-gray-400 mb-2">Category</label>
+        <input type="text" name="category" value="{{ product.category or '' if product else '' }}" class="input" placeholder="e.g. Marketing, Development" />
+      </div>
+
+      <div>
+        <label class="block text-xs font-medium text-gray-400 mb-2">Sort Order</label>
+        <input type="number" name="sort_order" value="{{ product.sort_order if product else 0 }}" min="0" class="input w-32" />
+      </div>
+
+      <div>
+        <label class="block text-xs font-medium text-gray-400 mb-2">Tags <span class="text-gray-600">(pisahkan dengan koma)</span></label>
+        <input type="text" name="tags" value="{{ product.tags | join(', ') if product and product.tags else '' }}" class="input" placeholder="python, web, template" />
+      </div>
+
+      <div class="flex items-center gap-3 mt-4">
+        <input type="checkbox" name="is_featured" id="is_featured" value="true"
+               class="w-4 h-4 accent-neon"
+               {% if product and product.is_featured %}checked{% endif %} />
+        <label for="is_featured" class="text-sm text-gray-300 cursor-pointer">
+          {% if locale == 'id' %}Tampilkan di halaman utama (Featured){% else %}Show on homepage (Featured){% endif %}
+        </label>
+      </div>
+
+      <div class="md:col-span-2">
+        <label class="block text-xs font-medium text-gray-400 mb-2">
+          {% if locale == 'id' %}Fitur Produk (satu per baris){% else %}Product Features (one per line){% endif %}
+        </label>
+        <textarea name="features" rows="5" class="input resize-y font-mono text-xs"
+                  placeholder="Akses seumur hidup&#10;Update gratis&#10;File source termasuk">{{ product.features | join('\n') if product and product.features else '' }}</textarea>
+      </div>
+    </div>
+  </div>
+
+  <!-- Actions -->
+  <div class="flex items-center gap-4">
+    <button type="submit" class="btn-primary px-8 py-3">
+      {% if product %}{% if locale == 'id' %}Simpan Perubahan{% else %}Save Changes{% endif %}{% else %}{% if locale == 'id' %}Tambah Produk{% else %}Add Product{% endif %}{% endif %}
+    </button>
+    <a href="/{{ locale }}/admin/products" class="btn-ghost">
+      {% if locale == 'id' %}Batal{% else %}Cancel{% endif %}
+    </a>
+  </div>
+
+</form>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  // Inject settings for template
+  window.__settings = { MAX_UPLOAD_SIZE_MB: {{ settings.MAX_UPLOAD_SIZE_MB }} };
+</script>
+{% endblock %}

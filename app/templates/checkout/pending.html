@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Menunggu Pembayaran — Toko Web Jaya{% endblock %}
+{% block content %}
+<section class="min-h-[calc(100vh-4rem)] bg-black pt-24 pb-16 flex items-center">
+  <div class="container-main max-w-lg text-center">
+    <div class="text-5xl mb-6">⏳</div>
+    <h1 class="heading-md text-white mb-4">
+      {% if locale == 'id' %}Menunggu Pembayaran{% else %}Awaiting Payment{% endif %}
+    </h1>
+    <p class="text-gray-500 text-sm mb-8">
+      {% if locale == 'id' %}
+        Pesanan Anda sedang menunggu konfirmasi pembayaran. Kami akan mengirim email setelah pembayaran dikonfirmasi.
+      {% else %}
+        Your order is awaiting payment confirmation. We'll send you an email once payment is confirmed.
+      {% endif %}
+    </p>
+    <div class="flex gap-3 justify-center">
+      <a href="/{{ locale }}/dashboard/orders" class="btn-primary text-sm">
+        {% if locale == 'id' %}Lihat Pesanan Saya{% else %}View My Orders{% endif %}
+      </a>
+      <a href="/{{ locale }}/catalog" class="btn-ghost text-sm">
+        {% if locale == 'id' %}Lanjut Belanja{% else %}Continue Shopping{% endif %}
+      </a>
+    </div>
+  </div>
+</section>
+{% endblock %}

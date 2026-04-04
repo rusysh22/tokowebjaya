@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="{{ locale }}" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+
+  <title>{% block title %}Toko Web Jaya — Tidak Sedia Alat Bangunan{% endblock %}</title>
+  <meta name="description" content="{% block meta_description %}Produk digital profesional: e-book, kursus, software, dan template untuk bisnis modern.{% endblock %}" />
+  <meta name="keywords" content="{% block meta_keywords %}produk digital, ebook, kursus online, software, template, toko web jaya{% endblock %}" />
+  <meta name="robots" content="index, follow" />
+  <meta name="author" content="Toko Web Jaya" />
+
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content="{% block og_type %}website{% endblock %}" />
+  <meta property="og:url" content="{{ request.url }}" />
+  <meta property="og:site_name" content="Toko Web Jaya" />
+  <meta property="og:title" content="{% block og_title %}{% block _title_inner %}Toko Web Jaya — Produk Digital Profesional{% endblock %}{% endblock %}" />
+  <meta property="og:description" content="{% block og_description %}Produk digital profesional: e-book, kursus, software, dan template untuk bisnis modern.{% endblock %}" />
+  <meta property="og:image" content="{% block og_image %}{{ settings.BASE_URL }}/static/og-default.png{% endblock %}" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:locale" content="{% if locale == 'id' %}id_ID{% else %}en_US{% endif %}" />
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="{% block twitter_card %}summary_large_image{% endblock %}" />
+  <meta name="twitter:site" content="@tokowebjaya" />
+  <meta name="twitter:title" content="{% block twitter_title %}Toko Web Jaya — Produk Digital Profesional{% endblock %}" />
+  <meta name="twitter:description" content="{% block twitter_description %}Produk digital profesional: e-book, kursus, software, dan template untuk bisnis modern.{% endblock %}" />
+  <meta name="twitter:image" content="{% block twitter_image %}{{ settings.BASE_URL }}/static/og-default.png{% endblock %}" />
+
+  <!-- Canonical hreflang -->
+  <link rel="alternate" hreflang="id" href="/id{{ request.url.path.lstrip('/id').lstrip('/en') or '/' }}" />
+  <link rel="alternate" hreflang="en" href="/en{{ request.url.path.lstrip('/id').lstrip('/en') or '/' }}" />
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/svg+xml" href="/static/favicon.svg" />
+  <link rel="icon" type="image/x-icon" href="/static/favicon.svg" />
+  <meta name="theme-color" content="#CAFF00" />
+
+  <!-- Fonts: Lexend -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+
+  <!-- Tailwind CSS -->
+  <link rel="stylesheet" href="/static/css/main.css" />
+
+  <!-- Alpine.js -->
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+  <!-- HTMX -->
+  <script src="https://unpkg.com/htmx.org@2.0.4/dist/htmx.min.js"></script>
+
+  {% block extra_head %}{% endblock %}
+</head>
+
+<body class="bg-black text-white font-sans antialiased" x-data="{ mobileMenuOpen: false }">
+
+  <!-- ===== NAVBAR ===== -->
+  <header class="fixed top-0 left-0 right-0 z-50 border-b border-gray-800 bg-black/90 backdrop-blur-sm" id="navbar">
+    <nav class="container-main flex items-center justify-between h-16">
+
+      <!-- Logo -->
+      <a href="/{{ locale }}/" class="flex items-center gap-2 group">
+        <div class="w-8 h-8 bg-neon flex items-center justify-center">
+          <span class="text-black font-black text-sm leading-none">TW</span>
+        </div>
+        <span class="font-bold text-white text-sm tracking-wide">Toko Web Jaya</span>
+      </a>
+
+      <!-- Desktop Nav -->
+      <div class="hidden md:flex items-center gap-8">
+        <a href="/{{ locale }}/" class="nav-link {% if active_page == 'home' %}text-white{% endif %}">
+          {{ t(locale, 'nav_home') }}
+        </a>
+        <a href="/{{ locale }}/catalog" class="nav-link {% if active_page == 'catalog' %}text-white{% endif %}">
+          {{ t(locale, 'nav_catalog') }}
+        </a>
+        <a href="/{{ locale }}/solutions" class="nav-link {% if active_page == 'solutions' %}text-white{% endif %}">
+          {{ t(locale, 'nav_solutions') }}
+        </a>
+        <a href="/{{ locale }}/about" class="nav-link {% if active_page == 'about' %}text-white{% endif %}">
+          {{ t(locale, 'nav_about') }}
+        </a>
+        <a href="/{{ locale }}/contact" class="nav-link {% if active_page == 'contact' %}text-white{% endif %}">
+          {{ t(locale, 'nav_contact') }}
+        </a>
+      </div>
+
+      <!-- Right actions -->
+      <div class="hidden md:flex items-center gap-4">
+        <!-- Language toggle -->
+        <div class="flex items-center border border-gray-700 text-xs font-semibold overflow-hidden">
+          <a href="/id{{ request.url.path.lstrip('/id').lstrip('/en') or '/' }}"
+             class="px-3 py-1.5 transition-colors duration-200 {% if locale == 'id' %}bg-neon text-black{% else %}text-gray-400 hover:text-white{% endif %}">
+            ID
+          </a>
+          <a href="/en{{ request.url.path.lstrip('/id').lstrip('/en') or '/' }}"
+             class="px-3 py-1.5 transition-colors duration-200 {% if locale == 'en' %}bg-neon text-black{% else %}text-gray-400 hover:text-white{% endif %}">
+            EN
+          </a>
+        </div>
+
+        {% if current_user %}
+          <!-- Bell notification icon -->
+          <a href="/{{ locale }}/dashboard/notifications"
+             class="relative text-gray-400 hover:text-white transition-colors"
+             x-data="notifBell()"
+             title="{% if locale == 'id' %}Notifikasi{% else %}Notifications{% endif %}">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+            </svg>
+            <span x-show="count > 0" x-cloak
+                  class="absolute -top-1.5 -right-1.5 w-4 h-4 bg-neon text-black text-[10px] font-black flex items-center justify-center rounded-full"
+                  x-text="count > 9 ? '9+' : count"></span>
+          </a>
+          <a href="/{{ locale }}/dashboard" class="nav-link">{{ t(locale, 'nav_dashboard') }}</a>
+          <a href="/auth/logout" class="btn-secondary text-xs py-2 px-4">{{ t(locale, 'nav_logout') }}</a>
+        {% else %}
+          <a href="/{{ locale }}/login" class="btn-primary text-xs py-2 px-4">{{ t(locale, 'nav_login') }}</a>
+        {% endif %}
+      </div>
+
+      <!-- Mobile hamburger -->
+      <button class="md:hidden p-2 text-gray-400 hover:text-white" @click="mobileMenuOpen = !mobileMenuOpen" aria-label="Menu">
+        <svg x-show="!mobileMenuOpen" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+        </svg>
+        <svg x-show="mobileMenuOpen" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </nav>
+
+    <!-- Mobile Menu -->
+    <div x-show="mobileMenuOpen"
+         x-transition:enter="transition ease-out duration-200"
+         x-transition:enter-start="opacity-0 -translate-y-2"
+         x-transition:enter-end="opacity-100 translate-y-0"
+         x-transition:leave="transition ease-in duration-150"
+         x-transition:leave-start="opacity-100 translate-y-0"
+         x-transition:leave-end="opacity-0 -translate-y-2"
+         class="md:hidden border-t border-gray-800 bg-black">
+      <div class="container-main py-4 flex flex-col gap-1">
+        <a href="/{{ locale }}/" class="nav-link py-3 border-b border-gray-900">{{ t(locale, 'nav_home') }}</a>
+        <a href="/{{ locale }}/catalog" class="nav-link py-3 border-b border-gray-900">{{ t(locale, 'nav_catalog') }}</a>
+        <a href="/{{ locale }}/solutions" class="nav-link py-3 border-b border-gray-900">{{ t(locale, 'nav_solutions') }}</a>
+        <a href="/{{ locale }}/about" class="nav-link py-3 border-b border-gray-900">{{ t(locale, 'nav_about') }}</a>
+        <a href="/{{ locale }}/contact" class="nav-link py-3 border-b border-gray-900">{{ t(locale, 'nav_contact') }}</a>
+        <div class="flex items-center gap-3 pt-4">
+          <div class="flex items-center border border-gray-700 text-xs font-semibold overflow-hidden">
+            <a href="/id{{ request.url.path.lstrip('/id').lstrip('/en') or '/' }}"
+               class="px-3 py-1.5 {% if locale == 'id' %}bg-neon text-black{% else %}text-gray-400{% endif %}">ID</a>
+            <a href="/en{{ request.url.path.lstrip('/id').lstrip('/en') or '/' }}"
+               class="px-3 py-1.5 {% if locale == 'en' %}bg-neon text-black{% else %}text-gray-400{% endif %}">EN</a>
+          </div>
+          {% if current_user %}
+            <a href="/{{ locale }}/dashboard" class="btn-secondary text-xs py-2 px-4">{{ t(locale, 'nav_dashboard') }}</a>
+          {% else %}
+            <a href="/{{ locale }}/login" class="btn-primary text-xs py-2 px-4">{{ t(locale, 'nav_login') }}</a>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ===== MAIN CONTENT ===== -->
+  <main class="pt-16">
+    {% block content %}{% endblock %}
+  </main>
+
+  <!-- ===== FOOTER ===== -->
+  <footer class="border-t border-gray-800 bg-gray-950">
+    <div class="container-main py-16">
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-10">
+
+        <!-- Brand -->
+        <div class="md:col-span-2">
+          <div class="flex items-center gap-2 mb-4">
+            <div class="w-8 h-8 bg-neon flex items-center justify-center">
+              <span class="text-black font-black text-sm">TW</span>
+            </div>
+            <span class="font-bold text-white">Toko Web Jaya</span>
+          </div>
+          <p class="text-gray-400 text-sm leading-relaxed max-w-xs">
+            {{ t(locale, 'footer_tagline') }}
+          </p>
+          <p class="text-xs text-gray-600 mt-3 italic">
+            {% if locale == 'id' %}
+              ⚠️ Kami tidak menjual semen, pasir, atau genteng.
+            {% else %}
+              ⚠️ We don't sell cement, sand, or roof tiles.
+            {% endif %}
+          </p>
+        </div>
+
+        <!-- Links -->
+        <div>
+          <h4 class="text-xs font-semibold tracking-widest uppercase text-gray-500 mb-4">Produk</h4>
+          <ul class="space-y-2">
+            <li><a href="/{{ locale }}/catalog?type=ebook" class="text-sm text-gray-400 hover:text-white transition-colors">E-Book</a></li>
+            <li><a href="/{{ locale }}/catalog?type=course" class="text-sm text-gray-400 hover:text-white transition-colors">Kursus</a></li>
+            <li><a href="/{{ locale }}/catalog?type=software" class="text-sm text-gray-400 hover:text-white transition-colors">Software</a></li>
+            <li><a href="/{{ locale }}/catalog?type=template" class="text-sm text-gray-400 hover:text-white transition-colors">Template</a></li>
+          </ul>
+        </div>
+
+        <div>
+          <h4 class="text-xs font-semibold tracking-widest uppercase text-gray-500 mb-4">Perusahaan</h4>
+          <ul class="space-y-2">
+            <li><a href="/{{ locale }}/about" class="text-sm text-gray-400 hover:text-white transition-colors">{{ t(locale, 'nav_about') }}</a></li>
+            <li><a href="/{{ locale }}/solutions" class="text-sm text-gray-400 hover:text-white transition-colors">{{ t(locale, 'nav_solutions') }}</a></li>
+            <li><a href="/{{ locale }}/contact" class="text-sm text-gray-400 hover:text-white transition-colors">{{ t(locale, 'nav_contact') }}</a></li>
+            <li><a href="/{{ locale }}/login" class="text-sm text-gray-400 hover:text-white transition-colors">{{ t(locale, 'nav_login') }}</a></li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Bottom bar -->
+      <div class="border-t border-gray-800 mt-12 pt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <p class="text-xs text-gray-600">
+          &copy; {{ now().year if now is defined else "2025" }} Toko Web Jaya. {{ t(locale, 'footer_rights') }}.
+        </p>
+        <div class="flex items-center gap-6">
+          <a href="#" class="text-xs text-gray-600 hover:text-gray-400 transition-colors">Privacy Policy</a>
+          <a href="#" class="text-xs text-gray-600 hover:text-gray-400 transition-colors">Terms of Service</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ===== SCRIPTS ===== -->
+  <script src="/static/js/main.js"></script>
+  {% block extra_scripts %}{% endblock %}
+
+  {% if current_user %}
+  <script>
+  function notifBell() {
+    return {
+      count: 0,
+      init() {
+        this.fetchCount();
+        // Poll every 60 seconds
+        setInterval(() => this.fetchCount(), 60000);
+      },
+      async fetchCount() {
+        try {
+          const r = await fetch('/api/notifications/unread-count');
+          const d = await r.json();
+          this.count = d.count || 0;
+        } catch (e) {}
+      }
+    }
+  }
+  </script>
+  {% endif %}
+</body>
+</html>

@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}{% if locale == 'id' %}Solusi IT{% else %}IT Solutions{% endif %} — Toko Web Jaya{% endblock %}
+{% block meta_description %}{% if locale == 'id' %}Layanan solusi IT profesional: konsultasi, integrasi sistem, pembuatan website, dan infrastruktur cloud dari Toko Web Jaya.{% else %}Professional IT solution services: consulting, system integration, website development, and cloud infrastructure from Toko Web Jaya.{% endif %}{% endblock %}
+{% block og_title %}{% if locale == 'id' %}Solusi IT Profesional{% else %}Professional IT Solutions{% endif %} — Toko Web Jaya{% endblock %}
+{% block og_description %}{% if locale == 'id' %}Layanan solusi IT profesional: konsultasi, integrasi sistem, pembuatan website, dan infrastruktur cloud.{% else %}Professional IT solution services: consulting, system integration, website development, and cloud infrastructure.{% endif %}{% endblock %}
+{% block twitter_title %}{% if locale == 'id' %}Solusi IT Profesional{% else %}Professional IT Solutions{% endif %} — Toko Web Jaya{% endblock %}
+{% block twitter_description %}{% if locale == 'id' %}Layanan solusi IT profesional: konsultasi, integrasi sistem, pembuatan website, dan infrastruktur cloud.{% else %}Professional IT solution services: consulting, system integration, website development, and cloud infrastructure.{% endif %}{% endblock %}
+{% block content %}
+<section class="bg-black border-b border-gray-800 pt-16">
+  <div class="container-main py-20">
+    <span class="text-label block mb-4">Solutions</span>
+    <h1 class="heading-xl text-white mb-6 reveal">
+      {% if locale == 'id' %}Layanan IT Profesional{% else %}Professional IT Services{% endif %}
+    </h1>
+    <p class="text-gray-400 text-lg max-w-2xl leading-relaxed reveal">
+      {% if locale == 'id' %}Konsultasi IT, integrasi sistem, dan pembuatan website untuk bisnis Anda.{% else %}IT consulting, system integration, and website development for your business.{% endif %}
+    </p>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-16">
+      {% for svc in [
+        {'id': 'Konsultasi IT & Strategi Digital', 'en': 'IT Consulting & Digital Strategy', 'icon': '🎯'},
+        {'id': 'Integrasi Sistem & API', 'en': 'System & API Integration', 'icon': '🔗'},
+        {'id': 'Pembuatan Website Profesional', 'en': 'Professional Website Development', 'icon': '🌐'},
+        {'id': 'Setup Infrastruktur Cloud', 'en': 'Cloud Infrastructure Setup', 'icon': '☁️'},
+      ] %}
+      <div class="card-hover p-6 reveal">
+        <div class="text-3xl mb-4">{{ svc.icon }}</div>
+        <h3 class="heading-sm text-white mb-2">{{ svc[locale] }}</h3>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endblock %}

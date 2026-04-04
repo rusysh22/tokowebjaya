@@ -1,0 +1,17 @@
+venv/
+__pycache__/
+*.pyc
+*.pyo
+.env
+*.egg-info/
+.DS_Store
+node_modules/
+static/uploads/
+static/css/main.css
+migrations/versions/
+*.db
+.pytest_cache/
+.coverage
+htmlcov/
+dist/
+build/
