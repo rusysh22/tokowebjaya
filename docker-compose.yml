@@ -14,7 +14,7 @@ services:
     ports:
       - "5433:5432"
     networks:
-      - evolution_api_server_default
+      - twj_internal
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 10s
@@ -33,7 +33,7 @@ services:
     volumes:
       - ./static/uploads:/app/static/uploads
     networks:
-      - evolution_api_server_default
+      - twj_internal
     depends_on:
       db:
         condition: service_healthy
@@ -51,7 +51,7 @@ services:
     volumes:
       - ./static/uploads:/app/static/uploads
     networks:
-      - evolution_api_server_default
+      - twj_internal
     depends_on:
       db:
         condition: service_healthy
@@ -65,15 +65,15 @@ services:
     env_file:
       - .env
     networks:
-      - evolution_api_server_default
+      - twj_internal
     depends_on:
       db:
         condition: service_healthy
     command: celery -A app.tasks.celery_app:celery beat --loglevel=info
 
 networks:
-  evolution_api_server_default:
-    external: true
+  twj_internal:
+    driver: bridge
 
 volumes:
   postgres_data:
