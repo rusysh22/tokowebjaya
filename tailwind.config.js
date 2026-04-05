@@ -76,6 +76,19 @@ module.exports = {
       },
     },
   },
+  safelist: [
+    // Alpine.js :class bindings — not detectable by Tailwind's static scanner
+    "opacity-100", "opacity-0",
+    "scale-100", "scale-[1.03]",
+    "z-10", "z-0",
+    "border-neon", "border-gray-800",
+    "bg-neon",
+    "w-5", "w-full",
+    "carousel-progress-play",
+    // brightness filter
+    "brightness-75", "brightness-100",
+    "scale-110",
+  ],
   plugins: [
     require("@tailwindcss/typography"),
     require("@tailwindcss/forms"),

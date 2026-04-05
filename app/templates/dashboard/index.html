@@ -6,14 +6,14 @@
   <div class="container-main">
 
     <!-- Welcome header -->
-    <div class="flex items-start justify-between mb-10 reveal">
+    <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-10 reveal">
       <div>
         <p class="text-label mb-2">Dashboard</p>
         <h1 class="heading-md text-white">
-          {{ t(locale, 'dashboard_welcome') }}, {{ current_user.name.split()[0] }} 👋
+          {{ t(locale, 'dashboard_welcome') }}, {{ current_user.name.split()[0] }} <i class="bi bi-hand-wave"></i>
         </h1>
       </div>
-      <div class="flex items-center gap-3">
+      <div class="flex items-center gap-3 flex-shrink-0">
         {% if current_user.avatar_url %}
           <img src="{{ current_user.avatar_url }}" class="w-10 h-10 rounded-full" alt="" />
         {% endif %}
@@ -26,14 +26,14 @@
     <!-- Quick stats -->
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
       {% set stats = [
-        {'label_id': 'Total Pesanan', 'label_en': 'Total Orders', 'value': recent_orders | length, 'icon': '🧾'},
-        {'label_id': 'Langganan Aktif', 'label_en': 'Active Subs', 'value': active_subs | length, 'icon': '🔄'},
-        {'label_id': 'Invoice', 'label_en': 'Invoices', 'value': recent_invoices | length, 'icon': '📄'},
-        {'label_id': 'Akun', 'label_en': 'Account', 'value': 'Google', 'icon': '🔐'},
+        {'label_id': 'Total Pesanan', 'label_en': 'Total Orders', 'value': recent_orders | length, 'icon': 'bi-receipt'},
+        {'label_id': 'Langganan Aktif', 'label_en': 'Active Subs', 'value': active_subs | length, 'icon': 'bi-arrow-repeat'},
+        {'label_id': 'Invoice', 'label_en': 'Invoices', 'value': recent_invoices | length, 'icon': 'bi-file-earmark-text'},
+        {'label_id': 'Akun', 'label_en': 'Account', 'value': 'Google', 'icon': 'bi-shield-lock'},
       ] %}
       {% for s in stats %}
       <div class="card p-5 reveal">
-        <div class="text-2xl mb-2">{{ s.icon }}</div>
+        <i class="bi {{ s.icon }} text-2xl mb-2 block text-gray-400"></i>
         <div class="text-white font-bold text-lg">{{ s.value }}</div>
         <div class="text-gray-500 text-xs">{{ s['label_' + locale] }}</div>
       </div>
@@ -48,6 +48,7 @@
         {'href': '/' + locale + '/dashboard/invoices', 'label_id': 'Invoice', 'label_en': 'Invoices', 'active': 'invoices' in request.url.path},
         {'href': '/' + locale + '/dashboard/subscriptions', 'label_id': 'Langganan', 'label_en': 'Subscriptions', 'active': 'subscriptions' in request.url.path},
         {'href': '/' + locale + '/dashboard/api-keys', 'label_id': 'API Keys', 'label_en': 'API Keys', 'active': 'api-keys' in request.url.path},
+        {'href': '/' + locale + '/appointments', 'label_id': 'Appointments', 'label_en': 'Appointments', 'active': 'appointments' in request.url.path},
       ] %}
       {% for tab in tabs %}
       <a href="{{ tab.href }}"
@@ -146,8 +147,8 @@
           {% if locale == 'id' %}Lihat Semua{% else %}View All{% endif %}
         </a>
       </div>
-      <div class="border border-gray-800 overflow-hidden">
-        <table class="w-full text-sm">
+      <div class="border border-gray-800 overflow-x-auto">
+        <table class="w-full text-sm min-w-[500px]">
           <thead class="bg-gray-950 border-b border-gray-800">
             <tr>
               <th class="text-left px-4 py-3 text-xs text-gray-500 font-semibold uppercase">Invoice #</th>

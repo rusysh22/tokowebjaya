@@ -18,6 +18,9 @@ class ProductCreate(BaseModel):
     price_otf: Optional[Decimal] = None
     price_monthly: Optional[Decimal] = None
     price_yearly: Optional[Decimal] = None
+    contact_whatsapp: Optional[str] = None
+    contact_email: Optional[str] = None
+    contact_address: Optional[str] = None
     category: Optional[str] = None
     tags: list[str] = []
     features: list[str] = []
@@ -47,6 +50,9 @@ class ProductUpdate(BaseModel):
     price_otf: Optional[Decimal] = None
     price_monthly: Optional[Decimal] = None
     price_yearly: Optional[Decimal] = None
+    contact_whatsapp: Optional[str] = None
+    contact_email: Optional[str] = None
+    contact_address: Optional[str] = None
     category: Optional[str] = None
     tags: Optional[list[str]] = None
     features: Optional[list[str]] = None

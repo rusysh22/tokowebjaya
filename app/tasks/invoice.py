@@ -1,6 +1,11 @@
-from app.tasks.celery_app import celery
-from app.services.invoice import create_invoice
+"""
+Celery task: invoice generation.
+Retries up to 3 times with 60-second delay on failure.
+"""
 import logging
+
+from app.services.invoice import create_invoice
+from app.tasks.celery_app import celery
 
 logger = logging.getLogger(__name__)
 

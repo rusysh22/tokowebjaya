@@ -1,0 +1,143 @@
+{% extends "admin/base_admin.html" %}
+{% set admin_section = "promos" %}
+{% block title %}Promo Codes — Admin{% endblock %}
+{% block page_title %}Promo Codes{% endblock %}
+
+{% block content %}
+
+<div class="flex items-center justify-between mb-6">
+  <div class="text-sm text-gray-500">{{ total }} kode promo</div>
+  <button @click="$dispatch('open-modal')" class="btn-primary text-sm py-2 px-4">+ Buat Promo</button>
+</div>
+
+<!-- Promo list -->
+<div class="border border-gray-800 overflow-x-auto">
+  <table class="w-full text-sm min-w-[700px]">
+    <thead class="bg-gray-950 border-b border-gray-800">
+      <tr>
+        {% for col in ['Kode', 'Diskon', 'Min. Order', 'Digunakan', 'Berlaku Hingga', 'Status', 'Aksi'] %}
+        <th class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">{{ col }}</th>
+        {% endfor %}
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-gray-800">
+      {% if promos %}
+        {% for p in promos %}
+        <tr class="hover:bg-gray-900/50">
+          <td class="px-4 py-3">
+            <span class="font-mono font-bold text-neon">{{ p.code }}</span>
+            {% if p.description %}<div class="text-xs text-gray-500 mt-0.5">{{ p.description }}</div>{% endif %}
+          </td>
+          <td class="px-4 py-3 text-white">
+            {% if p.discount_type.value == 'percent' %}
+              {{ p.discount_value | int }}%
+              {% if p.max_discount %}<span class="text-xs text-gray-500"> (max Rp {{ "{:,.0f}".format(p.max_discount) }})</span>{% endif %}
+            {% else %}
+              Rp {{ "{:,.0f}".format(p.discount_value) }}
+            {% endif %}
+          </td>
+          <td class="px-4 py-3 text-gray-400 text-xs">
+            {% if p.min_amount %}Rp {{ "{:,.0f}".format(p.min_amount) }}{% else %}—{% endif %}
+          </td>
+          <td class="px-4 py-3 text-gray-400 text-xs">
+            {{ p.used_count }}{% if p.max_uses %} / {{ p.max_uses }}{% else %} / ∞{% endif %}
+          </td>
+          <td class="px-4 py-3 text-gray-400 text-xs">
+            {% if p.valid_until %}{{ p.valid_until.strftime('%d %b %Y') }}{% else %}—{% endif %}
+          </td>
+          <td class="px-4 py-3">
+            {% if p.is_active %}
+              <span class="badge-neon text-xs">Aktif</span>
+            {% else %}
+              <span class="badge-gray text-xs">Nonaktif</span>
+            {% endif %}
+          </td>
+          <td class="px-4 py-3">
+            <div class="flex gap-2">
+              <form method="POST" action="/{{ locale }}/admin/promos/{{ p.id }}/toggle">
+                <button type="submit" class="text-xs border border-gray-700 px-2 py-1 hover:border-gray-500 text-gray-400 hover:text-white transition-colors">
+                  {% if p.is_active %}Nonaktifkan{% else %}Aktifkan{% endif %}
+                </button>
+              </form>
+              <form method="POST" action="/{{ locale }}/admin/promos/{{ p.id }}/delete"
+                    onsubmit="return confirm('Hapus promo {{ p.code }}?')">
+                <button type="submit" class="text-xs border border-gray-800 px-2 py-1 text-red-400 hover:border-red-700 transition-colors">Hapus</button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      {% else %}
+      <tr><td colspan="7" class="px-4 py-12 text-center text-gray-600 text-sm">Belum ada promo code.</td></tr>
+      {% endif %}
+    </tbody>
+  </table>
+</div>
+
+<!-- Create Promo Modal -->
+<div x-data="{ open: false }" @open-modal.window="open = true">
+  <div x-show="open" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div class="absolute inset-0 bg-black/80" @click="open = false"></div>
+    <div class="relative z-10 bg-gray-950 border border-gray-800 w-full max-w-md p-6">
+      <div class="flex items-center justify-between mb-6">
+        <h2 class="font-semibold text-white">Buat Promo Code</h2>
+        <button @click="open = false" class="text-gray-500 hover:text-white"><i class="bi bi-x-lg"></i></button>
+      </div>
+
+      <form method="POST" action="/{{ locale }}/admin/promos/create" class="space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-gray-400 mb-1.5 uppercase tracking-wide">Kode <span class="text-neon">*</span></label>
+          <input type="text" name="code" required maxlength="50" class="input py-2.5 text-sm uppercase" placeholder="HEMAT20" />
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-gray-400 mb-1.5 uppercase tracking-wide">Deskripsi</label>
+          <input type="text" name="description" maxlength="255" class="input py-2.5 text-sm" placeholder="Opsional" />
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-semibold text-gray-400 mb-1.5 uppercase tracking-wide">Tipe <span class="text-neon">*</span></label>
+            <select name="discount_type" class="input py-2.5 text-sm">
+              <option value="percent">Persen (%)</option>
+              <option value="fixed">Nominal (Rp)</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-400 mb-1.5 uppercase tracking-wide">Nilai <span class="text-neon">*</span></label>
+            <input type="number" name="discount_value" required min="1" step="0.01" class="input py-2.5 text-sm" placeholder="20" />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-semibold text-gray-400 mb-1.5 uppercase tracking-wide">Min. Order (Rp)</label>
+            <input type="number" name="min_amount" min="0" step="1000" class="input py-2.5 text-sm" placeholder="Kosongkan = bebas" />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-400 mb-1.5 uppercase tracking-wide">Max. Diskon (Rp)</label>
+            <input type="number" name="max_discount" min="0" step="1000" class="input py-2.5 text-sm" placeholder="Khusus tipe %" />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-semibold text-gray-400 mb-1.5 uppercase tracking-wide">Maks. Penggunaan</label>
+            <input type="number" name="max_uses" min="1" class="input py-2.5 text-sm" placeholder="Kosongkan = unlimited" />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-400 mb-1.5 uppercase tracking-wide">Berlaku Hingga</label>
+            <input type="datetime-local" name="valid_until" class="input py-2.5 text-sm" />
+          </div>
+        </div>
+
+        <div class="flex justify-end gap-3 pt-2">
+          <button type="button" @click="open = false" class="btn-secondary text-sm py-2 px-4">Batal</button>
+          <button type="submit" class="btn-primary text-sm py-2 px-4">Simpan</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

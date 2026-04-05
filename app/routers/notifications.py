@@ -1,13 +1,24 @@
-from fastapi import APIRouter, Request, Depends, HTTPException
-from fastapi.responses import RedirectResponse, JSONResponse
-from sqlalchemy.orm import Session
-from sqlalchemy import desc
+"""
+Notifications router — in-app notification pages and AJAX endpoints.
 
-from app.core.database import get_db
+Routes:
+  GET  /{locale}/dashboard/notifications            — Notification list (marks all read on open)
+  POST /{locale}/dashboard/notifications/{id}/read  — Mark single notification read
+  GET  /api/notifications/unread-count              — AJAX: unread count for navbar badge
+"""
+import logging
+
+from fastapi import APIRouter, Depends, Request
+from fastapi.responses import JSONResponse, RedirectResponse
+from sqlalchemy import desc
+from sqlalchemy.orm import Session
+
 from app.core.auth import get_current_user
 from app.core.config import settings
+from app.core.database import get_db
 from app.models.notification import Notification
 
+logger = logging.getLogger(__name__)
 router = APIRouter(tags=["notifications"])
 
 

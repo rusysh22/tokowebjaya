@@ -125,11 +125,59 @@
         <input type="number" name="price_yearly" min="0" step="1000"
                value="{{ product.price_yearly | int if product and product.price_yearly else '' }}" class="input" />
       </div>
+
+      <!-- Contact Seller Fields -->
+      <div x-show="pricingModel === 'contact_seller'" class="col-span-full space-y-4 border border-gray-700 bg-gray-900/50 p-4">
+        <p class="text-xs text-gray-500">
+          {% if locale == 'id' %}Isi minimal satu saluran kontak.{% else %}Fill in at least one contact channel.{% endif %}
+        </p>
+        <div>
+          <label class="block text-xs font-medium text-gray-400 mb-2">
+            <i class="bi bi-whatsapp text-green-400 mr-1"></i> WhatsApp
+            <span class="text-gray-600 font-normal ml-1">({% if locale == 'id' %}nomor dengan kode negara, contoh: 6281234567890{% else %}number with country code, e.g. 6281234567890{% endif %})</span>
+          </label>
+          <input type="text" name="contact_whatsapp" placeholder="6281234567890"
+                 value="{{ product.contact_whatsapp or '' if product else '' }}" class="input" />
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-400 mb-2">
+            <i class="bi bi-envelope text-neon mr-1"></i> Email
+          </label>
+          <input type="email" name="contact_email" placeholder="sales@example.com"
+                 value="{{ product.contact_email or '' if product else '' }}" class="input" />
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-400 mb-2">
+            <i class="bi bi-geo-alt text-blue-400 mr-1"></i>
+            {% if locale == 'id' %}Alamat / Lokasi Meeting{% else %}Address / Meeting Location{% endif %}
+          </label>
+          <textarea name="contact_address" rows="2" placeholder="Jl. Contoh No. 1, Jakarta..."
+                    class="input resize-none">{{ product.contact_address or '' if product else '' }}</textarea>
+        </div>
+      </div>
     </div>
   </div>
 
   <!-- Section: Media -->
-  <div class="border border-gray-800 p-6">
+  <div class="border border-gray-800 p-6"
+       x-data="{
+         galleryDelete: [],
+         newPreviews: [],
+         toggleDelete(fname) {
+           const i = this.galleryDelete.indexOf(fname);
+           if (i === -1) this.galleryDelete.push(fname);
+           else this.galleryDelete.splice(i, 1);
+         },
+         onFilePick(e) {
+           const files = Array.from(e.target.files);
+           this.newPreviews = [];
+           files.forEach(f => {
+             const reader = new FileReader();
+             reader.onload = ev => this.newPreviews.push(ev.target.result);
+             reader.readAsDataURL(f);
+           });
+         }
+       }">
     <h2 class="text-sm font-semibold text-white mb-5 pb-3 border-b border-gray-800">
       Media & Files
     </h2>
@@ -170,6 +218,66 @@
         {% endif %}
         <input type="file" name="download_file" accept=".pdf,.zip,.docx,.xlsx" class="input py-2 text-xs file:mr-3 file:py-1 file:px-3 file:border-0 file:bg-gray-700 file:text-white file:text-xs file:cursor-pointer" />
       </div>
+    </div>
+
+    <!-- Gallery Images -->
+    <div class="mt-6 pt-5 border-t border-gray-800">
+      <label class="block text-xs font-medium text-gray-400 mb-3">
+        Gallery Images
+        <span class="text-gray-600 font-normal ml-1">(multiple — shown as slideshow on product page)</span>
+      </label>
+
+      <!-- Existing gallery -->
+      {% if product and product.gallery %}
+      <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2 mb-3">
+        {% for fname in product.gallery %}
+        <div class="relative group cursor-pointer" @click="toggleDelete('{{ fname }}')">
+          <img src="/static/uploads/products/images/{{ fname }}"
+               class="w-full aspect-square object-cover border"
+               :class="galleryDelete.includes('{{ fname }}') ? 'border-red-500 opacity-40' : 'border-gray-700'" />
+          <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+               :class="galleryDelete.includes('{{ fname }}') ? '!opacity-100' : ''">
+            <span class="text-xs font-bold px-1.5 py-0.5"
+                  :class="galleryDelete.includes('{{ fname }}') ? 'bg-red-600 text-white' : 'bg-black/70 text-red-400'">
+              <span x-show="galleryDelete.includes('{{ fname }}')">✕ Hapus</span>
+              <span x-show="!galleryDelete.includes('{{ fname }}')">× Klik hapus</span>
+            </span>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      <p class="text-xs text-gray-600 mb-3">Klik gambar untuk tandai hapus. Perubahan disimpan saat submit.</p>
+      {% endif %}
+
+      <!-- Hidden field for gallery_delete -->
+      <input type="hidden" name="gallery_delete" :value="galleryDelete.join(',')">
+
+      <!-- New gallery upload -->
+      <div>
+        <input type="file" name="gallery_images" accept="image/*" multiple
+               @change="onFilePick($event)"
+               class="input py-2 text-xs file:mr-3 file:py-1 file:px-3 file:border-0 file:bg-gray-700 file:text-white file:text-xs file:cursor-pointer" />
+        <!-- Preview new picks -->
+        <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2 mt-3" x-show="newPreviews.length > 0">
+          <template x-for="(src, i) in newPreviews" :key="i">
+            <div class="border border-neon/40">
+              <img :src="src" class="w-full aspect-square object-cover" />
+            </div>
+          </template>
+        </div>
+      </div>
+    </div>
+
+    <!-- Demo URL -->
+    <div class="mt-5 pt-5 border-t border-gray-800">
+      <label class="block text-xs font-medium text-gray-400 mb-2">
+        Demo URL
+        <span class="text-gray-600 font-normal ml-1">(link ke live demo / preview produk)</span>
+      </label>
+      <input type="url" name="demo_url"
+             value="{{ product.demo_url or '' if product else '' }}"
+             placeholder="https://demo.example.com"
+             class="input" />
     </div>
   </div>
 

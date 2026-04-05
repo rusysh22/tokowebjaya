@@ -5,22 +5,437 @@
 {% block og_description %}{% if locale == 'id' %}Kenali Toko Web Jaya — platform produk digital profesional untuk bisnis modern Indonesia.{% else %}Learn about Toko Web Jaya — a professional digital product platform for modern businesses.{% endif %}{% endblock %}
 {% block twitter_title %}{% if locale == 'id' %}Tentang Kami{% else %}About Us{% endif %} — Toko Web Jaya{% endblock %}
 {% block twitter_description %}{% if locale == 'id' %}Kenali Toko Web Jaya — platform produk digital profesional untuk bisnis modern Indonesia.{% else %}Learn about Toko Web Jaya — a professional digital product platform for modern businesses.{% endif %}{% endblock %}
+
 {% block content %}
-<section class="min-h-[60vh] flex items-center bg-black border-b border-gray-800 pt-16">
-  <div class="container-main py-20">
-    <span class="text-label block mb-4">About</span>
-    <h1 class="heading-xl text-white mb-6 reveal">Toko Web Jaya</h1>
-    <p class="text-gray-400 text-lg max-w-2xl leading-relaxed reveal">
-      {% if locale == 'id' %}
-        Platform produk digital profesional untuk bisnis modern. Kami menyediakan e-book, kursus, software, template, dan layanan IT konsultasi.
-        <br/><br/>
-        <em class="text-gray-600">Dan sekali lagi — kami tidak menjual semen, pasir, atau bata.</em>
-      {% else %}
-        Professional digital product platform for modern businesses. We provide e-books, courses, software, templates, and IT consulting services.
-        <br/><br/>
-        <em class="text-gray-600">And once more — we do not sell cement, sand, or bricks.</em>
-      {% endif %}
-    </p>
+
+<!-- ===== HERO ===== -->
+<section class="bg-black border-b border-gray-800 pt-16">
+  <div class="container-main py-20 lg:py-28">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+
+      <!-- Left: copy -->
+      <div>
+        <span class="text-label block mb-4 reveal">About</span>
+        <h1 class="heading-xl text-white mb-6 reveal">
+          {% if locale == 'id' %}Kami Bukan<br/><span class="text-neon">Toko Bangunan.</span>{% else %}We Are Not<br/><span class="text-neon">a Hardware Store.</span>{% endif %}
+        </h1>
+        <p class="text-gray-400 text-lg leading-relaxed mb-8 reveal">
+          {% if locale == 'id' %}
+            Toko Web Jaya adalah platform produk digital profesional — bukan toko yang menjual semen, batu bata, atau kawat proyek.
+            Meski namanya terdengar seperti itu.
+          {% else %}
+            Toko Web Jaya is a professional digital product platform — not a store that sells cement, bricks, or construction wire.
+            Even though the name might suggest otherwise.
+          {% endif %}
+        </p>
+        <div class="flex gap-4 flex-wrap reveal">
+          <a href="/{{ locale }}/catalog" class="btn-primary px-8 py-3">
+            {% if locale == 'id' %}Lihat Produk{% else %}Browse Products{% endif %}
+          </a>
+          <a href="/{{ locale }}/solutions" class="btn-secondary px-8 py-3">
+            {% if locale == 'id' %}Layanan Kami{% else %}Our Services{% endif %}
+          </a>
+        </div>
+      </div>
+
+      <!-- Right: storefront image card with neon frame -->
+      <div class="reveal" style="animation-delay: 0.2s">
+        <!-- Neon accent frame -->
+        <div class="relative">
+          <!-- Offset border trick -->
+          <div class="absolute -top-2 -right-2 w-full h-full border border-neon/40 pointer-events-none"></div>
+          <div class="relative border border-gray-700 overflow-hidden bg-gray-900">
+            <img src="/static/assets/images/profile-halaman-toko-web-jaya.png"
+                 alt="Toko Web Jaya storefront"
+                 class="w-full h-72 object-cover object-center" />
+            <!-- Top neon bar -->
+            <div class="absolute top-0 left-0 right-0 h-0.5 bg-neon"></div>
+            <!-- Gradient overlay bottom -->
+            <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black via-black/70 to-transparent p-5 pt-12">
+              <p class="text-neon text-xs font-bold uppercase tracking-widest mb-1">
+                {% if locale == 'id' %}Inspirasi nama{% else %}Name inspiration{% endif %}
+              </p>
+              <p class="text-white text-sm font-semibold">
+                {% if locale == 'id' %}
+                  Tampak luar: toko bangunan. Isinya: platform digital.
+                {% else %}
+                  Looks like: a hardware store. Actually: a digital platform.
+                {% endif %}
+              </p>
+            </div>
+          </div>
+        </div>
+        <!-- Badge below image -->
+        <div class="mt-3 flex items-center gap-3">
+          <div class="flex-1 h-px bg-gray-800"></div>
+          <span class="text-xs text-gray-600 italic">
+            {% if locale == 'id' %}Iya, ini foto toko bangunan asli.{% else %}Yes, this is an actual hardware store photo.{% endif %}
+          </span>
+          <div class="flex-1 h-px bg-gray-800"></div>
+        </div>
+      </div>
+
+    </div>
   </div>
 </section>
+
+<!-- ===== STORY SECTION ===== -->
+<section class="section bg-gray-950 border-b border-gray-800">
+  <div class="container-main">
+
+    <div class="text-center mb-16 reveal">
+      <span class="text-label block mb-3">{% if locale == 'id' %}Cerita Kami{% else %}Our Story{% endif %}</span>
+      <h2 class="heading-lg text-white">
+        {% if locale == 'id' %}Dibangun dari Fondasi yang Kuat{% else %}Built on a Solid Foundation{% endif %}
+      </h2>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-px bg-gray-800">
+
+      <!-- Card 1: pondasi -->
+      <div class="bg-gray-950 group overflow-hidden reveal">
+        <div class="relative h-48 overflow-hidden">
+          <img src="/static/assets/images/pondasi.png"
+               alt="Fondasi"
+               class="w-full h-full object-cover brightness-50 group-hover:brightness-75 group-hover:scale-105 transition-all duration-500" />
+          <div class="absolute inset-0 bg-gradient-to-t from-gray-950 to-transparent"></div>
+          <div class="absolute bottom-4 left-4">
+            <span class="text-neon text-xs font-bold uppercase tracking-widest">
+              {% if locale == 'id' %}Fondasi{% else %}Foundation{% endif %}
+            </span>
+          </div>
+        </div>
+        <div class="p-6">
+          <h3 class="heading-sm text-white mb-3">
+            {% if locale == 'id' %}Mulai dari Nol{% else %}Started from Zero{% endif %}
+          </h3>
+          <p class="text-gray-500 text-sm leading-relaxed">
+            {% if locale == 'id' %}
+              Seperti pondasi beton yang kokoh, kami membangun platform ini dengan arsitektur yang solid — FastAPI, PostgreSQL, dan infrastruktur yang skalabel.
+            {% else %}
+              Like a strong concrete foundation, we built this platform with solid architecture — FastAPI, PostgreSQL, and scalable infrastructure.
+            {% endif %}
+          </p>
+        </div>
+      </div>
+
+      <!-- Card 2: proyek (mandor) -->
+      <div class="bg-gray-950 group overflow-hidden reveal" style="animation-delay:0.1s">
+        <div class="relative h-48 overflow-hidden">
+          <img src="/static/assets/images/mandor-proyek.jpg"
+               alt="Tim Profesional"
+               class="w-full h-full object-cover brightness-50 group-hover:brightness-75 group-hover:scale-105 transition-all duration-500" />
+          <div class="absolute inset-0 bg-gradient-to-t from-gray-950 to-transparent"></div>
+          <div class="absolute bottom-4 left-4">
+            <span class="text-neon text-xs font-bold uppercase tracking-widest">
+              {% if locale == 'id' %}Tim{% else %}Team{% endif %}
+            </span>
+          </div>
+        </div>
+        <div class="p-6">
+          <h3 class="heading-sm text-white mb-3">
+            {% if locale == 'id' %}Dikelola Profesional{% else %}Professionally Managed{% endif %}
+          </h3>
+          <p class="text-gray-500 text-sm leading-relaxed">
+            {% if locale == 'id' %}
+              Seperti mandor yang mengawasi proyek dengan teliti, tim kami memastikan setiap fitur berjalan sempurna. Minus helm proyek.
+            {% else %}
+              Like a foreman overseeing a project with care, our team ensures every feature runs perfectly. Minus the hard hat.
+            {% endif %}
+          </p>
+        </div>
+      </div>
+
+      <!-- Card 3: proyek bangunan -->
+      <div class="bg-gray-950 group overflow-hidden reveal" style="animation-delay:0.2s">
+        <div class="relative h-48 overflow-hidden">
+          <img src="/static/assets/images/proyek.jpg"
+               alt="Proyek Besar"
+               class="w-full h-full object-cover brightness-50 group-hover:brightness-75 group-hover:scale-105 transition-all duration-500" />
+          <div class="absolute inset-0 bg-gradient-to-t from-gray-950 to-transparent"></div>
+          <div class="absolute bottom-4 left-4">
+            <span class="text-neon text-xs font-bold uppercase tracking-widest">
+              {% if locale == 'id' %}Visi{% else %}Vision{% endif %}
+            </span>
+          </div>
+        </div>
+        <div class="p-6">
+          <h3 class="heading-sm text-white mb-3">
+            {% if locale == 'id' %}Membangun Masa Depan Digital{% else %}Building the Digital Future{% endif %}
+          </h3>
+          <p class="text-gray-500 text-sm leading-relaxed">
+            {% if locale == 'id' %}
+              Gedung-gedung ini dibangun dari nol. Begitu juga bisnis digital Anda — dan kami ada untuk membantu setiap langkahnya.
+            {% else %}
+              These buildings were built from scratch. So is your digital business — and we're here to help every step of the way.
+            {% endif %}
+          </p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ===== CEO SECTION ===== -->
+<section class="bg-black border-b border-gray-800">
+  <div class="container-main py-10">
+    <div class="flex items-center gap-6 reveal">
+
+      <!-- Photo — small -->
+      <div class="relative flex-shrink-0">
+        <div class="w-16 h-16 rounded-full overflow-hidden border-2 border-neon/40">
+          <img src="/static/assets/images/ceo-toko-web-jaya.png"
+               alt="Rusydani"
+               class="w-full h-full object-cover object-top scale-110" />
+        </div>
+      </div>
+
+      <!-- Bio — compact -->
+      <div>
+        <div class="flex items-center gap-2 mb-0.5">
+          <span class="text-white font-semibold text-sm">Rusydani</span>
+          <span class="text-gray-700 text-xs">—</span>
+          <span class="text-neon text-xs font-medium">CEO & Founder</span>
+        </div>
+        <p class="text-gray-500 text-xs leading-relaxed max-w-lg">
+          {% if locale == 'id' %}
+            Membangun Toko Web Jaya dengan satu visi: produk digital berkualitas untuk semua bisnis di Indonesia. Dan ya, beliau yang pertama sadar nama ini terdengar seperti toko bangunan.
+          {% else %}
+            Built Toko Web Jaya with one vision: quality digital products for every business in Indonesia. And yes, he was the first to notice the name sounds like a hardware store.
+          {% endif %}
+        </p>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ===== VALUES SECTION ===== -->
+<section class="section bg-black border-b border-gray-800">
+  <div class="container-main">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+
+      <!-- Left: image mosaic -->
+      <div class="reveal">
+        <div class="grid grid-cols-2 gap-3">
+          <!-- Large top-left -->
+          <div class="col-span-2 relative overflow-hidden border border-gray-800">
+            <img src="/static/assets/images/ngecor.jpeg"
+                 alt="Proses kerja"
+                 class="w-full h-48 object-cover brightness-60 hover:brightness-80 transition-all duration-500" />
+            <div class="absolute inset-0 bg-gradient-to-r from-black/50 to-transparent flex items-end p-4">
+              <span class="text-white text-xs font-semibold">
+                {% if locale == 'id' %}Proses yang presisi — itu filosofi kami.{% else %}Precision in process — that's our philosophy.{% endif %}
+              </span>
+            </div>
+            <div class="absolute top-0 left-0 right-0 h-0.5 bg-neon"></div>
+          </div>
+          <!-- Bottom left -->
+          <div class="relative overflow-hidden border border-gray-800">
+            <img src="/static/assets/images/batu-bata-merah.jpg"
+                 alt="Material kuat"
+                 class="w-full h-32 object-cover brightness-40 hover:brightness-60 transition-all duration-500" />
+            <div class="absolute inset-0 flex items-center justify-center">
+              <span class="text-white text-xs font-bold text-center px-2">
+                {% if locale == 'id' %}Tidak kami jual{% else %}Not our product{% endif %}
+              </span>
+            </div>
+            <div class="absolute bottom-2 right-2">
+              <div class="w-5 h-5 bg-red-600 flex items-center justify-center">
+                <i class="bi bi-x-lg text-white text-xs"></i>
+              </div>
+            </div>
+          </div>
+          <!-- Bottom right -->
+          <div class="relative overflow-hidden border border-gray-800">
+            <img src="/static/assets/images/asbes.jpg"
+                 alt="Atap asbes"
+                 class="w-full h-32 object-cover brightness-40 hover:brightness-60 transition-all duration-500" />
+            <div class="absolute inset-0 flex items-center justify-center">
+              <span class="text-white text-xs font-bold text-center px-2">
+                {% if locale == 'id' %}Juga tidak{% else %}Also not us{% endif %}
+              </span>
+            </div>
+            <div class="absolute bottom-2 right-2">
+              <div class="w-5 h-5 bg-red-600 flex items-center justify-center">
+                <i class="bi bi-x-lg text-white text-xs"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: values list -->
+      <div class="reveal" style="animation-delay: 0.15s">
+        <span class="text-label block mb-4">
+          {% if locale == 'id' %}Nilai Kami{% else %}Our Values{% endif %}
+        </span>
+        <h2 class="heading-lg text-white mb-8">
+          {% if locale == 'id' %}Yang Kami Bangun<br/>Untuk Anda{% else %}What We Build<br/>For You{% endif %}
+        </h2>
+
+        {% set values = [
+          {
+            'icon': 'bi-box-seam',
+            'title_id': 'Produk Berkualitas',
+            'title_en': 'Quality Products',
+            'desc_id': 'E-book, kursus, software, dan template yang dikurasi dengan standar tinggi.',
+            'desc_en': 'E-books, courses, software, and templates curated to high standards.'
+          },
+          {
+            'icon': 'bi-shield-lock',
+            'title_id': 'Transaksi Aman',
+            'title_en': 'Secure Transactions',
+            'desc_id': 'Pembayaran terenkripsi, invoice otomatis, data Anda terlindungi sepenuhnya.',
+            'desc_en': 'Encrypted payments, automatic invoices, your data fully protected.'
+          },
+          {
+            'icon': 'bi-headset',
+            'title_id': 'Dukungan Responsif',
+            'title_en': 'Responsive Support',
+            'desc_id': 'Tim kami membalas dalam 1×24 jam. Tanpa halangan birokrasi.',
+            'desc_en': 'Our team replies within 24 hours. No bureaucratic barriers.'
+          },
+          {
+            'icon': 'bi-graph-up-arrow',
+            'title_id': 'Tumbuh Bersama',
+            'title_en': 'Grow Together',
+            'desc_id': 'Platform yang berkembang seiring kebutuhan bisnis Anda — dari startup hingga enterprise.',
+            'desc_en': 'A platform that evolves with your business needs — from startup to enterprise.'
+          },
+        ] %}
+        <div class="space-y-6">
+          {% for v in values %}
+          <div class="flex items-start gap-4 reveal" style="animation-delay: {{ loop.index0 * 0.1 }}s">
+            <div class="w-10 h-10 bg-neon/10 border border-neon/20 flex items-center justify-center flex-shrink-0">
+              <i class="bi {{ v.icon }} text-neon"></i>
+            </div>
+            <div>
+              <h3 class="text-white font-semibold text-sm mb-1">{{ v['title_' + locale] }}</h3>
+              <p class="text-gray-500 text-sm leading-relaxed">{{ v['desc_' + locale] }}</p>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ===== NOT SOLD HERE GALLERY ===== -->
+<section class="section bg-gray-950 border-b border-gray-800">
+  <div class="container-main">
+
+    <div class="text-center mb-12 reveal">
+      <span class="text-label block mb-3">
+        {% if locale == 'id' %}Klarifikasi Final{% else %}Final Clarification{% endif %}
+      </span>
+      <h2 class="heading-lg text-white mb-3">
+        {% if locale == 'id' %}Semua yang <span class="text-red-500">Tidak</span> Kami Jual{% else %}Everything We Do <span class="text-red-500">Not</span> Sell{% endif %}
+      </h2>
+      <p class="text-gray-500 text-sm max-w-lg mx-auto">
+        {% if locale == 'id' %}
+          Untuk menghindari kebingungan lebih lanjut, berikut dokumentasi lengkapnya.
+        {% else %}
+          To avoid further confusion, here is the full documentation.
+        {% endif %}
+      </p>
+    </div>
+
+    <!-- Gallery grid -->
+    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 mb-12">
+      {% set not_items = [
+        ('/static/assets/images/cement.jpg',           'Semen',         'Cement'),
+        ('/static/assets/images/batu-bata-merah.jpg',  'Batu Bata',     'Bricks'),
+        ('/static/assets/images/hebel.jpg',            'Hebel',         'Lightweight Blocks'),
+        ('/static/assets/images/asbes.jpg',            'Asbes',         'Asbestos'),
+        ('/static/assets/images/pondasi.png',          'Pondasi',       'Foundation'),
+        ('/static/assets/images/ngecor.jpeg',          'Tukang Cor',    'Concrete Work'),
+      ] %}
+      {% for img, label_id, label_en in not_items %}
+      <div class="group relative overflow-hidden border border-gray-800 hover:border-red-800 transition-colors duration-300 reveal"
+           style="animation-delay: {{ loop.index0 * 0.05 }}s">
+        <img src="{{ img }}" alt="{{ label_id }}"
+             class="w-full aspect-square object-cover brightness-50 group-hover:brightness-70 group-hover:scale-105 transition-all duration-500" />
+        <!-- Red X overlay -->
+        <div class="absolute inset-0 flex flex-col items-center justify-center gap-1">
+          <div class="w-8 h-8 bg-red-600/90 flex items-center justify-center">
+            <i class="bi bi-x-lg text-white text-sm font-black"></i>
+          </div>
+          <span class="text-white text-xs font-semibold text-center px-1 line-clamp-1">
+            {{ label_id if locale == 'id' else label_en }}
+          </span>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- But we DO sell... -->
+    <div class="border border-neon/30 bg-neon/5 p-8 lg:p-10 reveal">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+        <div>
+          <span class="text-neon text-xs font-bold uppercase tracking-widest block mb-3">
+            {% if locale == 'id' %}Tapi ini yang kami jual{% else %}But here's what we DO sell{% endif %}
+          </span>
+          <h3 class="heading-md text-white mb-4">
+            {% if locale == 'id' %}Produk Digital Profesional{% else %}Professional Digital Products{% endif %}
+          </h3>
+          <p class="text-gray-400 text-sm leading-relaxed">
+            {% if locale == 'id' %}
+              E-book, kursus online, software, template, dan layanan IT consulting. Tidak ada semen, tidak ada kawat. Hanya pixel dan kode.
+            {% else %}
+              E-books, online courses, software, templates, and IT consulting services. No cement, no wire. Just pixels and code.
+            {% endif %}
+          </p>
+        </div>
+        <div class="flex flex-wrap gap-3">
+          {% for tag in ['E-Book', 'Online Course', 'Software', 'Template', 'IT Consulting', 'Web Development'] %}
+          <span class="border border-neon/40 text-neon text-xs font-semibold px-4 py-2 hover:bg-neon hover:text-black transition-colors duration-200 cursor-default">
+            {{ tag }}
+          </span>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ===== CTA ===== -->
+<section class="relative overflow-hidden bg-black">
+  <!-- Background: citylight -->
+  <div class="absolute inset-0">
+    <img src="/static/assets/images/citylight.avif"
+         alt=""
+         class="w-full h-full object-cover opacity-15"
+         loading="lazy" />
+    <div class="absolute inset-0 bg-gradient-to-b from-black/50 via-black/60 to-black"></div>
+  </div>
+
+  <div class="container-main relative z-10 py-24 text-center">
+    <div class="max-w-xl mx-auto reveal">
+      <h2 class="heading-lg text-white mb-6">
+        {% if locale == 'id' %}Sudah Cukup Mengenal Kami?{% else %}Know Enough About Us?{% endif %}
+      </h2>
+      <p class="text-gray-400 mb-8">
+        {% if locale == 'id' %}
+          Sekarang waktunya eksplorasi produk digital kami.
+        {% else %}
+          Now it's time to explore our digital products.
+        {% endif %}
+      </p>
+      <div class="flex flex-wrap justify-center gap-4">
+        <a href="/{{ locale }}/catalog" class="btn-primary px-10 py-4">
+          {% if locale == 'id' %}Lihat Katalog{% else %}Browse Catalog{% endif %}
+        </a>
+        <a href="/{{ locale }}/contact" class="btn-secondary px-10 py-4">
+          {% if locale == 'id' %}Hubungi Kami{% else %}Contact Us{% endif %}
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
+
 {% endblock %}

@@ -11,7 +11,7 @@
     <h1 class="heading-md text-white mb-8">{{ t(locale, 'dashboard_orders') }}</h1>
     <div class="border border-gray-800">
       <div class="overflow-x-auto">
-        <table class="w-full text-sm">
+        <table class="w-full text-sm min-w-[640px]">
           <thead class="bg-gray-950 border-b border-gray-800">
             <tr>
               {% for col in ['Order #', 'Produk' if locale=='id' else 'Product', 'Tipe' if locale=='id' else 'Type', 'Amount', 'Status', 'Tanggal' if locale=='id' else 'Date', ''] %}

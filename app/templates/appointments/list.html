@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% block title %}Appointments — Toko Web Jaya{% endblock %}
+
+{% block content %}
+<section class="bg-black min-h-[calc(100vh-4rem)] pt-24 pb-16">
+  <div class="container-main max-w-3xl">
+
+    <div class="mb-8 reveal">
+      <a href="/{{ locale }}/dashboard" class="text-xs text-gray-600 hover:text-white mb-4 inline-block">
+        ← Dashboard
+      </a>
+      <h1 class="heading-md text-white">
+        {% if locale == 'id' %}Janji Temu Saya{% else %}My Appointments{% endif %}
+      </h1>
+    </div>
+
+    {% if appointments %}
+    <div class="space-y-4">
+      {% for appt in appointments %}
+      <div class="border border-gray-800 bg-gray-950 p-5 reveal">
+        <div class="flex flex-col sm:flex-row sm:items-start gap-4">
+
+          <!-- Date block -->
+          <div class="flex-shrink-0 w-16 text-center border border-gray-800 py-2">
+            <div class="text-neon font-black text-xl leading-none">{{ appt.appt_date.strftime('%d') }}</div>
+            <div class="text-gray-500 text-xs uppercase tracking-wide mt-0.5">{{ appt.appt_date.strftime('%b %Y') }}</div>
+          </div>
+
+          <!-- Info -->
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2 mb-1 flex-wrap">
+              {% set sb = {
+                'pending':   'bg-yellow-500/10 text-yellow-400 border-yellow-800',
+                'confirmed': 'bg-green-500/10 text-green-400 border-green-800',
+                'completed': 'bg-blue-500/10 text-blue-400 border-blue-800',
+                'cancelled': 'bg-gray-500/10 text-gray-400 border-gray-700',
+                'rejected':  'bg-red-500/10 text-red-400 border-red-800',
+              } %}
+              <span class="border text-xs font-semibold px-2 py-0.5 {{ sb.get(appt.status.value, '') }}">
+                {{ appt.status.value | upper }}
+              </span>
+              {% set tb = {'demo':'bi-display','call':'bi-telephone','meeting':'bi-people'} %}
+              <span class="text-xs text-gray-500 border border-gray-800 px-2 py-0.5">
+                <i class="bi {{ tb.get(appt.appt_type.value, 'bi-calendar') }}"></i>
+                {{ appt.appt_type.value | capitalize }}
+              </span>
+            </div>
+
+            <p class="text-white font-semibold text-sm truncate">
+              {{ appt.product.name_id if locale == 'id' else appt.product.name_en }}
+            </p>
+            <p class="text-gray-500 text-xs mt-0.5">
+              <i class="bi bi-clock mr-1"></i>{{ appt.appt_time.strftime('%H:%M') }} WIB
+              <span class="text-gray-700 mx-1">·</span>
+              {{ appt.timezone }}
+            </p>
+
+            {% if appt.admin_note %}
+            <p class="text-xs mt-2 {% if appt.status.value == 'rejected' %}text-red-400{% else %}text-green-400{% endif %}">
+              <i class="bi bi-chat-left-text mr-1"></i>{{ appt.admin_note }}
+            </p>
+            {% endif %}
+
+            {% if appt.notes %}
+            <p class="text-gray-600 text-xs mt-1 italic">"{{ appt.notes }}"</p>
+            {% endif %}
+          </div>
+
+          <!-- Cancel button -->
+          {% if appt.status.value in ['pending', 'confirmed'] %}
+          <div class="flex-shrink-0">
+            <form method="POST" action="/{{ locale }}/appointments/{{ appt.id }}/cancel"
+                  onsubmit="return confirm('{{ 'Batalkan janji ini?' if locale == 'id' else 'Cancel this appointment?' }}')">
+              <button type="submit"
+                      class="text-xs text-red-400 border border-red-900 hover:border-red-700 hover:bg-red-950/30 px-3 py-1.5 transition-colors">
+                <i class="bi bi-x-lg"></i>
+                {% if locale == 'id' %}Batalkan{% else %}Cancel{% endif %}
+              </button>
+            </form>
+          </div>
+          {% endif %}
+
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+
+    {% else %}
+    <div class="border border-dashed border-gray-800 py-20 text-center reveal">
+      <i class="bi bi-calendar-x text-4xl text-gray-700 block mb-3"></i>
+      <p class="text-gray-500 text-sm mb-4">
+        {% if locale == 'id' %}Belum ada janji temu.{% else %}No appointments yet.{% endif %}
+      </p>
+      <a href="/{{ locale }}/catalog" class="btn-secondary text-sm px-6 py-2">
+        {% if locale == 'id' %}Jelajahi Produk{% else %}Browse Products{% endif %}
+      </a>
+    </div>
+    {% endif %}
+
+  </div>
+</section>
+{% endblock %}

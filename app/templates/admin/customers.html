@@ -36,7 +36,7 @@
               {% set sc = {'active':'bg-green-950 text-green-400 border-green-800','inactive':'bg-gray-800 text-gray-500 border-gray-700','banned':'bg-red-950 text-red-400 border-red-800'} %}
               <span class="badge text-xs {{ sc.get(c.status.value, '') }}">{{ c.status.value }}</span>
             </td>
-            <td class="px-4 py-3 text-xs">{% if c.google_id %}<span class="text-neon">✓</span>{% else %}<span class="text-gray-700">—</span>{% endif %}</td>
+            <td class="px-4 py-3 text-xs">{% if c.google_id %}<span class="text-neon"><i class="bi bi-check-lg"></i></span>{% else %}<span class="text-gray-700">—</span>{% endif %}</td>
             <td class="px-4 py-3 text-xs text-gray-500">{{ c.created_at.strftime('%d %b %Y') }}</td>
           </tr>
           {% endfor %}

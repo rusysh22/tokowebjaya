@@ -1,26 +1,79 @@
-from fastapi import APIRouter, Request, Depends, HTTPException, Form, BackgroundTasks
-from fastapi.responses import RedirectResponse
-from sqlalchemy.orm import Session
-from datetime import datetime, timedelta
-import uuid
+"""
+Checkout router — handles the full purchase flow:
+  1. Review page  GET  /{locale}/checkout/{product_id}
+  2. Validate promo (AJAX)      POST /checkout/promo/validate
+  3. Create payment (AJAX/JSON) POST /{locale}/checkout/{product_id}/create-payment
+  4. Legacy form-based process  POST /{locale}/checkout/{product_id}/process
+  5. Return page after redirect GET  /{locale}/checkout/return/{order_id}
+  6. Payment status polling     GET  /checkout/status/{order_id}
+  7. Duitku webhook             POST /checkout/callback/duitku
+  8. Mayar webhook              POST /checkout/callback/mayar
 
+Pricing contract (IDR):
+  base_amount  = product price (excl. VAT)
+  discount     = promo discount applied to base_amount
+  subtotal     = base_amount - discount
+  vat          = subtotal * VAT_RATE (11% PPN for IDR)
+  final_amount = subtotal + vat   ← this is what Duitku charges
+"""
+import logging
+import uuid
+from datetime import datetime, timedelta
+
+from fastapi import APIRouter, BackgroundTasks, Depends, Form, HTTPException, Request
+from fastapi.responses import JSONResponse, RedirectResponse
+from sqlalchemy.orm import Session
+
+from app.core.auth import get_current_user
 from app.core.config import settings
 from app.core.database import get_db
-from app.core.auth import get_current_user
-from app.models.product import Product, ProductStatus, PricingModel
-from app.models.order import Order, OrderType, OrderStatus, PaymentGateway
-from app.models.invoice import Invoice, InvoiceStatus
-from app.models.subscription import Subscription, SubscriptionStatus, BillingCycle
-from app.services.payment import duitku, mayar, generate_order_number
+from app.models.order import Order, OrderStatus, OrderType, PaymentGateway
+from app.models.product import Product, ProductStatus
+from app.models.promo import PromoCode
+from app.models.subscription import BillingCycle, Subscription, SubscriptionStatus
+from app.services.payment import duitku, generate_order_number, mayar
 
+logger = logging.getLogger(__name__)
 router = APIRouter(tags=["checkout"])
 
 
-def _locale(path: str) -> str:
-    for loc in ["id", "en"]:
-        if path.startswith(f"/{loc}/"):
-            return loc
-    return "id"
+# ─── Helpers ────────────────────────────────────────────────────────────────
+
+def _calc_final_amount(base_idr: float, promo: PromoCode | None) -> dict:
+    """
+    Calculate final charge amount (IDR) after discount and VAT.
+    Returns dict with all breakdown fields.
+    """
+    discount = promo.calc_discount(base_idr) if promo else 0.0
+    subtotal = base_idr - discount
+    vat_rate = settings.VAT_RATE_IDR          # 0.11
+    vat_amt  = round(subtotal * vat_rate, 0)
+    final    = round(subtotal + vat_amt, 0)
+    return {
+        "base":            base_idr,
+        "discount":        discount,
+        "subtotal":        subtotal,
+        "vat_rate":        vat_rate,
+        "vat_amount":      vat_amt,
+        "final":           final,
+        "promo_code":      promo.code if promo else None,
+    }
+
+
+def _resolve_promo(code: str, base_idr: float, db: Session) -> tuple[PromoCode | None, str]:
+    """Look up and validate a promo code. Returns (promo_obj, error_reason)."""
+    if not code:
+        return None, ""
+    promo = db.query(PromoCode).filter(
+        PromoCode.code == code.strip().upper(),
+        PromoCode.is_active == True,
+    ).first()
+    if not promo:
+        return None, "not_found"
+    ok, reason = promo.is_valid(base_idr)
+    if not ok:
+        return None, reason
+    return promo, ""
 
 
 @router.get("/{locale}/checkout/failed")
@@ -41,6 +94,50 @@ async def checkout_pending(request: Request, locale: str, order: str = "", db: S
         request, "checkout/pending.html",
         {"locale": locale, "current_user": current_user, "order_id": order},
     )
+
+
+@router.post("/checkout/promo/validate")
+async def validate_promo(request: Request, db: Session = Depends(get_db)):
+    """AJAX — validate a promo code and return discount breakdown."""
+    current_user = get_current_user(request, db)
+    if not current_user:
+        return JSONResponse({"valid": False, "reason": "login_required"}, status_code=401)
+
+    try:
+        body = await request.json()
+    except Exception:
+        return JSONResponse({"valid": False, "reason": "invalid_request"}, status_code=400)
+
+    code     = str(body.get("code", "")).strip().upper()
+    base_idr = float(body.get("base_amount", 0))
+
+    if not code:
+        return JSONResponse({"valid": False, "reason": "empty"})
+
+    promo, reason = _resolve_promo(code, base_idr, db)
+    if not promo:
+        reason_msg = {
+            "not_found":     "Kode promo tidak ditemukan.",
+            "expired":       "Kode promo sudah kadaluarsa.",
+            "not_started":   "Kode promo belum aktif.",
+            "used_up":       "Kode promo sudah habis digunakan.",
+            "below_minimum": f"Minimum pembelian untuk promo ini adalah Rp {float(promo.min_amount or 0):,.0f}." if promo else "Minimum pembelian tidak terpenuhi.",
+            "inactive":      "Kode promo tidak aktif.",
+        }.get(reason, "Kode promo tidak valid.")
+        return JSONResponse({"valid": False, "reason": reason, "message": reason_msg})
+
+    breakdown = _calc_final_amount(base_idr, promo)
+    return JSONResponse({
+        "valid":           True,
+        "code":            promo.code,
+        "description":     promo.description or "",
+        "discount_type":   promo.discount_type.value,
+        "discount_value":  float(promo.discount_value),
+        "discount_amount": breakdown["discount"],
+        "subtotal":        breakdown["subtotal"],
+        "vat_amount":      breakdown["vat_amount"],
+        "final":           breakdown["final"],
+    })
 
 
 @router.get("/{locale}/checkout/{product_id}")
@@ -90,6 +187,16 @@ async def checkout_review(
     from app.core.currency import get_display_prices
     pricing = get_display_prices(amount_idr, currency, include_vat=True)
 
+    # Fetch active promo codes (shown as dropdown suggestions)
+    now = datetime.utcnow()
+    available_promos = db.query(PromoCode).filter(
+        PromoCode.is_active == True,
+        (PromoCode.valid_until == None) | (PromoCode.valid_until > now),
+        (PromoCode.valid_from == None)  | (PromoCode.valid_from <= now),
+        (PromoCode.max_uses == None)    | (PromoCode.used_count < PromoCode.max_uses),
+        (PromoCode.min_amount == None)  | (PromoCode.min_amount <= amount_idr),
+    ).all()
+
     from app.main import templates
     return templates.TemplateResponse(
         request, "checkout/review.html",
@@ -103,6 +210,7 @@ async def checkout_review(
             "pricing": pricing,
             "amount": amount_idr,
             "supported_currencies": settings.SUPPORTED_CURRENCIES,
+            "available_promos": available_promos,
         },
     )
 
@@ -114,7 +222,6 @@ async def checkout_create_payment(
     db: Session = Depends(get_db),
 ):
     """AJAX endpoint — returns JSON with payment_url for Duitku Pop.js."""
-    from fastapi.responses import JSONResponse
 
     current_user = get_current_user(request, db)
     if not current_user:
@@ -125,8 +232,9 @@ async def checkout_create_payment(
     except Exception:
         body = {}
 
-    order_type = body.get("order_type", "one_time")
+    order_type    = body.get("order_type", "one_time")
     billing_cycle = body.get("billing_cycle", "monthly")
+    promo_code    = str(body.get("promo_code", "")).strip().upper()
 
     product = db.query(Product).filter(
         Product.id == product_id, Product.status == ProductStatus.active
@@ -134,16 +242,31 @@ async def checkout_create_payment(
     if not product:
         return JSONResponse({"detail": "Product not found"}, status_code=404)
 
-    amount = None
+    # Base price (IDR, excl. VAT)
+    base_amount = None
     if order_type == "one_time":
-        amount = float(product.price_otf) if product.price_otf else None
+        base_amount = float(product.price_otf) if product.price_otf else None
     elif order_type == "subscription":
-        amount = float(product.price_yearly) if billing_cycle == "yearly" and product.price_yearly else (
+        base_amount = float(product.price_yearly) if billing_cycle == "yearly" and product.price_yearly else (
             float(product.price_monthly) if product.price_monthly else None
         )
 
-    if not amount:
+    if not base_amount:
         return JSONResponse({"detail": "Invalid amount"}, status_code=400)
+
+    # Resolve promo
+    promo, promo_error = _resolve_promo(promo_code, base_amount, db)
+    if promo_code and not promo:
+        return JSONResponse({"detail": f"Promo tidak valid: {promo_error}"}, status_code=400)
+
+    # Calculate final amount (base - discount + VAT)
+    breakdown = _calc_final_amount(base_amount, promo)
+    charge_amount = int(breakdown["final"])   # IDR integer sent to Duitku
+    logger.info(
+        "Checkout breakdown — base=%.0f discount=%.0f subtotal=%.0f vat=%.0f final=%d",
+        breakdown["base"], breakdown["discount"], breakdown["subtotal"],
+        breakdown["vat_amount"], charge_amount,
+    )
 
     order_number = generate_order_number()
     order = Order(
@@ -152,7 +275,10 @@ async def checkout_create_payment(
         user_id=current_user.id,
         product_id=product.id,
         type=order_type,
-        amount=amount,
+        amount=base_amount,
+        discount_amount=breakdown["discount"],
+        final_amount=breakdown["final"],
+        promo_code=promo.code if promo else None,
         status=OrderStatus.pending,
         payment_gateway=PaymentGateway.duitku,
     )
@@ -166,7 +292,7 @@ async def checkout_create_payment(
     try:
         result = await duitku.create_payment(
             order_number=order_number,
-            amount=int(amount),
+            amount=charge_amount,          # ← final amount incl. VAT, after discount
             product_name=product_name,
             customer_name=current_user.name,
             customer_email=current_user.email,
@@ -179,18 +305,24 @@ async def checkout_create_payment(
         order.gateway_reference = reference
         db.commit()
 
+        # Increment promo used_count
+        if promo:
+            promo.used_count += 1
+            db.commit()
+
         return JSONResponse({
-            "payment_url": payment_url,
-            "reference": reference,
-            "order_id": str(order.id),
-            "order_number": order_number,
+            "payment_url":    payment_url,
+            "reference":      reference,
+            "order_id":       str(order.id),
+            "order_number":   order_number,
+            "final_amount":   charge_amount,
+            "discount":       breakdown["discount"],
         })
 
     except Exception as e:
         order.status = OrderStatus.failed
         db.commit()
-        import logging
-        logging.getLogger("checkout").error(f"[create-payment] error: {e}")
+        logger.error(f"[create-payment] {e}")
         return JSONResponse({"detail": "Payment gateway error. Please try again."}, status_code=502)
 
 
@@ -255,7 +387,7 @@ async def checkout_process(
                 customer_email=current_user.email,
                 return_url=return_url,
             )
-            import logging; logging.getLogger("checkout").warning(f"[duitku] response: {result}")
+            logger.debug(f"[duitku] response: {result}")
             payment_url = result.get("paymentUrl") or result.get("payment_url")
             reference = result.get("reference") or result.get("merchantOrderId")
         else:
@@ -278,7 +410,7 @@ async def checkout_process(
             return RedirectResponse(url=payment_url, status_code=303)
 
     except Exception as e:
-        import logging; logging.getLogger("checkout").error(f"[checkout] payment error: {e}")
+        logger.error(f"[checkout/process] {e}")
         order.status = OrderStatus.failed
         db.commit()
         return RedirectResponse(url=f"/{locale}/checkout/failed?order={order.id}", status_code=303)
@@ -305,7 +437,6 @@ async def checkout_return(
 @router.get("/checkout/status/{order_id}")
 async def checkout_status(order_id: str, db: Session = Depends(get_db)):
     """AJAX endpoint — returns current order status."""
-    from fastapi.responses import JSONResponse
     order = db.query(Order).filter(Order.id == order_id).first()
     if not order:
         return JSONResponse({"status": "not_found"}, status_code=404)
@@ -337,8 +468,7 @@ async def duitku_callback(
     signature = data.get("signature")
     result_code = data.get("resultCode")
 
-    import logging
-    logging.getLogger("checkout").warning(f"[duitku callback] data={data}")
+    logger.info(f"[duitku callback] data={data}")
 
     if merchant_code and signature:
         if not duitku.verify_callback(merchant_code, amount, order_id, signature):

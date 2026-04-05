@@ -21,7 +21,7 @@
     {% if new_key %}
     <div class="border border-neon bg-neon/5 p-4 mb-8" x-data="{ copied: false }">
       <div class="flex items-start gap-3">
-        <div class="text-neon text-lg">🔑</div>
+        <i class="bi bi-key text-neon text-lg"></i>
         <div class="flex-1 min-w-0">
           <p class="text-sm font-semibold text-white mb-1">
             {% if locale == 'id' %}API Key Baru Dibuat{% else %}New API Key Created{% endif %}
@@ -34,7 +34,7 @@
             <button @click="navigator.clipboard.writeText('{{ new_key }}'); copied = true; setTimeout(() => copied = false, 2000)"
                     class="btn-secondary text-xs px-3 py-2 whitespace-nowrap">
               <span x-show="!copied">{% if locale == 'id' %}Salin{% else %}Copy{% endif %}</span>
-              <span x-show="copied" class="text-neon">✓ Disalin!</span>
+              <span x-show="copied" class="text-neon"><i class="bi bi-check-lg"></i> Disalin!</span>
             </button>
           </div>
         </div>
@@ -76,7 +76,7 @@
       <div class="border border-gray-800 p-4 flex items-center justify-between gap-4">
         <div class="flex items-center gap-3 min-w-0">
           <div class="w-8 h-8 bg-gray-900 border border-gray-700 flex items-center justify-center flex-shrink-0">
-            <span class="text-xs text-gray-400">🔑</span>
+            <i class="bi bi-key text-xs text-gray-400"></i>
           </div>
           <div class="min-w-0">
             <div class="text-white text-sm font-medium">{{ key.name }}</div>
@@ -106,7 +106,7 @@
     </div>
     {% else %}
     <div class="border border-gray-800 py-16 text-center">
-      <div class="text-3xl mb-3 opacity-30">🔑</div>
+      <div class="mb-3 opacity-30"><i class="bi bi-key text-3xl"></i></div>
       <p class="text-gray-600 text-sm">
         {% if locale == 'id' %}Belum ada API key.{% else %}No API keys yet.{% endif %}
       </p>

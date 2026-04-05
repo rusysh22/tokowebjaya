@@ -14,7 +14,7 @@
       "label_id": "Total Pendapatan",
       "label_en": "Total Revenue",
       "value": "Rp {:,.0f}".format(total_revenue),
-      "icon": "💰",
+      "icon": "bi-currency-dollar",
       "color": "border-neon/30 bg-neon/5",
       "value_color": "text-neon",
     },
@@ -22,7 +22,7 @@
       "label_id": "Total Transaksi",
       "label_en": "Total Orders",
       "value": total_orders | string,
-      "icon": "🧾",
+      "icon": "bi-receipt",
       "color": "border-gray-700",
       "value_color": "text-white",
     },
@@ -30,7 +30,7 @@
       "label_id": "Subscription Aktif",
       "label_en": "Active Subscriptions",
       "value": active_subs | string,
-      "icon": "🔄",
+      "icon": "bi-arrow-repeat",
       "color": "border-gray-700",
       "value_color": "text-white",
     },
@@ -38,7 +38,7 @@
       "label_id": "Invoice Overdue",
       "label_en": "Overdue Invoices",
       "value": overdue_invoices | string,
-      "icon": "⚠️",
+      "icon": "bi-exclamation-triangle",
       "color": "border-red-800/50 bg-red-950/20",
       "value_color": "text-red-400",
     },
@@ -47,7 +47,7 @@
   {% for kpi in kpis %}
   <div class="border {{ kpi.color }} p-5 reveal">
     <div class="flex items-start justify-between mb-3">
-      <span class="text-2xl">{{ kpi.icon }}</span>
+      <i class="bi {{ kpi.icon }} text-2xl text-gray-400"></i>
     </div>
     <div class="{{ kpi.value_color }} text-2xl font-bold mb-1">{{ kpi.value }}</div>
     <div class="text-xs text-gray-500">{{ kpi['label_' + locale] }}</div>

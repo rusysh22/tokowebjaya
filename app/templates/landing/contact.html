@@ -3,32 +3,157 @@
 {% block meta_description %}{% if locale == 'id' %}Hubungi tim Toko Web Jaya untuk pertanyaan, dukungan, atau kerjasama bisnis.{% else %}Contact Toko Web Jaya team for inquiries, support, or business partnerships.{% endif %}{% endblock %}
 {% block og_title %}{% if locale == 'id' %}Kontak Kami{% else %}Contact Us{% endif %} — Toko Web Jaya{% endblock %}
 {% block og_description %}{% if locale == 'id' %}Hubungi tim Toko Web Jaya untuk pertanyaan, dukungan, atau kerjasama bisnis.{% else %}Contact Toko Web Jaya team for inquiries, support, or business partnerships.{% endif %}{% endblock %}
-{% block twitter_title %}{% if locale == 'id' %}Kontak Kami{% else %}Contact Us{% endif %} — Toko Web Jaya{% endblock %}
-{% block twitter_description %}{% if locale == 'id' %}Hubungi tim Toko Web Jaya untuk pertanyaan, dukungan, atau kerjasama bisnis.{% else %}Contact Toko Web Jaya team for inquiries, support, or business partnerships.{% endif %}{% endblock %}
+
 {% block content %}
-<section class="bg-black border-b border-gray-800 pt-16">
-  <div class="container-main py-20 max-w-2xl">
-    <span class="text-label block mb-4">Contact</span>
-    <h1 class="heading-lg text-white mb-6 reveal">
-      {% if locale == 'id' %}Hubungi Kami{% else %}Get in Touch{% endif %}
-    </h1>
-    <form class="space-y-4 reveal">
-      <div>
-        <label class="block text-xs font-medium text-gray-400 mb-2">{% if locale == 'id' %}Nama{% else %}Name{% endif %}</label>
-        <input type="text" class="input" placeholder="{% if locale == 'id' %}Nama Anda{% else %}Your Name{% endif %}" />
+<section class="bg-black border-b border-gray-800 min-h-[calc(100vh-4rem)]">
+  <div class="container-main py-20">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-16 items-start">
+
+      <!-- Left: info -->
+      <div class="reveal">
+        <span class="text-label block mb-4">Contact</span>
+        <h1 class="heading-lg text-white mb-6">
+          {% if locale == 'id' %}Hubungi Kami{% else %}Get in Touch{% endif %}
+        </h1>
+        <p class="text-gray-400 leading-relaxed mb-10">
+          {% if locale == 'id' %}
+            Ada pertanyaan, ingin berdiskusi soal layanan, atau butuh bantuan teknis?
+            Isi form dan tim kami akan membalas dalam <strong class="text-white">1×24 jam</strong> hari kerja.
+          {% else %}
+            Have questions, want to discuss our services, or need technical help?
+            Fill out the form and our team will reply within <strong class="text-white">1 business day</strong>.
+          {% endif %}
+        </p>
+
+        <!-- Contact info items -->
+        <div class="space-y-6">
+          {% set info_items = [
+            {"icon": "bi-envelope", "label_id": "Email", "label_en": "Email",
+             "value": settings.ADMIN_EMAIL or "hello@tokowebjaya.com"},
+            {"icon": "bi-clock", "label_id": "Waktu Respons", "label_en": "Response Time",
+             "value_id": "1×24 jam hari kerja", "value_en": "Within 1 business day"},
+            {"icon": "bi-globe2", "label_id": "Bahasa", "label_en": "Language",
+             "value_id": "Indonesia & English", "value_en": "Indonesian & English"},
+          ] %}
+          {% for item in info_items %}
+          <div class="flex items-start gap-4 reveal" style="animation-delay: {{ loop.index0 * 0.1 }}s">
+            <div class="w-10 h-10 bg-gray-900 border border-gray-800 flex items-center justify-center flex-shrink-0">
+              <i class="bi {{ item.icon }} text-lg text-neon"></i>
+            </div>
+            <div>
+              <div class="text-xs text-gray-500 font-semibold tracking-widest uppercase mb-1">
+                {{ item['label_' + locale] }}
+              </div>
+              <div class="text-sm text-white">
+                {% if item.get('value') %}{{ item.value }}
+                {% else %}{{ item['value_' + locale] }}{% endif %}
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
       </div>
-      <div>
-        <label class="block text-xs font-medium text-gray-400 mb-2">Email</label>
-        <input type="email" class="input" placeholder="email@example.com" />
+
+      <!-- Right: form -->
+      <div class="reveal" style="animation-delay: 0.15s">
+
+        <!-- Success state -->
+        {% if success %}
+        <div class="border border-neon bg-neon/5 p-8 text-center">
+          <div class="mb-4"><i class="bi bi-check-circle-fill text-4xl text-neon"></i></div>
+          <h2 class="heading-sm text-white mb-3">
+            {% if locale == 'id' %}Pesan Terkirim!{% else %}Message Sent!{% endif %}
+          </h2>
+          <p class="text-gray-400 text-sm leading-relaxed mb-6">
+            {% if locale == 'id' %}
+              Terima kasih telah menghubungi kami. Kami telah mengirim konfirmasi ke email Anda
+              dan akan membalas dalam 1×24 jam hari kerja.
+            {% else %}
+              Thank you for reaching out. We've sent a confirmation to your email
+              and will reply within 1 business day.
+            {% endif %}
+          </p>
+          <a href="/{{ locale }}/contact" class="btn-secondary text-sm">
+            {% if locale == 'id' %}Kirim Pesan Lain{% else %}Send Another Message{% endif %}
+          </a>
+        </div>
+
+        {% else %}
+
+        <!-- Error alert -->
+        {% if error %}
+        <div class="border border-red-800 bg-red-900/20 px-5 py-4 mb-6 flex items-start gap-3">
+          <i class="bi bi-exclamation-triangle text-red-400 mt-0.5 flex-shrink-0"></i>
+          <p class="text-red-400 text-sm">
+            {% if error == 'missing_fields' %}
+              {% if locale == 'id' %}Nama, email, dan pesan wajib diisi.{% else %}Name, email, and message are required.{% endif %}
+            {% elif error == 'message_too_short' %}
+              {% if locale == 'id' %}Pesan terlalu pendek, minimal 10 karakter.{% else %}Message is too short, minimum 10 characters.{% endif %}
+            {% else %}
+              {% if locale == 'id' %}Terjadi kesalahan, silakan coba lagi.{% else %}Something went wrong, please try again.{% endif %}
+            {% endif %}
+          </p>
+        </div>
+        {% endif %}
+
+        <!-- Form -->
+        <form method="POST" action="/{{ locale }}/contact" class="space-y-5">
+          <div>
+            <label class="block text-xs font-semibold text-gray-400 mb-2 tracking-wide uppercase">
+              {% if locale == 'id' %}Nama{% else %}Name{% endif %} <span class="text-neon">*</span>
+            </label>
+            <input type="text" name="name" required maxlength="255"
+                   class="input"
+                   placeholder="{% if locale == 'id' %}Nama lengkap Anda{% else %}Your full name{% endif %}" />
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-gray-400 mb-2 tracking-wide uppercase">
+              Email <span class="text-neon">*</span>
+            </label>
+            <input type="email" name="email" required maxlength="255"
+                   class="input"
+                   placeholder="email@example.com" />
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-gray-400 mb-2 tracking-wide uppercase">
+              {% if locale == 'id' %}Subjek{% else %}Subject{% endif %}
+            </label>
+            <input type="text" name="subject" maxlength="500"
+                   class="input"
+                   placeholder="{% if locale == 'id' %}Topik pesan (opsional){% else %}Message topic (optional){% endif %}" />
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-gray-400 mb-2 tracking-wide uppercase">
+              {% if locale == 'id' %}Pesan{% else %}Message{% endif %} <span class="text-neon">*</span>
+            </label>
+            <textarea name="message" required rows="6" minlength="10"
+                      class="input resize-y"
+                      placeholder="{% if locale == 'id' %}Tulis pesan Anda...{% else %}Write your message...{% endif %}"></textarea>
+          </div>
+
+          <button type="submit" class="btn-primary w-full py-4">
+            {% if locale == 'id' %}Kirim Pesan{% else %}Send Message{% endif %}
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+            </svg>
+          </button>
+
+          <p class="text-xs text-gray-600 text-center">
+            {% if locale == 'id' %}
+              Dengan mengirim pesan ini, Anda menyetujui bahwa kami akan membalas melalui email yang Anda berikan.
+            {% else %}
+              By submitting this form, you agree that we will reply to the email address you provided.
+            {% endif %}
+          </p>
+        </form>
+
+        {% endif %}
       </div>
-      <div>
-        <label class="block text-xs font-medium text-gray-400 mb-2">{% if locale == 'id' %}Pesan{% else %}Message{% endif %}</label>
-        <textarea rows="5" class="input resize-y" placeholder="{% if locale == 'id' %}Tulis pesan Anda...{% else %}Write your message...{% endif %}"></textarea>
-      </div>
-      <button type="submit" class="btn-primary">
-        {% if locale == 'id' %}Kirim Pesan{% else %}Send Message{% endif %}
-      </button>
-    </form>
+
+    </div>
   </div>
 </section>
 {% endblock %}

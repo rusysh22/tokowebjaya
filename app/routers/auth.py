@@ -1,20 +1,40 @@
-from fastapi import APIRouter, Request, Depends, Form
-from fastapi.responses import RedirectResponse, HTMLResponse
-from sqlalchemy.orm import Session
-from authlib.integrations.starlette_client import OAuth
-from starlette.config import Config
+"""
+Auth router — handles all authentication flows.
+
+Routes (Google OAuth):
+  GET  /auth/google/login     — Redirect to Google OAuth
+  GET  /auth/google/callback  — Handle OAuth callback, create session
+
+Routes (Email+Password):
+  POST /auth/register         — Register new account, send verification OTP
+  POST /auth/verify-email     — Verify OTP, activate account
+  POST /auth/resend-otp       — Resend verification or reset OTP
+  POST /auth/login-email      — Login with email+password
+  POST /auth/forgot-password  — Send password-reset OTP
+  POST /auth/reset-password   — Apply new password after OTP verification
+
+  GET  /auth/logout           — Clear session and redirect home
+"""
+import logging
 import uuid
+
+from authlib.integrations.starlette_client import OAuth
+from fastapi import APIRouter, Depends, Form, Request
+from fastapi.responses import RedirectResponse
+from sqlalchemy.orm import Session
+from starlette.config import Config
 
 from app.core.config import settings
 from app.core.database import get_db
 from app.core.security import create_session_token, hash_password, verify_password
-from app.models.user import User, UserRole, UserStatus, AuthProvider
-from app.services.otp import generate_otp, verify_otp
+from app.models.user import AuthProvider, User, UserRole, UserStatus
 from app.services.email import send_otp_email
+from app.services.otp import generate_otp, verify_otp
 
+logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/auth", tags=["auth"])
 
-# OAuth setup
+# ─── OAuth setup ─────────────────────────────────────────────────────────────
 config = Config(environ={
     "GOOGLE_CLIENT_ID": settings.GOOGLE_CLIENT_ID,
     "GOOGLE_CLIENT_SECRET": settings.GOOGLE_CLIENT_SECRET,

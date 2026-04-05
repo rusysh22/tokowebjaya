@@ -26,14 +26,14 @@
   <!-- Summary stats -->
   <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
     {% set stats = [
-      {'label': 'Total Revenue', 'value': 'Rp ' + "{:,.0f}".format(total_revenue), 'icon': '💰', 'color': 'text-neon'},
-      {'label': 'Orders Paid', 'value': total_orders, 'icon': '🧾', 'color': 'text-white'},
-      {'label': 'New Customers', 'value': new_customers, 'icon': '👤', 'color': 'text-white'},
-      {'label': 'Active Subs', 'value': active_subs, 'icon': '🔄', 'color': 'text-white'},
+      {'label': 'Total Revenue', 'value': 'Rp ' + "{:,.0f}".format(total_revenue), 'icon': 'bi-currency-dollar', 'color': 'text-neon'},
+      {'label': 'Orders Paid', 'value': total_orders, 'icon': 'bi-receipt', 'color': 'text-white'},
+      {'label': 'New Customers', 'value': new_customers, 'icon': 'bi-person', 'color': 'text-white'},
+      {'label': 'Active Subs', 'value': active_subs, 'icon': 'bi-arrow-repeat', 'color': 'text-white'},
     ] %}
     {% for s in stats %}
     <div class="border border-gray-800 bg-gray-950 p-5">
-      <div class="text-2xl mb-2">{{ s.icon }}</div>
+      <i class="bi {{ s.icon }} text-2xl mb-2 block text-gray-400"></i>
       <div class="text-xl font-bold {{ s.color }}">{{ s.value }}</div>
       <div class="text-gray-500 text-xs mt-1">{{ s.label }}</div>
     </div>

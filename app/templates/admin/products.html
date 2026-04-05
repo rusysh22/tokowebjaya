@@ -67,7 +67,7 @@
             </td>
             <td class="px-4 py-3">
               {% if p.is_featured %}
-                <span class="text-neon text-xs font-bold">★</span>
+                <i class="bi bi-star-fill text-neon text-xs"></i>
               {% else %}
                 <span class="text-gray-700 text-xs">—</span>
               {% endif %}
@@ -76,7 +76,12 @@
               <div class="flex items-center gap-2">
                 <a href="/{{ locale }}/admin/products/{{ p.id }}/edit"
                    class="text-xs text-gray-400 hover:text-white transition-colors px-2 py-1 border border-gray-700 hover:border-gray-500">
-                  {% if locale == 'id' %}Edit{% else %}Edit{% endif %}
+                  Edit
+                </a>
+                <a href="/{{ locale }}/admin/products/{{ p.id }}/availability"
+                   class="text-xs text-blue-400 hover:text-blue-300 transition-colors px-2 py-1 border border-blue-900 hover:border-blue-700"
+                   title="Atur jadwal booking">
+                  <i class="bi bi-calendar-week"></i>
                 </a>
                 <form method="post" action="/{{ locale }}/admin/products/{{ p.id }}/delete"
                       onsubmit="return confirm('{% if locale == 'id' %}Hapus produk ini?{% else %}Delete this product?{% endif %}')">

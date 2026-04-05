@@ -13,90 +13,140 @@
 <!-- ===== HERO ===== -->
 <section class="relative min-h-screen flex items-center bg-black overflow-hidden">
 
-  <!-- Grid background pattern -->
-  <div class="absolute inset-0 opacity-[0.04]"
-       style="background-image: linear-gradient(#CAFF00 1px, transparent 1px), linear-gradient(90deg, #CAFF00 1px, transparent 1px); background-size: 48px 48px;">
-  </div>
+  <!-- Particle canvas -->
+  <canvas id="hero-canvas" class="absolute inset-0 w-full h-full pointer-events-none" style="z-index:1"></canvas>
 
-  <!-- Corner accent -->
-  <div class="absolute top-0 right-0 w-[400px] h-[400px] bg-neon opacity-5 blur-[120px] pointer-events-none"></div>
-  <div class="absolute bottom-0 left-0 w-[300px] h-[300px] bg-neon opacity-3 blur-[100px] pointer-events-none"></div>
 
-  <div class="container-main relative z-10 py-32">
-    <div class="max-w-4xl">
+  <!-- Glow blobs -->
+  <div class="absolute top-0 right-0 w-[500px] h-[500px] bg-neon opacity-[0.04] blur-[140px] pointer-events-none" style="z-index:0"></div>
+  <div class="absolute bottom-0 left-0 w-[350px] h-[350px] bg-neon opacity-[0.03] blur-[120px] pointer-events-none" style="z-index:0"></div>
 
-      <!-- Label -->
-      <div class="inline-flex items-center gap-2 border border-neon/30 bg-neon/5 px-4 py-2 mb-8 reveal">
-        <span class="w-1.5 h-1.5 bg-neon rounded-full animate-pulse"></span>
-        <span class="text-label">
-          {% if locale == 'id' %}Platform Produk Digital #1{% else %}#1 Digital Product Platform{% endif %}
-        </span>
+  <div class="container-main py-20 sm:py-28 lg:py-32" style="position:relative;z-index:2">
+    <div class="grid grid-cols-1 xl:grid-cols-2 gap-16 items-center">
+
+      <!-- Left: copy -->
+      <div>
+        <div class="overflow-hidden mb-6">
+          <h1 class="heading-xl text-white hero-slide-up" style="animation-delay:0.15s">
+            {{ t(locale, 'hero_title') }}
+          </h1>
+        </div>
+
+        <div class="overflow-hidden mb-10">
+          <p class="text-gray-400 text-lg sm:text-xl max-w-xl leading-relaxed hero-slide-up" style="animation-delay:0.25s">
+            {{ t(locale, 'hero_subtitle') }}
+          </p>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-4 hero-slide-up" style="animation-delay:0.35s">
+          <a href="/{{ locale }}/catalog" class="btn-primary px-8 py-4 text-sm">
+            {{ t(locale, 'hero_cta_primary') }}
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/>
+            </svg>
+          </a>
+          <a href="/{{ locale }}/solutions" class="btn-secondary px-8 py-4 text-sm">
+            {% if locale == 'id' %}Lihat Layanan{% else %}Our Services{% endif %}
+          </a>
+        </div>
+
       </div>
 
-      <!-- Heading -->
-      <h1 class="heading-xl text-white mb-6 reveal" style="animation-delay: 0.1s">
-        {{ t(locale, 'hero_title') }}
-      </h1>
+      <!-- Right: product image carousel -->
+      <div class="hidden xl:block hero-slide-up" style="animation-delay:0.3s">
+        {% if featured_products %}
+        <div class="relative" x-data="productCarousel()" x-init="init()">
 
-      <p class="text-gray-400 text-lg sm:text-xl max-w-2xl leading-relaxed mb-10 reveal" style="animation-delay: 0.2s">
-        {{ t(locale, 'hero_subtitle') }}
-      </p>
+          <!-- Main slide -->
+          <div class="relative overflow-hidden border border-gray-800 bg-gray-900" style="aspect-ratio:4/3">
+            {% for product in featured_products[:5] %}
+            <div class="absolute inset-0 transition-all duration-700 ease-in-out"
+                 :class="current === {{ loop.index0 }} ? 'opacity-100 scale-100 z-10' : 'opacity-0 scale-[1.03] z-0'">
+              {% if product.cover_image %}
+                <img src="/static/uploads/products/images/{{ product.cover_image }}"
+                     alt="{{ product['name_' + locale] }}"
+                     class="w-full h-full object-cover" />
+              {% else %}
+                <div class="w-full h-full flex items-center justify-center bg-gray-800">
+                  <i class="bi bi-box-seam text-6xl opacity-20"></i>
+                </div>
+              {% endif %}
+              <!-- Overlay gradient -->
+              <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
+              <!-- Product info overlay -->
+              <div class="absolute bottom-0 left-0 right-0 p-6">
+                <span class="badge-gray text-xs mb-2 inline-block">{{ product.type.value | upper }}</span>
+                <h3 class="text-white font-semibold text-lg mb-1 line-clamp-1">{{ product['name_' + locale] }}</h3>
+                <div class="flex items-center justify-between">
+                  <div>
+                    {% if product.price_otf %}
+                      <span class="text-neon font-bold">Rp {{ "{:,.0f}".format(product.price_otf) }}</span>
+                    {% elif product.price_monthly %}
+                      <span class="text-neon font-bold">Rp {{ "{:,.0f}".format(product.price_monthly) }}</span>
+                      <span class="text-gray-400 text-xs">/bln</span>
+                    {% endif %}
+                  </div>
+                  <a href="/{{ locale }}/product/{{ product.slug }}"
+                     class="text-xs font-semibold text-neon hover:underline flex items-center gap-1">
+                    {% if locale == 'id' %}Detail{% else %}View{% endif %}
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/>
+                    </svg>
+                  </a>
+                </div>
+              </div>
+            </div>
+            {% endfor %}
 
-      <!-- CTAs -->
-      <div class="flex flex-wrap items-center gap-4 reveal" style="animation-delay: 0.3s">
-        <a href="/{{ locale }}/catalog" class="btn-primary px-8 py-4 text-sm">
-          {{ t(locale, 'hero_cta_primary') }}
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/>
-          </svg>
-        </a>
-        <a href="/{{ locale }}/solutions" class="btn-secondary px-8 py-4 text-sm">
-          {{ t(locale, 'hero_cta_secondary') }}
-        </a>
+            <!-- Prev/Next buttons -->
+            <button @click="prev()" class="absolute left-3 top-1/2 -translate-y-1/2 z-20 w-8 h-8 bg-black/60 border border-gray-700 flex items-center justify-center hover:border-neon hover:text-neon text-white transition-colors duration-200">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+            </button>
+            <button @click="next()" class="absolute right-3 top-1/2 -translate-y-1/2 z-20 w-8 h-8 bg-black/60 border border-gray-700 flex items-center justify-center hover:border-neon hover:text-neon text-white transition-colors duration-200">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+            </button>
+
+            <!-- Progress bar -->
+            <div class="absolute bottom-0 left-0 right-0 h-0.5 bg-gray-800 z-20">
+              <div class="h-full bg-neon carousel-progress" :style="'animation-duration:' + duration + 'ms'"
+                   :key="current" :class="playing ? 'carousel-progress-play' : ''"></div>
+            </div>
+          </div>
+
+          <!-- Thumbnail strip -->
+          <div class="flex gap-2 mt-3">
+            {% for product in featured_products[:5] %}
+            <button @click="goTo({{ loop.index0 }}); pause()"
+                    class="flex-1 aspect-video overflow-hidden border-2 transition-all duration-300"
+                    :class="current === {{ loop.index0 }} ? 'border-neon' : 'border-gray-800 opacity-50 hover:opacity-80'">
+              {% if product.cover_image %}
+                <img src="/static/uploads/products/images/{{ product.cover_image }}"
+                     alt="{{ product['name_' + locale] }}"
+                     class="w-full h-full object-cover" loading="lazy" />
+              {% else %}
+                <div class="w-full h-full bg-gray-800 flex items-center justify-center">
+                  <i class="bi bi-box-seam text-xl opacity-20"></i>
+                </div>
+              {% endif %}
+            </button>
+            {% endfor %}
+          </div>
+
+          <!-- Slide counter -->
+          <div class="flex items-center justify-between mt-3">
+            <div class="flex gap-1.5">
+              {% for product in featured_products[:5] %}
+              <button @click="goTo({{ loop.index0 }})"
+                      class="w-5 h-0.5 transition-all duration-300"
+                      :class="current === {{ loop.index0 }} ? 'bg-neon' : 'bg-gray-700'"></button>
+              {% endfor %}
+            </div>
+            <span class="text-xs text-gray-500 font-mono" x-text="(current+1) + ' / ' + total"></span>
+          </div>
+        </div>
+        {% endif %}
       </div>
 
-      <!-- Stats row -->
-      <div class="flex flex-wrap items-center gap-8 mt-16 pt-8 border-t border-gray-800 reveal" style="animation-delay: 0.4s">
-        <div>
-          <div class="text-3xl font-bold text-white" data-counter data-target="200">0</div>
-          <div class="text-xs text-gray-500 mt-1 tracking-wide">
-            {% if locale == 'id' %}Produk Digital{% else %}Digital Products{% endif %}
-          </div>
-        </div>
-        <div class="w-px h-8 bg-gray-800"></div>
-        <div>
-          <div class="text-3xl font-bold text-white" data-counter data-target="1500">0</div>
-          <div class="text-xs text-gray-500 mt-1 tracking-wide">
-            {% if locale == 'id' %}Pelanggan Aktif{% else %}Active Customers{% endif %}
-          </div>
-        </div>
-        <div class="w-px h-8 bg-gray-800"></div>
-        <div>
-          <div class="text-3xl font-bold text-white" data-counter data-target="99">0</div>
-          <div class="text-xs text-gray-500 mt-1 tracking-wide">
-            {% if locale == 'id' %}% Uptime{% else %}% Uptime{% endif %}
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Floating product cards (decorative) -->
-  <div class="absolute right-8 top-1/2 -translate-y-1/2 hidden xl:flex flex-col gap-4 opacity-60">
-    <div class="w-56 card p-4 animate-float" style="animation-delay: 0s">
-      <div class="w-full h-24 bg-gray-800 mb-3 skeleton"></div>
-      <div class="h-3 bg-gray-700 w-3/4 mb-2"></div>
-      <div class="h-3 bg-gray-800 w-1/2"></div>
-    </div>
-    <div class="w-56 card p-4 animate-float" style="animation-delay: 0.5s">
-      <div class="w-full h-24 bg-gray-800 mb-3 skeleton"></div>
-      <div class="h-3 bg-gray-700 w-2/3 mb-2"></div>
-      <div class="h-3 bg-gray-800 w-1/3"></div>
-    </div>
-    <div class="w-56 card p-4 animate-float" style="animation-delay: 1s">
-      <div class="w-full h-24 bg-gray-800 mb-3 skeleton"></div>
-      <div class="h-3 bg-gray-700 w-4/5 mb-2"></div>
-      <div class="h-3 bg-gray-800 w-2/5"></div>
     </div>
   </div>
 </section>
@@ -108,7 +158,7 @@
     {% for _ in range(4) %}
       {% for item in items %}
         <span class="text-black font-semibold text-sm mx-8 tracking-wide">{{ item }}</span>
-        <span class="text-black/40 text-sm mx-2">✦</span>
+        <span class="text-black/40 text-sm mx-2"><i class="bi bi-diamond-fill" style="font-size:0.5rem"></i></span>
       {% endfor %}
     {% endfor %}
   </div>
@@ -126,45 +176,45 @@
       </h2>
     </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-px bg-gray-800">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-px bg-gray-800" data-stagger-grid>
       {% set features = [
         {
-          "icon": "📦",
+          "icon": "bi-box-seam",
           "title_id": "Produk Digital Siap Pakai",
           "title_en": "Ready-to-Use Digital Products",
           "desc_id": "E-book, kursus, software, dan template berkualitas tinggi yang langsung bisa digunakan.",
           "desc_en": "High-quality e-books, courses, software, and templates ready for immediate use."
         },
         {
-          "icon": "💳",
+          "icon": "bi-credit-card",
           "title_id": "Pembayaran Otomatis",
           "title_en": "Automated Payments",
           "desc_id": "Checkout, invoice, dan subscription billing semuanya otomatis. Zero manual work.",
           "desc_en": "Checkout, invoicing, and subscription billing fully automated. Zero manual work."
         },
         {
-          "icon": "🔄",
+          "icon": "bi-arrow-repeat",
           "title_id": "Manajemen Subscription",
           "title_en": "Subscription Management",
           "desc_id": "Kelola langganan bulanan dan tahunan dengan mudah. Renew, cancel, upgrade — semua self-service.",
           "desc_en": "Manage monthly and annual subscriptions effortlessly. Renew, cancel, upgrade — all self-service."
         },
         {
-          "icon": "📊",
+          "icon": "bi-bar-chart-line",
           "title_id": "Dashboard Admin Lengkap",
           "title_en": "Full Admin Dashboard",
           "desc_id": "Monitor KPI, transaksi, dan laporan penjualan dalam satu panel yang bersih.",
           "desc_en": "Monitor KPIs, transactions, and sales reports in one clean panel."
         },
         {
-          "icon": "🧾",
+          "icon": "bi-file-earmark-text",
           "title_id": "Invoice PDF Otomatis",
           "title_en": "Automatic PDF Invoices",
           "desc_id": "Setiap transaksi menghasilkan invoice PDF profesional yang dikirim langsung ke email.",
           "desc_en": "Every transaction generates a professional PDF invoice sent directly to email."
         },
         {
-          "icon": "🔐",
+          "icon": "bi-shield-lock",
           "title_id": "Login Google (OAuth2)",
           "title_en": "Google Login (OAuth2)",
           "desc_id": "Sign in cepat dan aman dengan akun Google. Tidak perlu password tambahan.",
@@ -173,12 +223,15 @@
       ] %}
 
       {% for feature in features %}
-      <div class="bg-black p-8 group hover:bg-gray-900 transition-colors duration-300 reveal">
-        <div class="text-3xl mb-5">{{ feature.icon }}</div>
+      <div class="bg-black p-8 group hover:bg-gray-900 transition-all duration-300 reveal feature-card"
+           style="animation-delay: {{ loop.index0 * 0.08 }}s">
+        <i class="bi {{ feature.icon }} text-3xl mb-5 feature-icon block"></i>
         <h3 class="heading-sm text-white mb-3 group-hover:text-neon transition-colors duration-300">
           {{ feature['title_' + locale] }}
         </h3>
         <p class="text-gray-500 text-sm leading-relaxed">{{ feature['desc_' + locale] }}</p>
+        <!-- Neon bottom border on hover -->
+        <div class="h-px w-0 bg-neon mt-5 group-hover:w-full transition-all duration-500 ease-out"></div>
       </div>
       {% endfor %}
     </div>
@@ -206,24 +259,53 @@
     {% if featured_products %}
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
       {% for product in featured_products %}
-      <article class="card-neon group overflow-hidden reveal" data-tilt>
-        <!-- Cover image -->
-        <div class="relative aspect-[16/9] bg-gray-800 overflow-hidden">
-          {% if product.cover_image %}
-            <img src="/static/uploads/products/images/{{ product.cover_image }}"
-                 alt="{{ product['name_' + locale] }}"
-                 class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                 loading="lazy" />
-          {% else %}
-            <div class="w-full h-full flex items-center justify-center bg-gray-800">
-              <span class="text-4xl opacity-30">📦</span>
-            </div>
-          {% endif %}
+      <article class="card-neon group overflow-hidden reveal product-card" data-tilt
+               style="animation-delay: {{ loop.index0 * 0.1 }}s">
+
+        <!-- Image with multiple-photo slideshow per card -->
+        {% if product.cover_image %}
+        <div class="relative aspect-[16/9] bg-gray-800 overflow-hidden"
+             x-data="{ hovered: false }" @mouseenter="hovered = true" @mouseleave="hovered = false">
+          <!-- Primary image -->
+          <img src="/static/uploads/products/images/{{ product.cover_image }}"
+               alt="{{ product['name_' + locale] }}"
+               class="w-full h-full object-cover transition-all duration-700"
+               :class="hovered ? 'scale-110 brightness-75' : 'scale-100 brightness-100'"
+               loading="lazy" />
+          <!-- Overlay with shine effect on hover -->
+          <div class="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+               style="background:linear-gradient(135deg,rgba(202,255,0,0.08) 0%,transparent 60%)"></div>
+          <!-- Quick view button -->
+          <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0">
+            <a href="/{{ locale }}/product/{{ product.slug }}"
+               class="bg-neon text-black text-xs font-bold px-4 py-2 flex items-center gap-1.5 hover:bg-white transition-colors duration-200">
+              {% if locale == 'id' %}Lihat Detail{% else %}Quick View{% endif %}
+              <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+              </svg>
+            </a>
+          </div>
           <!-- Type badge -->
           <div class="absolute top-3 left-3">
             <span class="badge-gray text-xs">{{ product.type.value | upper }}</span>
           </div>
+          {% if product.is_featured %}
+          <div class="absolute top-3 right-3">
+            <span class="badge-neon text-xs"><i class="bi bi-star-fill"></i> Featured</span>
+          </div>
+          {% endif %}
         </div>
+        {% else %}
+        <div class="relative aspect-[16/9] bg-gray-800 overflow-hidden">
+          <div class="w-full h-full flex items-center justify-center">
+            <i class="bi bi-box-seam text-5xl opacity-20 group-hover:opacity-40 transition-opacity duration-300"></i>
+          </div>
+          <div class="absolute top-3 left-3">
+            <span class="badge-gray text-xs">{{ product.type.value | upper }}</span>
+          </div>
+        </div>
+        {% endif %}
 
         <div class="p-6">
           <h3 class="font-semibold text-white text-base mb-2 group-hover:text-neon transition-colors duration-200 line-clamp-2">
@@ -260,7 +342,6 @@
       {% endfor %}
     </div>
     {% else %}
-    <!-- Empty state -->
     <div class="text-center py-20 border border-gray-800 reveal">
       <p class="text-gray-500 text-sm">
         {% if locale == 'id' %}Produk segera hadir.{% else %}Products coming soon.{% endif %}
@@ -270,21 +351,24 @@
   </div>
 </section>
 
-<!-- ===== HUMOR SECTION ===== -->
-<section class="section bg-neon">
+<!-- ===== STATS COUNTER ===== -->
+<section class="py-16 bg-black border-y border-gray-800">
   <div class="container-main">
-    <div class="max-w-3xl mx-auto text-center reveal">
-      <div class="text-6xl mb-6">🧱</div>
-      <h2 class="heading-lg text-black mb-6">{{ t(locale, 'humor_title') }}</h2>
-      <p class="text-black/70 text-base sm:text-lg leading-relaxed mb-10 max-w-2xl mx-auto">
-        {{ t(locale, 'humor_body') }}
-      </p>
-      <a href="/{{ locale }}/catalog" class="inline-flex items-center gap-2 bg-black text-white px-8 py-4 font-semibold text-sm hover:bg-gray-900 transition-colors duration-200 active:scale-95">
-        {{ t(locale, 'humor_cta') }}
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/>
-        </svg>
-      </a>
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-px bg-gray-800">
+      {% set stats = [
+        {"num": 500,  "suffix": "+", "label_id": "Produk Aktif",      "label_en": "Active Products"},
+        {"num": 2000, "suffix": "+", "label_id": "Pengguna Terdaftar", "label_en": "Registered Users"},
+        {"num": 9800, "suffix": "+", "label_id": "Transaksi Berhasil", "label_en": "Successful Orders"},
+        {"num": 99,   "suffix": "%", "label_id": "Uptime Platform",    "label_en": "Platform Uptime"},
+      ] %}
+      {% for stat in stats %}
+      <div class="bg-black px-8 py-10 text-center reveal" style="animation-delay: {{ loop.index0 * 0.1 }}s">
+        <div class="text-4xl font-black text-neon mb-2">
+          <span data-counter data-target="{{ stat.num }}">0</span>{{ stat.suffix }}
+        </div>
+        <div class="text-sm text-gray-400 tracking-wide">{{ stat['label_' + locale] }}</div>
+      </div>
+      {% endfor %}
     </div>
   </div>
 </section>
@@ -305,24 +389,43 @@
       {% set steps = [
         {"num": "01", "title_id": "Pilih Produk", "title_en": "Choose a Product",
          "desc_id": "Jelajahi katalog dan temukan produk digital yang sesuai kebutuhan bisnis Anda.",
-         "desc_en": "Browse the catalog and find the digital product that fits your business needs."},
+         "desc_en": "Browse the catalog and find the digital product that fits your business needs.",
+         "icon": "bi-cart3"},
         {"num": "02", "title_id": "Checkout & Bayar", "title_en": "Checkout & Pay",
          "desc_id": "Pilih metode pembayaran via Duitku atau Mayar.id. Proses aman dan instan.",
-         "desc_en": "Choose payment via Duitku or Mayar.id. Secure and instant processing."},
+         "desc_en": "Choose payment via Duitku or Mayar.id. Secure and instant processing.",
+         "icon": "bi-credit-card"},
         {"num": "03", "title_id": "Akses Langsung", "title_en": "Instant Access",
          "desc_id": "Invoice dikirim otomatis ke email. Produk langsung bisa diakses atau didownload.",
-         "desc_en": "Invoice sent automatically to email. Product immediately accessible or downloadable."},
+         "desc_en": "Invoice sent automatically to email. Product immediately accessible or downloadable.",
+         "icon": "bi-lightning-charge"},
       ] %}
 
       {% for step in steps %}
-      <div class="reveal relative">
-        {% if not loop.last %}
-        <div class="hidden md:block absolute top-8 left-full w-full h-px bg-gray-800 z-0 -translate-x-1/2"></div>
-        {% endif %}
-        <div class="relative z-10">
-          <div class="text-5xl font-black text-gray-800 mb-4">{{ step.num }}</div>
-          <h3 class="heading-sm text-white mb-3">{{ step['title_' + locale] }}</h3>
+      <div class="reveal step-card group" style="animation-delay: {{ loop.index0 * 0.15 }}s">
+        <div class="relative border border-gray-800 p-8 bg-black group-hover:border-gray-600 group-hover:bg-gray-900 transition-all duration-400 overflow-hidden">
+          <!-- Connector line -->
+          {% if not loop.last %}
+          <div class="hidden md:block absolute top-12 left-full w-8 h-px bg-gray-800 z-10" style="transform:translateX(-100%)"></div>
+          {% endif %}
+
+          <!-- Step number -->
+          <div class="text-6xl font-black text-gray-800 group-hover:text-gray-700 transition-colors duration-300 mb-2 select-none">{{ step.num }}</div>
+
+          <!-- Icon with pulse ring -->
+          <div class="relative inline-flex mb-5">
+            <i class="bi {{ step.icon }} text-3xl text-neon"></i>
+            <div class="absolute inset-0 rounded-full opacity-0 group-hover:opacity-100 group-hover:animate-ping bg-neon/10 transition-opacity duration-300"></div>
+          </div>
+
+          <h3 class="heading-sm text-white mb-3 group-hover:text-neon transition-colors duration-300">
+            {{ step['title_' + locale] }}
+          </h3>
           <p class="text-gray-500 text-sm leading-relaxed">{{ step['desc_' + locale] }}</p>
+
+          <!-- Corner accent -->
+          <div class="absolute bottom-0 right-0 w-16 h-16 bg-neon opacity-0 group-hover:opacity-[0.04] transition-opacity duration-500"
+               style="clip-path:polygon(100% 0,100% 100%,0 100%)"></div>
         </div>
       </div>
       {% endfor %}
@@ -358,8 +461,8 @@
             {"id": "Setup Infrastruktur Cloud", "en": "Cloud Infrastructure Setup"},
           ] %}
           {% for service in services %}
-          <li class="flex items-center gap-3 text-sm text-gray-400">
-            <span class="w-5 h-5 bg-neon/10 border border-neon/30 flex items-center justify-center flex-shrink-0">
+          <li class="flex items-center gap-3 text-sm text-gray-400 service-item reveal" style="animation-delay: {{ loop.index0 * 0.1 }}s">
+            <span class="w-5 h-5 bg-neon/10 border border-neon/30 flex items-center justify-center flex-shrink-0 transition-all duration-300 hover:bg-neon/20 hover:border-neon">
               <svg class="w-3 h-3 text-neon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
               </svg>
@@ -373,15 +476,26 @@
         </a>
       </div>
 
-      <!-- Visual block -->
+      <!-- Animated tech grid -->
       <div class="reveal">
         <div class="grid grid-cols-2 gap-4">
-          {% for i in range(4) %}
-          <div class="card p-6 {% if i == 1 %}border-neon{% endif %}">
-            <div class="w-8 h-8 bg-gray-800 mb-4"></div>
-            <div class="h-3 bg-gray-700 w-4/5 mb-2"></div>
-            <div class="h-3 bg-gray-800 w-3/5 mb-2"></div>
-            <div class="h-3 bg-gray-800 w-2/5"></div>
+          {% set solution_cards = [
+            {"icon": "bi-plug", "title_id": "Integrasi API", "title_en": "API Integration", "highlight": false},
+            {"icon": "bi-cloud-arrow-up", "title_id": "Cloud Deploy", "title_en": "Cloud Deploy", "highlight": true},
+            {"icon": "bi-shield-check", "title_id": "Security Audit", "title_en": "Security Audit", "highlight": false},
+            {"icon": "bi-graph-up-arrow", "title_id": "Analytics Setup", "title_en": "Analytics Setup", "highlight": false},
+          ] %}
+          {% for card in solution_cards %}
+          <div class="card p-6 group hover:bg-gray-800 transition-all duration-300 cursor-default solution-card
+                       {% if card.highlight %}border-neon{% endif %}"
+               style="animation-delay: {{ loop.index0 * 0.1 }}s">
+            <i class="bi {{ card.icon }} text-2xl mb-3 transition-transform duration-300 group-hover:scale-110 inline-block text-neon"></i>
+            <div class="h-2 bg-neon/60 w-8 mb-3 group-hover:w-full transition-all duration-500 ease-out"></div>
+            <div class="text-sm font-semibold text-white mb-2 group-hover:text-neon transition-colors duration-200">
+              {{ card['title_' + locale] }}
+            </div>
+            <div class="h-2 bg-gray-700 w-4/5 mb-1.5 rounded-sm"></div>
+            <div class="h-2 bg-gray-800 w-3/5 rounded-sm"></div>
           </div>
           {% endfor %}
         </div>
@@ -390,10 +504,131 @@
   </div>
 </section>
 
+<!-- ===== HUMOR SECTION ===== -->
+<section class="bg-black border-y border-gray-800 overflow-hidden">
+
+  <!-- Top strip: neon label -->
+  <div class="bg-neon py-3 text-center">
+    <span class="text-black font-black text-sm uppercase tracking-[0.2em]">
+      {% if locale == 'id' %}⚠ PERINGATAN PENTING ⚠{% else %}⚠ IMPORTANT NOTICE ⚠{% endif %}
+    </span>
+  </div>
+
+  <!-- Main humor content -->
+  <div class="container-main py-20">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+
+      <!-- Left: text -->
+      <div class="reveal">
+        <span class="text-label block mb-4">
+          {% if locale == 'id' %}Klarifikasi{% else %}Clarification{% endif %}
+        </span>
+        <h2 class="heading-lg text-white mb-6">{{ t(locale, 'humor_title') }}</h2>
+        <p class="text-gray-400 text-base leading-relaxed mb-8">
+          {{ t(locale, 'humor_body') }}
+        </p>
+
+        <!-- "Tidak tersedia" list -->
+        <div class="space-y-3 mb-10">
+          {% set unavailable = [
+            {'id': 'Semen', 'en': 'Cement', 'img': '/static/assets/images/cement.jpg'},
+            {'id': 'Batu Bata', 'en': 'Red Bricks', 'img': '/static/assets/images/batu-bata-merah.jpg'},
+            {'id': 'Hebel / Bata Ringan', 'en': 'Lightweight Blocks', 'img': '/static/assets/images/hebel.jpg'},
+            {'id': 'Atap Asbes', 'en': 'Asbestos Roofing', 'img': '/static/assets/images/asbes.jpg'},
+          ] %}
+          {% for item in unavailable %}
+          <div class="flex items-center gap-3 reveal" style="animation-delay: {{ loop.index0 * 0.08 }}s">
+            <div class="w-10 h-10 overflow-hidden flex-shrink-0 relative">
+              <img src="{{ item.img }}" alt="{{ item[locale] }}" class="w-full h-full object-cover brightness-50" />
+              <div class="absolute inset-0 flex items-center justify-center">
+                <i class="bi bi-x-lg text-red-500 font-black text-sm"></i>
+              </div>
+            </div>
+            <span class="text-gray-500 line-through text-sm">{{ item[locale] }}</span>
+            <span class="text-xs text-gray-700 italic">
+              {% if locale == 'id' %}— tidak tersedia{% else %}— not available{% endif %}
+            </span>
+          </div>
+          {% endfor %}
+        </div>
+
+        <a href="/{{ locale }}/catalog" class="btn-primary px-8 py-4">
+          {{ t(locale, 'humor_cta') }}
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/>
+          </svg>
+        </a>
+      </div>
+
+      <!-- Right: photo collage -->
+      <div class="reveal" style="animation-delay: 0.2s">
+        <!-- Main large image: storefront -->
+        <div class="relative overflow-hidden border border-gray-800 mb-3">
+          <img src="/static/assets/images/profile-halaman-toko-web-jaya.png"
+               alt="Toko Web Jaya"
+               class="w-full h-72 object-cover object-top brightness-75 hover:brightness-90 transition-all duration-500" />
+          <!-- Overlay label -->
+          <div class="absolute inset-0 flex flex-col items-start justify-end p-5 bg-gradient-to-t from-black/80 via-black/20 to-transparent">
+            <span class="text-xs font-bold text-neon uppercase tracking-widest mb-1">
+              {% if locale == 'id' %}Bukan ini{% else %}Not this{% endif %}
+            </span>
+            <p class="text-white font-semibold text-sm">
+              {% if locale == 'id' %}Toko bangunan ≠ Toko Web Jaya{% else %}Hardware store ≠ Toko Web Jaya{% endif %}
+            </p>
+          </div>
+          <!-- Neon border top accent -->
+          <div class="absolute top-0 left-0 right-0 h-0.5 bg-neon"></div>
+        </div>
+
+        <!-- Bottom 3 images grid -->
+        <div class="grid grid-cols-3 gap-3">
+          {% for img in [
+            ('/static/assets/images/pondasi.png',   'Pondasi',    'Foundation'),
+            ('/static/assets/images/ngecor.jpeg',   'Tukang Cor', 'Concrete Work'),
+            ('/static/assets/images/proyek.jpg',    'Proyek',     'Construction'),
+          ] %}
+          <div class="relative overflow-hidden border border-gray-800 group">
+            <img src="{{ img[0] }}" alt="{{ img[1] }}"
+                 class="w-full h-24 object-cover brightness-50 group-hover:brightness-75 transition-all duration-400" />
+            <div class="absolute inset-0 flex items-center justify-center">
+              <div class="w-6 h-6 bg-red-600/80 flex items-center justify-center">
+                <i class="bi bi-x-lg text-white text-xs"></i>
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+
+        <!-- Caption -->
+        <p class="text-center text-xs text-gray-700 italic mt-3">
+          {% if locale == 'id' %}
+            Kami paham, namanya memang membingungkan. Tapi percayalah.
+          {% else %}
+            We know, the name is confusing. But trust us.
+          {% endif %}
+        </p>
+      </div>
+
+    </div>
+  </div>
+</section>
+
 <!-- ===== CTA FINAL ===== -->
-<section class="section bg-black">
-  <div class="container-main">
-    <div class="border border-gray-800 p-12 lg:p-20 text-center reveal">
+<section class="relative overflow-hidden bg-black">
+  <!-- Citylight background image -->
+  <div class="absolute inset-0">
+    <img src="/static/assets/images/citylight.avif"
+         alt=""
+         class="w-full h-full object-cover opacity-20"
+         loading="lazy" />
+    <div class="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-black/40"></div>
+  </div>
+
+  <div class="container-main relative z-10 py-28 lg:py-36">
+    <div class="max-w-2xl mx-auto text-center reveal">
+      <span class="text-label block mb-4">
+        {% if locale == 'id' %}Bergabung Sekarang{% else %}Get Started Today{% endif %}
+      </span>
       <h2 class="heading-lg text-white mb-6">
         {% if locale == 'id' %}Siap Mulai?{% else %}Ready to Start?{% endif %}
       </h2>
@@ -416,4 +651,44 @@
   </div>
 </section>
 
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="/static/js/hero-particles.js"></script>
+<script>
+// ── Alpine.js: Product Carousel ────────────────────────────────────────────
+function productCarousel() {
+  return {
+    current: 0,
+    total: {{ featured_products | length if featured_products else 0 }},
+    duration: 4000,
+    playing: true,
+    _timer: null,
+
+    init() {
+      if (this.total > 1) this._start();
+    },
+    _start() {
+      this._timer = setInterval(() => {
+        if (this.playing) this.next();
+      }, this.duration);
+    },
+    next() {
+      this.current = (this.current + 1) % this.total;
+    },
+    prev() {
+      this.current = (this.current - 1 + this.total) % this.total;
+    },
+    goTo(i) {
+      this.current = i;
+    },
+    pause() {
+      this.playing = false;
+      clearInterval(this._timer);
+      // Resume after 8 seconds of inactivity
+      setTimeout(() => { this.playing = true; this._start(); }, 8000);
+    },
+  };
+}
+</script>
 {% endblock %}

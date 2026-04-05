@@ -1,6 +1,12 @@
-from fastapi import Request, HTTPException, status
-from fastapi.responses import RedirectResponse
+"""
+Auth helpers — session-based authentication.
+
+  get_current_user(request, db)  — Returns User or None (no redirect, no exception)
+  require_admin(request, db)     — Returns User or raises 403 if not admin
+"""
+from fastapi import HTTPException, Request, status
 from sqlalchemy.orm import Session
+
 from app.core.security import verify_session_token
 from app.models.user import User, UserRole
 

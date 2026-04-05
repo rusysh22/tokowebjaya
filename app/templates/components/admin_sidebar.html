@@ -14,19 +14,22 @@
 
   <nav class="flex-1 p-4 space-y-1">
     {% set nav_items = [
-      {"href": "/" + locale + "/admin", "icon": "⬛", "label_id": "Overview", "label_en": "Overview", "key": "overview"},
-      {"href": "/" + locale + "/admin/products", "icon": "📦", "label_id": "Produk", "label_en": "Products", "key": "products"},
-      {"href": "/" + locale + "/admin/orders", "icon": "🧾", "label_id": "Transaksi", "label_en": "Orders", "key": "orders"},
-      {"href": "/" + locale + "/admin/customers", "icon": "👤", "label_id": "Pelanggan", "label_en": "Customers", "key": "customers"},
-      {"href": "/" + locale + "/admin/invoices", "icon": "📄", "label_id": "Invoice", "label_en": "Invoices", "key": "invoices"},
-      {"href": "/" + locale + "/admin/reports", "icon": "📊", "label_id": "Laporan", "label_en": "Reports", "key": "reports"},
+      {"href": "/" + locale + "/admin", "icon": "bi-grid-fill", "label_id": "Overview", "label_en": "Overview", "key": "overview"},
+      {"href": "/" + locale + "/admin/products", "icon": "bi-box-seam", "label_id": "Produk", "label_en": "Products", "key": "products"},
+      {"href": "/" + locale + "/admin/orders", "icon": "bi-receipt", "label_id": "Transaksi", "label_en": "Orders", "key": "orders"},
+      {"href": "/" + locale + "/admin/customers", "icon": "bi-people", "label_id": "Pelanggan", "label_en": "Customers", "key": "customers"},
+      {"href": "/" + locale + "/admin/invoices", "icon": "bi-file-earmark-text", "label_id": "Invoice", "label_en": "Invoices", "key": "invoices"},
+      {"href": "/" + locale + "/admin/reports", "icon": "bi-bar-chart-line", "label_id": "Laporan", "label_en": "Reports", "key": "reports"},
+      {"href": "/" + locale + "/admin/promos", "icon": "bi-tag", "label_id": "Promo Code", "label_en": "Promo Codes", "key": "promos"},
+      {"href": "/" + locale + "/admin/contacts", "icon": "bi-envelope", "label_id": "Pesan Kontak", "label_en": "Contact Messages", "key": "contacts"},
+      {"href": "/" + locale + "/admin/appointments", "icon": "bi-calendar-check", "label_id": "Appointments", "label_en": "Appointments", "key": "appointments"},
     ] %}
 
     {% for item in nav_items %}
     <a href="{{ item.href }}"
        class="flex items-center gap-3 px-3 py-2.5 text-sm font-medium transition-colors duration-150 rounded-none
               {% if admin_section == item.key %}bg-neon text-black{% else %}text-gray-400 hover:text-white hover:bg-gray-800{% endif %}">
-      <span class="text-base">{{ item.icon }}</span>
+      <i class="bi {{ item.icon }} text-base"></i>
       {{ item['label_' + locale] }}
     </a>
     {% endfor %}

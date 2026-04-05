@@ -1,17 +1,36 @@
-from fastapi import APIRouter, Request, Depends, HTTPException, BackgroundTasks
-from fastapi.responses import RedirectResponse, FileResponse
-from sqlalchemy.orm import Session
-from sqlalchemy import desc
-from pathlib import Path
+"""
+Dashboard router — authenticated user pages.
 
+Routes:
+  GET  /{locale}/dashboard                          — Overview (redirects admin to /admin)
+  GET  /{locale}/dashboard/orders                   — Paginated order history
+  GET  /{locale}/dashboard/invoices                 — Paginated invoice list
+  GET  /{locale}/dashboard/orders/{id}/receipt      — Order receipt view
+  GET  /{locale}/dashboard/invoices/{id}/download   — Download invoice PDF
+  GET  /{locale}/dashboard/subscriptions            — Active / past subscriptions
+  GET  /{locale}/dashboard/api-keys                 — Manage API keys
+  POST /{locale}/dashboard/api-keys/create          — Create new API key
+  POST /{locale}/dashboard/api-keys/{id}/revoke     — Revoke API key
+  POST /{locale}/dashboard/subscriptions/{id}/cancel — Cancel subscription
+"""
+import logging
+from pathlib import Path
+from urllib.parse import quote
+
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
+from fastapi.responses import FileResponse, RedirectResponse
+from sqlalchemy import desc
+from sqlalchemy.orm import Session
+
+from app.core.auth import get_current_user
 from app.core.config import settings
 from app.core.database import get_db
-from app.core.auth import get_current_user
-from app.models.order import Order
-from app.models.invoice import Invoice
-from app.models.subscription import Subscription, SubscriptionStatus
 from app.models.api_key import ApiKey, ApiKeyScope
+from app.models.invoice import Invoice
+from app.models.order import Order
+from app.models.subscription import Subscription, SubscriptionStatus
 
+logger = logging.getLogger(__name__)
 router = APIRouter(tags=["dashboard"])
 
 
@@ -36,7 +55,7 @@ async def dashboard(request: Request, locale: str, db: Session = Depends(get_db)
         return redirect
 
     # Redirect admin to admin panel
-    from app.models.user import UserRole
+    from app.models.user import UserRole  # noqa: PLC0415
     if user.role == UserRole.admin:
         return RedirectResponse(url=f"/{locale}/admin")
 
@@ -205,7 +224,6 @@ async def dashboard_api_keys(request: Request, locale: str, db: Session = Depend
 
 @router.post("/{locale}/dashboard/api-keys/create")
 async def dashboard_create_api_key(request: Request, locale: str, db: Session = Depends(get_db)):
-    from fastapi import Form as FastForm
     redirect, user = _require_user(request, db)
     if redirect:
         return redirect
@@ -231,7 +249,6 @@ async def dashboard_create_api_key(request: Request, locale: str, db: Session = 
     db.commit()
 
     # Pass new key once via redirect (flash-style)
-    from urllib.parse import quote
     return RedirectResponse(
         url=f"/{locale}/dashboard/api-keys?new_key={quote(raw_key)}",
         status_code=303,
@@ -258,7 +275,7 @@ async def cancel_subscription(request: Request, locale: str, sub_id: str, backgr
     if redirect:
         return redirect
 
-    from datetime import datetime
+    from datetime import datetime  # noqa: PLC0415 — avoid circular import
     sub = db.query(Subscription).filter(
         Subscription.id == sub_id, Subscription.user_id == user.id
     ).first()

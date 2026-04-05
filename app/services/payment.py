@@ -1,9 +1,19 @@
+"""
+Payment service — gateway integrations for Duitku (primary) and Mayar (secondary).
+
+Exports:
+  duitku   — DuitkuService singleton
+  mayar    — MayarService singleton
+  generate_order_number()  — Unique order number with timestamp + random suffix
+"""
 import hashlib
-import httpx
-import uuid
 import logging
 import time
+import uuid
 from datetime import datetime
+
+import httpx
+
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)

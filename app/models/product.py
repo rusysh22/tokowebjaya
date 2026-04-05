@@ -19,6 +19,7 @@ class PricingModel(str, enum.Enum):
     one_time = "one_time"
     subscription = "subscription"
     both = "both"
+    contact_seller = "contact_seller"
 
 
 class ProductStatus(str, enum.Enum):
@@ -55,6 +56,12 @@ class Product(Base):
     preview_video = Column(String(500), nullable=True)
     download_file = Column(String(500), nullable=True)
     gallery = Column(JSON, default=list)
+    demo_url = Column(String(500), nullable=True)
+
+    # Contact seller info (used when pricing_model = contact_seller)
+    contact_whatsapp = Column(String(30), nullable=True)   # e.g. "6281234567890"
+    contact_email    = Column(String(255), nullable=True)
+    contact_address  = Column(Text, nullable=True)
 
     # Metadata
     category = Column(String(100), nullable=True)

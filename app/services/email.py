@@ -326,6 +326,50 @@ def send_otp_email(to_email: str, name: str, otp: str, purpose: str = "verify", 
     return _send(to_email, subject, _base_html(subject, body))
 
 
+def send_contact_notification(name: str, email: str, subject: str, message: str, admin_email: str) -> bool:
+    """Send contact form submission notification to admin."""
+    email_subject = f"[Kontak] {subject or 'Pesan baru'} — dari {name}"
+
+    body = f"""
+    <div class="badge">Pesan Kontak Baru</div>
+    <h1>Pesan baru dari {name}</h1>
+    <p>Ada pesan baru masuk melalui form kontak website.</p>
+    <table class="info-table">
+      <tr><td>Nama</td><td>{name}</td></tr>
+      <tr><td>Email</td><td><a href="mailto:{email}" style="color:#0a0a0a">{email}</a></td></tr>
+      <tr><td>Subjek</td><td>{subject or '-'}</td></tr>
+    </table>
+    <div style="background:#f9f9f9;border-left:3px solid #CAFF00;padding:16px 20px;margin:20px 0;font-size:14px;line-height:1.7;color:#333;white-space:pre-wrap">{message}</div>
+    <a href="mailto:{email}?subject=Re: {subject or 'Pesan Anda'}" class="btn">Balas Email &rarr;</a>
+    <p style="font-size:12px;color:#bbb;margin-top:16px">Pesan ini dikirim otomatis dari form kontak Toko Web Jaya.</p>
+    """
+    return _send(admin_email, email_subject, _base_html(email_subject, body))
+
+
+def send_contact_autoreply(name: str, to_email: str, locale: str = "id") -> bool:
+    """Send auto-reply confirmation to the person who submitted the contact form."""
+    if locale == "id":
+        subject  = "Pesan Anda telah kami terima — Toko Web Jaya"
+        badge    = "Pesan Diterima"
+        heading  = f"Halo, {name.split()[0]}!"
+        intro    = "Terima kasih telah menghubungi kami. Pesan Anda telah kami terima dan tim kami akan membalas dalam <strong>1×24 jam</strong> hari kerja."
+        note     = "Jika ada hal mendesak, Anda juga bisa menghubungi kami langsung melalui halaman kontak."
+    else:
+        subject  = "We've received your message — Toko Web Jaya"
+        badge    = "Message Received"
+        heading  = f"Hello, {name.split()[0]}!"
+        intro    = "Thank you for reaching out. We've received your message and our team will reply within <strong>1 business day</strong>."
+        note     = "For urgent matters, you can also reach us directly through our contact page."
+
+    body = f"""
+    <div class="badge">{badge}</div>
+    <h1>{heading}</h1>
+    <p>{intro}</p>
+    <p style="color:#888;font-size:13px">{note}</p>
+    """
+    return _send(to_email, subject, _base_html(subject, body))
+
+
 def send_subscription_cancelled(subscription, product, user, locale: str = "id") -> bool:
     product_name = product.name_id if locale == "id" else product.name_en
     catalog_url  = f"{settings.BASE_URL}/{locale}/catalog"
@@ -351,5 +395,99 @@ def send_subscription_cancelled(subscription, product, user, locale: str = "id")
     <p>{intro}</p>
     <p>{note}</p>
     <a href="{catalog_url}" class="btn">{btn_text} &rarr;</a>
+    """
+    return _send(user.email, subject, _base_html(subject, body))
+
+
+# ── Appointment emails ────────────────────────────────────────────────────────
+
+def send_appointment_booked(appt, product, user, locale: str = "id") -> bool:
+    """Notify user (booking confirmed) + admin (new booking)."""
+    product_name = product.name_id if locale == "id" else product.name_en
+    date_str     = appt.appt_date.strftime("%d %B %Y")
+    time_str     = appt.appt_time.strftime("%H:%M") + " WIB"
+    type_label   = {"demo": "Demo Produk", "call": "Video/Phone Call", "meeting": "Meeting Offline"}.get(appt.appt_type.value, appt.appt_type.value)
+
+    # Email to user
+    if locale == "id":
+        subject  = f"Booking Diterima — {product_name}"
+        heading  = "Booking Anda Diterima!"
+        intro    = f"Terima kasih! Booking <strong>{type_label}</strong> untuk produk <strong>{product_name}</strong> telah kami terima dan sedang menunggu konfirmasi dari penjual."
+        detail   = f"<strong>Tanggal:</strong> {date_str}<br><strong>Waktu:</strong> {time_str}"
+        note     = "Anda akan mendapat notifikasi email saat penjual mengkonfirmasi janji temu."
+        badge    = "Booking Diterima"
+    else:
+        subject  = f"Booking Received — {product_name}"
+        heading  = "Your Booking is Received!"
+        intro    = f"Thank you! Your <strong>{type_label}</strong> booking for <strong>{product_name}</strong> has been received and is pending seller confirmation."
+        detail   = f"<strong>Date:</strong> {date_str}<br><strong>Time:</strong> {time_str}"
+        note     = "You will receive an email notification once the seller confirms your appointment."
+        badge    = "Booking Received"
+
+    body = f"""
+    <div class="badge">{badge}</div>
+    <h1>{heading}</h1>
+    <p>{intro}</p>
+    <div style="background:#111;border:1px solid #222;padding:16px;margin:16px 0;font-size:14px;line-height:1.8">{detail}</div>
+    <p style="color:#888;font-size:13px">{note}</p>
+    """
+    ok_user = _send(user.email, subject, _base_html(subject, body))
+
+    # Email to admin
+    admin_subject = f"[New Appointment] {product_name} — {user.name}"
+    admin_body = f"""
+    <div class="badge">New Appointment</div>
+    <h1>Booking Baru Masuk</h1>
+    <p>Ada booking baru yang perlu dikonfirmasi.</p>
+    <div style="background:#111;border:1px solid #222;padding:16px;margin:16px 0;font-size:14px;line-height:1.8">
+      <strong>Produk:</strong> {product_name}<br>
+      <strong>Tipe:</strong> {type_label}<br>
+      <strong>Tanggal:</strong> {date_str}<br>
+      <strong>Waktu:</strong> {time_str}<br>
+      <strong>Nama:</strong> {user.name}<br>
+      <strong>Email:</strong> {user.email}<br>
+      {f'<strong>Catatan:</strong> {appt.notes}' if appt.notes else ''}
+    </div>
+    <a href="{settings.BASE_URL}/id/admin/appointments" class="btn">Lihat di Admin Panel &rarr;</a>
+    """
+    _send(settings.SMTP_FROM, admin_subject, _base_html(admin_subject, admin_body))
+    return ok_user
+
+
+def send_appointment_confirmed(appt) -> bool:
+    user         = appt.user
+    product      = appt.product
+    product_name = product.name_id
+    date_str     = appt.appt_date.strftime("%d %B %Y")
+    time_str     = appt.appt_time.strftime("%H:%M") + " WIB"
+
+    subject = f"Janji Temu Dikonfirmasi — {product_name}"
+    body = f"""
+    <div class="badge badge-green">Dikonfirmasi</div>
+    <h1>Janji Temu Anda Dikonfirmasi!</h1>
+    <p>Penjual telah mengkonfirmasi janji temu Anda untuk produk <strong>{product_name}</strong>.</p>
+    <div style="background:#111;border:1px solid #222;padding:16px;margin:16px 0;font-size:14px;line-height:1.8">
+      <strong>Tanggal:</strong> {date_str}<br>
+      <strong>Waktu:</strong> {time_str}<br>
+      {f'<strong>Catatan penjual:</strong> {appt.admin_note}' if appt.admin_note else ''}
+    </div>
+    <p style="color:#888;font-size:13px">Silakan hadir tepat waktu. Jika ada perubahan, hubungi kami segera.</p>
+    """
+    return _send(user.email, subject, _base_html(subject, body))
+
+
+def send_appointment_rejected(appt) -> bool:
+    user         = appt.user
+    product      = appt.product
+    product_name = product.name_id
+
+    subject = f"Janji Temu Tidak Dapat Dikonfirmasi — {product_name}"
+    body = f"""
+    <div class="badge badge-red">Tidak Dikonfirmasi</div>
+    <h1>Mohon Maaf</h1>
+    <p>Sayangnya janji temu Anda untuk produk <strong>{product_name}</strong> tidak dapat dikonfirmasi saat ini.</p>
+    {f'<p><strong>Alasan:</strong> {appt.admin_note}</p>' if appt.admin_note else ''}
+    <p>Silakan coba pilih waktu lain atau hubungi kami langsung.</p>
+    <a href="{settings.BASE_URL}/id/catalog" class="btn">Lihat Produk Lain &rarr;</a>
     """
     return _send(user.email, subject, _base_html(subject, body))

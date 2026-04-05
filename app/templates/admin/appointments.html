@@ -1,0 +1,156 @@
+{% extends "admin/base_admin.html" %}
+{% block title %}Appointments — Admin{% endblock %}
+{% block content %}
+
+<div class="flex items-center justify-between mb-8">
+  <div>
+    <h1 class="text-2xl font-black text-white">Appointments</h1>
+    <p class="text-gray-500 text-sm mt-1">
+      {% if pending_count > 0 %}
+        <span class="text-yellow-400 font-semibold">{{ pending_count }} menunggu konfirmasi</span>
+      {% else %}
+        Semua appointment sudah ditangani
+      {% endif %}
+    </p>
+  </div>
+</div>
+
+<!-- Filter tabs -->
+<div class="flex gap-1 mb-6 border-b border-gray-800 overflow-x-auto">
+  {% set tab_items = [('all','Semua'),('pending','Pending'),('confirmed','Confirmed'),('completed','Completed'),('cancelled','Cancelled'),('rejected','Rejected')] %}
+  {% for val, label in tab_items %}
+  <a href="?status={{ val }}"
+     class="px-4 py-2.5 text-xs font-semibold whitespace-nowrap border-b-2 transition-colors
+            {% if status_filter == val %}border-neon text-neon{% else %}border-transparent text-gray-500 hover:text-white{% endif %}">
+    {{ label }}
+  </a>
+  {% endfor %}
+</div>
+
+{% if appointments %}
+<div class="space-y-3">
+  {% for appt in appointments %}
+  <div class="border border-gray-800 bg-gray-950 p-5">
+    <div class="flex flex-col lg:flex-row lg:items-start gap-4">
+
+      <!-- Left: Info -->
+      <div class="flex-1 min-w-0">
+        <div class="flex items-center gap-2 mb-2 flex-wrap">
+          <!-- Status badge -->
+          {% set sb = {
+            'pending':   'bg-yellow-500/10 text-yellow-400 border-yellow-800',
+            'confirmed': 'bg-green-500/10 text-green-400 border-green-800',
+            'completed': 'bg-blue-500/10 text-blue-400 border-blue-800',
+            'cancelled': 'bg-gray-500/10 text-gray-400 border-gray-700',
+            'rejected':  'bg-red-500/10 text-red-400 border-red-800',
+          } %}
+          <span class="border text-xs font-semibold px-2 py-0.5 {{ sb.get(appt.status.value, '') }}">
+            {{ appt.status.value | upper }}
+          </span>
+          <!-- Type badge -->
+          {% set tb = {'demo':'bi-display','call':'bi-telephone','meeting':'bi-people'} %}
+          <span class="text-xs text-gray-500 border border-gray-800 px-2 py-0.5 flex items-center gap-1">
+            <i class="bi {{ tb.get(appt.appt_type.value, 'bi-calendar') }}"></i>
+            {{ appt.appt_type.value | capitalize }}
+          </span>
+        </div>
+
+        <p class="text-white font-semibold text-sm mb-1 truncate">
+          {{ appt.product.name_id if locale == 'id' else appt.product.name_en }}
+        </p>
+        <p class="text-gray-400 text-sm">
+          <i class="bi bi-person text-xs mr-1"></i>{{ appt.user.name }}
+          <span class="text-gray-700 mx-1">·</span>
+          <span class="text-gray-500 text-xs">{{ appt.user.email }}</span>
+        </p>
+
+        <div class="flex items-center gap-4 mt-2 text-xs text-gray-500">
+          <span><i class="bi bi-calendar3 mr-1"></i>{{ appt.appt_date.strftime('%d %b %Y') }}</span>
+          <span><i class="bi bi-clock mr-1"></i>{{ appt.appt_time.strftime('%H:%M') }} WIB</span>
+          <span class="text-gray-700">TZ: {{ appt.timezone }}</span>
+        </div>
+
+        {% if appt.notes %}
+        <p class="text-gray-500 text-xs mt-2 italic">"{{ appt.notes }}"</p>
+        {% endif %}
+        {% if appt.admin_note %}
+        <p class="text-yellow-600 text-xs mt-1"><i class="bi bi-chat-left-text mr-1"></i>{{ appt.admin_note }}</p>
+        {% endif %}
+      </div>
+
+      <!-- Right: Actions -->
+      <div class="flex flex-col gap-2 flex-shrink-0">
+
+        {% if appt.status.value == 'pending' %}
+        <!-- Confirm -->
+        <form method="POST" action="/{{ locale }}/admin/appointments/{{ appt.id }}/confirm"
+              x-data="{ note: '' }" @submit.prevent="$el.submit()">
+          <input type="hidden" name="admin_note" :value="note" />
+          <input type="text" x-model="note" placeholder="Catatan (opsional)"
+                 class="input text-xs mb-2 w-full" />
+          <button type="submit"
+                  class="w-full flex items-center justify-center gap-1.5 bg-green-900/40 border border-green-800 text-green-400 hover:bg-green-900/70 px-4 py-2 text-xs font-semibold transition-colors">
+            <i class="bi bi-check-lg"></i> Konfirmasi
+          </button>
+        </form>
+        <!-- Reject -->
+        <form method="POST" action="/{{ locale }}/admin/appointments/{{ appt.id }}/reject"
+              x-data="{ note: '' }">
+          <input type="hidden" name="admin_note" :value="note" />
+          <input type="text" x-model="note" placeholder="Alasan penolakan"
+                 class="input text-xs mb-2 w-full" />
+          <button type="submit"
+                  class="w-full flex items-center justify-center gap-1.5 bg-red-900/20 border border-red-900 text-red-400 hover:bg-red-900/40 px-4 py-2 text-xs font-semibold transition-colors">
+            <i class="bi bi-x-lg"></i> Tolak
+          </button>
+        </form>
+
+        {% elif appt.status.value == 'confirmed' %}
+        <form method="POST" action="/{{ locale }}/admin/appointments/{{ appt.id }}/complete">
+          <button type="submit"
+                  class="w-full flex items-center justify-center gap-1.5 bg-blue-900/30 border border-blue-800 text-blue-400 hover:bg-blue-900/60 px-4 py-2 text-xs font-semibold transition-colors">
+            <i class="bi bi-check-circle"></i> Tandai Selesai
+          </button>
+        </form>
+        <form method="POST" action="/{{ locale }}/admin/appointments/{{ appt.id }}/reject"
+              x-data="{ note: '' }">
+          <input type="hidden" name="admin_note" :value="note" />
+          <input type="text" x-model="note" placeholder="Alasan pembatalan"
+                 class="input text-xs mb-2 w-full" />
+          <button type="submit"
+                  class="w-full flex items-center justify-center gap-1.5 bg-red-900/20 border border-red-900 text-red-400 hover:bg-red-900/40 px-4 py-2 text-xs font-semibold transition-colors">
+            <i class="bi bi-x-lg"></i> Batalkan
+          </button>
+        </form>
+        {% endif %}
+
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<!-- Pagination -->
+{% if total > per_page %}
+<div class="flex items-center justify-between mt-6 text-xs text-gray-500">
+  <span>{{ total }} total</span>
+  <div class="flex gap-1">
+    {% if page > 1 %}
+    <a href="?status={{ status_filter }}&page={{ page - 1 }}" class="border border-gray-700 px-3 py-1.5 hover:border-gray-500">←</a>
+    {% endif %}
+    <span class="border border-gray-800 px-3 py-1.5 text-white">{{ page }}</span>
+    {% if page * per_page < total %}
+    <a href="?status={{ status_filter }}&page={{ page + 1 }}" class="border border-gray-700 px-3 py-1.5 hover:border-gray-500">→</a>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+
+{% else %}
+<div class="border border-gray-800 py-16 text-center">
+  <i class="bi bi-calendar-x text-4xl text-gray-700 block mb-3"></i>
+  <p class="text-gray-500 text-sm">Belum ada appointment.</p>
+</div>
+{% endif %}
+
+{% endblock %}

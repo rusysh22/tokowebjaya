@@ -1,20 +1,31 @@
-from fastapi import APIRouter, Request, Depends
-from fastapi.responses import RedirectResponse
-from fastapi.templating import Jinja2Templates
-from sqlalchemy.orm import Session
-from jinja2 import Environment
+"""
+Landing router — public-facing pages and auth page routes.
 
+Routes:
+  GET  /                        — Auto-detect locale and redirect
+  GET  /{locale}/               — Home / landing page
+  GET  /{locale}/about          — About page
+  GET  /{locale}/solutions      — Solutions page
+  GET  /{locale}/contact        — Contact page
+  GET  /{locale}/login          — Login page (Google + Email tabs)
+  GET  /{locale}/register       — Register page
+  GET  /{locale}/verify-email   — Email verification OTP page
+  GET  /{locale}/forgot-password — Forgot password page
+  GET  /{locale}/reset-password — Reset password OTP + new password page
+"""
+import uuid
+
+from fastapi import APIRouter, BackgroundTasks, Depends, Form, Request
+from fastapi.responses import RedirectResponse
+from sqlalchemy.orm import Session
+
+from app.core.auth import get_current_user
 from app.core.config import settings
 from app.core.database import get_db
-from app.core.auth import get_current_user
+from app.models.contact import ContactMessage
 from app.models.product import Product, ProductStatus
 
 router = APIRouter(tags=["landing"])
-
-
-def _templates(request: Request) -> Jinja2Templates:
-    from app.main import templates
-    return templates
 
 
 @router.get("/")
@@ -76,15 +87,76 @@ async def solutions(request: Request, locale: str, db: Session = Depends(get_db)
 
 
 @router.get("/{locale}/contact")
-async def contact(request: Request, locale: str, db: Session = Depends(get_db)):
+async def contact(
+    request: Request, locale: str,
+    success: str = None, error: str = None,
+    db: Session = Depends(get_db),
+):
     if locale not in settings.SUPPORTED_LOCALES:
         return RedirectResponse(url=f"/{settings.DEFAULT_LOCALE}/contact")
     from app.main import templates
     current_user = get_current_user(request, db)
     return templates.TemplateResponse(
         request, "landing/contact.html",
-        {"locale": locale, "current_user": current_user, "active_page": "contact"},
+        {"locale": locale, "current_user": current_user, "active_page": "contact",
+         "success": success, "error": error},
     )
+
+
+@router.post("/{locale}/contact")
+async def contact_submit(
+    request: Request,
+    locale: str,
+    background_tasks: BackgroundTasks,
+    name: str = Form(...),
+    email: str = Form(...),
+    subject: str = Form(default=""),
+    message: str = Form(...),
+    db: Session = Depends(get_db),
+):
+    if locale not in settings.SUPPORTED_LOCALES:
+        locale = settings.DEFAULT_LOCALE
+
+    # Basic validation
+    name    = name.strip()[:255]
+    email   = email.strip().lower()[:255]
+    subject = subject.strip()[:500]
+    message = message.strip()
+
+    if not name or not email or not message:
+        return RedirectResponse(
+            url=f"/{locale}/contact?error=missing_fields", status_code=302
+        )
+
+    if len(message) < 10:
+        return RedirectResponse(
+            url=f"/{locale}/contact?error=message_too_short", status_code=302
+        )
+
+    # Get client IP
+    ip = request.headers.get("x-forwarded-for", request.client.host if request.client else "")
+
+    # Save to DB
+    msg = ContactMessage(
+        id=uuid.uuid4(),
+        name=name,
+        email=email,
+        subject=subject,
+        message=message,
+        ip_address=ip[:64] if ip else None,
+    )
+    db.add(msg)
+    db.commit()
+
+    # Send notifications in background (non-blocking)
+    from app.services.email import send_contact_notification, send_contact_autoreply
+    if settings.ADMIN_EMAIL:
+        background_tasks.add_task(
+            send_contact_notification, name, email, subject, message, settings.ADMIN_EMAIL
+        )
+    background_tasks.add_task(send_contact_autoreply, name, email, locale)
+
+    return RedirectResponse(url=f"/{locale}/contact?success=1", status_code=302)
 
 
 @router.get("/{locale}/login")

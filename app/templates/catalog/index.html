@@ -39,7 +39,7 @@
                      placeholder="{% if locale == 'id' %}Nama produk...{% else %}Product name...{% endif %}"
                      class="input pr-8 text-sm" />
               {% if q %}
-              <a href="?{{ request.url.query | replace('q=' + q, '') }}" class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white">✕</a>
+              <a href="?{{ request.url.query | replace('q=' + q, '') }}" class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white"><i class="bi bi-x-lg"></i></a>
               {% endif %}
             </div>
           </div>
@@ -111,28 +111,54 @@
         {% if products %}
         <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
           {% for product in products %}
-          <article class="card-neon group overflow-hidden reveal" data-tilt>
+          {% set card_images = [] %}
+          {% if product.cover_image %}{% set _ = card_images.append(product.cover_image) %}{% endif %}
+          {% for g in (product.gallery or []) %}{% set _ = card_images.append(g) %}{% endfor %}
+
+          <article class="card-neon group overflow-hidden reveal" data-tilt
+                   {% if card_images | length > 1 %}
+                   x-data="cardSwiper({{ card_images | tojson }})"
+                   @mouseenter="startSwipe()"
+                   @mouseleave="stopSwipe()"
+                   {% endif %}>
 
             <!-- Cover -->
             <a href="/{{ locale }}/product/{{ product.slug }}" class="block relative aspect-[16/9] bg-gray-800 overflow-hidden">
-              {% if product.cover_image %}
+              {% if card_images | length > 1 %}
+                <!-- Multi-image hover swiper -->
+                {% for img in card_images %}
+                <img src="/static/uploads/products/images/{{ img }}"
+                     alt="{{ product['name_' + locale] }}"
+                     class="card-swipe-img absolute inset-0 w-full h-full object-cover"
+                     style="opacity: {{ '1' if loop.first else '0' }}; transition: opacity 0.5s ease;"
+                     data-idx="{{ loop.index0 }}"
+                     loading="lazy" />
+                {% endfor %}
+                <!-- Dot indicators -->
+                <div class="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10">
+                  {% for img in card_images %}
+                  <div class="card-swipe-dot w-1.5 h-1.5 rounded-full bg-white/40 transition-all duration-300"
+                       data-idx="{{ loop.index0 }}"></div>
+                  {% endfor %}
+                </div>
+              {% elif product.cover_image %}
                 <img src="/static/uploads/products/images/{{ product.cover_image }}"
                      alt="{{ product['name_' + locale] }}"
                      class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                      loading="lazy" />
               {% else %}
                 <div class="w-full h-full flex items-center justify-center">
-                  <span class="text-5xl opacity-20">📦</span>
+                  <i class="bi bi-box-seam text-5xl opacity-20"></i>
                 </div>
               {% endif %}
-              <div class="absolute top-3 left-3 flex gap-2">
+              <div class="absolute top-3 left-3 flex gap-2 z-10">
                 <span class="badge-gray text-xs">{{ product.type.value }}</span>
                 {% if product.is_featured %}
                   <span class="badge-neon text-xs">Featured</span>
                 {% endif %}
               </div>
               {% if product.preview_video %}
-              <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-black/50">
+              <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-black/50 z-5">
                 <div class="w-12 h-12 border-2 border-white flex items-center justify-center">
                   <svg class="w-5 h-5 text-white ml-1" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M8 5v14l11-7z"/>
@@ -207,7 +233,7 @@
         {% else %}
         <!-- Empty state -->
         <div class="border border-gray-800 py-24 text-center">
-          <div class="text-5xl mb-4 opacity-30">🔍</div>
+          <div class="mb-4 opacity-30"><i class="bi bi-search text-5xl"></i></div>
           <h3 class="text-white font-semibold mb-2">
             {% if locale == 'id' %}Produk tidak ditemukan{% else %}No products found{% endif %}
           </h3>
@@ -229,4 +255,43 @@
   </div>
 </section>
 
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+function cardSwiper(images) {
+  let idx = 0;
+  let timer = null;
+
+  return {
+    startSwipe() {
+      if (images.length <= 1) return;
+      idx = 0;
+      timer = setInterval(() => {
+        idx = (idx + 1) % images.length;
+        this._update();
+      }, 900);
+    },
+    stopSwipe() {
+      clearInterval(timer);
+      timer = null;
+      idx = 0;
+      this._update();
+    },
+    _update() {
+      const el   = this.$el;
+      const imgs = el.querySelectorAll('.card-swipe-img');
+      const dots = el.querySelectorAll('.card-swipe-dot');
+      imgs.forEach((img, i) => {
+        img.style.opacity = i === idx ? '1' : '0';
+      });
+      dots.forEach((dot, i) => {
+        dot.style.opacity         = i === idx ? '1' : '0.4';
+        dot.style.transform       = i === idx ? 'scale(1.5)' : 'scale(1)';
+        dot.style.backgroundColor = i === idx ? '#CAFF00' : 'rgba(255,255,255,0.4)';
+      });
+    },
+  };
+}
+</script>
 {% endblock %}

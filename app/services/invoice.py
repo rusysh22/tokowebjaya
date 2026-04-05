@@ -1,7 +1,15 @@
-import uuid
+"""
+Invoice service — create and generate PDF invoices for paid orders.
+
+Functions:
+  create_invoice(order_id)  — Create Invoice record; called as background task after payment
+  _generate_pdf(invoice, order, db)  — Render WeasyPrint PDF and save to UPLOAD_DIR
+"""
 import os
+import uuid
 from datetime import datetime, timedelta
 from pathlib import Path
+
 from sqlalchemy.orm import Session
 
 from app.core.config import settings

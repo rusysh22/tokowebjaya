@@ -1,0 +1,119 @@
+{% extends "admin/base_admin.html" %}
+{% set admin_section = "contacts" %}
+{% block title %}{% if locale == 'id' %}Pesan Kontak{% else %}Contact Messages{% endif %} — Admin{% endblock %}
+{% block page_title %}
+  {% if locale == 'id' %}Pesan Kontak{% else %}Contact Messages{% endif %}
+  {% if unread > 0 %}
+  <span class="ml-2 inline-flex items-center justify-center w-5 h-5 text-xs font-bold bg-neon text-black">{{ unread }}</span>
+  {% endif %}
+{% endblock %}
+
+{% block content %}
+
+<!-- Filter bar -->
+<div class="flex flex-wrap items-center gap-3 mb-6">
+  <div class="flex items-center border border-gray-800 text-xs font-semibold overflow-hidden">
+    <a href="?status=" class="px-3 py-2 {% if not status_filter %}bg-neon text-black{% else %}text-gray-400 hover:text-white{% endif %}">
+      {% if locale == 'id' %}Semua{% else %}All{% endif %} ({{ total }})
+    </a>
+    {% for s in statuses %}
+    <a href="?status={{ s }}" class="px-3 py-2 {% if status_filter == s %}bg-neon text-black{% else %}text-gray-400 hover:text-white{% endif %}">
+      {{ s | capitalize }}
+    </a>
+    {% endfor %}
+  </div>
+</div>
+
+<!-- Messages list -->
+<div class="border border-gray-800 divide-y divide-gray-800">
+  {% if messages %}
+    {% for msg in messages %}
+    <div class="p-5 {% if msg.status.value == 'new' %}bg-gray-900/40{% else %}bg-black{% endif %} hover:bg-gray-900/60 transition-colors"
+         x-data="{ open: false }">
+
+      <!-- Header row -->
+      <div class="flex items-start justify-between gap-4">
+        <div class="flex items-start gap-3 flex-1 min-w-0 cursor-pointer" @click="open = !open">
+          <!-- Unread indicator -->
+          <div class="mt-1.5 w-2 h-2 rounded-full flex-shrink-0 {% if msg.status.value == 'new' %}bg-neon{% else %}bg-gray-700{% endif %}"></div>
+
+          <div class="flex-1 min-w-0">
+            <div class="flex flex-wrap items-center gap-2 mb-1">
+              <span class="font-semibold text-white text-sm">{{ msg.name }}</span>
+              <span class="text-gray-500 text-xs">{{ msg.email }}</span>
+              {% if msg.status.value == 'new' %}
+              <span class="badge-neon text-xs">New</span>
+              {% elif msg.status.value == 'replied' %}
+              <span class="badge text-xs border-green-700 text-green-400 bg-green-900/20">Replied</span>
+              {% endif %}
+            </div>
+            <div class="text-sm text-gray-300 font-medium truncate">
+              {{ msg.subject or '(No subject)' }}
+            </div>
+            <div class="text-xs text-gray-500 mt-1 line-clamp-1" x-show="!open">
+              {{ msg.message[:120] }}{% if msg.message | length > 120 %}...{% endif %}
+            </div>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2 flex-shrink-0 text-xs text-gray-500">
+          <span>{{ msg.created_at.strftime('%d %b %Y, %H:%M') }}</span>
+        </div>
+      </div>
+
+      <!-- Expanded content -->
+      <div x-show="open" x-transition class="mt-4 ml-5 pl-3 border-l border-gray-800">
+        <div class="bg-gray-950 p-4 text-sm text-gray-300 leading-relaxed whitespace-pre-wrap mb-4">{{ msg.message }}</div>
+
+        <div class="flex flex-wrap gap-2">
+          <a href="mailto:{{ msg.email }}?subject=Re: {{ msg.subject or 'Pesan Anda' }}"
+             class="btn-primary text-xs py-2 px-4">
+            <i class="bi bi-envelope"></i> {% if locale == 'id' %}Balas Email{% else %}Reply by Email{% endif %}
+          </a>
+
+          {% if msg.status.value == 'new' %}
+          <form method="POST" action="/{{ locale }}/admin/contacts/{{ msg.id }}/read">
+            <button type="submit" class="btn-secondary text-xs py-2 px-4">
+              <i class="bi bi-check-lg"></i> {% if locale == 'id' %}Tandai Dibaca{% else %}Mark as Read{% endif %}
+            </button>
+          </form>
+          {% endif %}
+
+          <form method="POST" action="/{{ locale }}/admin/contacts/{{ msg.id }}/delete"
+                onsubmit="return confirm('{{ 'Hapus pesan ini?' if locale == 'id' else 'Delete this message?' }}')">
+            <button type="submit" class="text-xs py-2 px-4 border border-gray-800 text-red-400 hover:border-red-800 hover:bg-red-950/20 transition-colors">
+              <i class="bi bi-trash3"></i> {% if locale == 'id' %}Hapus{% else %}Delete{% endif %}
+            </button>
+          </form>
+        </div>
+
+        {% if msg.ip_address %}
+        <div class="text-xs text-gray-700 mt-3">IP: {{ msg.ip_address }}</div>
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+
+  {% else %}
+  <div class="py-16 text-center text-gray-500 text-sm">
+    {% if locale == 'id' %}Belum ada pesan masuk.{% else %}No messages yet.{% endif %}
+  </div>
+  {% endif %}
+</div>
+
+<!-- Pagination -->
+{% if total > per_page %}
+<div class="flex items-center justify-between mt-6 text-sm text-gray-500">
+  <span>{{ total }} {% if locale == 'id' %}pesan{% else %}messages{% endif %}</span>
+  <div class="flex gap-2">
+    {% if page > 1 %}
+    <a href="?page={{ page - 1 }}&status={{ status_filter }}" class="btn-secondary text-xs py-1.5 px-3">←</a>
+    {% endif %}
+    {% if page * per_page < total %}
+    <a href="?page={{ page + 1 }}&status={{ status_filter }}" class="btn-secondary text-xs py-1.5 px-3">→</a>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}

@@ -1,11 +1,18 @@
-from fastapi import APIRouter, Request, Depends, HTTPException
-from fastapi.responses import RedirectResponse
-from sqlalchemy.orm import Session
-from sqlalchemy import or_
+"""
+Catalog router — product listing and product detail pages.
 
+Routes:
+  GET  /{locale}/catalog              — Filterable product grid (type, category, search, sort)
+  GET  /{locale}/product/{slug}       — Product detail with related products
+"""
+from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi.responses import RedirectResponse
+from sqlalchemy import or_
+from sqlalchemy.orm import Session
+
+from app.core.auth import get_current_user
 from app.core.config import settings
 from app.core.database import get_db
-from app.core.auth import get_current_user
 from app.models.product import Product, ProductStatus, ProductType
 
 router = APIRouter(tags=["catalog"])

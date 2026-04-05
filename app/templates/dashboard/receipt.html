@@ -94,7 +94,7 @@
         <div class="text-xs text-gray-500">Status</div>
         {% if order.status.value == 'paid' %}
           <span class="bg-green-950 text-green-400 border border-green-800 text-xs font-bold px-3 py-1 uppercase tracking-widest">
-            ✓ {% if locale == 'id' %}Lunas{% else %}Paid{% endif %}
+            <i class="bi bi-check-lg"></i> {% if locale == 'id' %}Lunas{% else %}Paid{% endif %}
           </span>
         {% else %}
           <span class="bg-yellow-950 text-yellow-400 border border-yellow-800 text-xs font-bold px-3 py-1 uppercase tracking-widest">

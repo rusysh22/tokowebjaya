@@ -22,6 +22,8 @@ class Settings(BaseSettings):
     SMTP_FROM: str = "noreply@dev-tokowebjaya.roc.web.id"
     EMAIL_FROM: str = "Toko Web Jaya <noreply@dev-tokowebjaya.roc.web.id>"
 
+    ADMIN_EMAIL: str = ""   # Contact form notifications sent here
+
     UPLOAD_DIR: str = "static/uploads"
     MAX_UPLOAD_SIZE_MB: int = 100
 

@@ -35,7 +35,10 @@ class Order(Base):
     product_id = Column(UUID(as_uuid=True), ForeignKey("products.id"), nullable=False)
 
     type = Column(Enum(OrderType), nullable=False)
-    amount = Column(Numeric(15, 2), nullable=False)
+    amount = Column(Numeric(15, 2), nullable=False)          # base price (IDR, excl. VAT)
+    discount_amount = Column(Numeric(15, 2), default=0)      # promo discount (IDR)
+    final_amount = Column(Numeric(15, 2), nullable=True)     # amount charged (IDR, incl. VAT, after discount)
+    promo_code = Column(String(50), nullable=True)
     status = Column(Enum(OrderStatus), default=OrderStatus.pending)
 
     payment_gateway = Column(Enum(PaymentGateway), nullable=True)

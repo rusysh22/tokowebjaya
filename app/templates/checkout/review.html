@@ -17,18 +17,92 @@
       {% if locale == 'id' %}Ringkasan Pesanan{% else %}Order Summary{% endif %}
     </h1>
 
-    <div class="grid grid-cols-1 lg:grid-cols-5 gap-6">
+    <div class="grid grid-cols-1 lg:grid-cols-5 gap-6"
+         x-data="checkoutPage()"
+         x-init="init()">
 
-      <!-- Order details -->
-      <div class="lg:col-span-3 space-y-4 reveal">
+      <!-- ── Price summary (right on desktop, top on mobile) ── -->
+      <div class="lg:col-span-2 lg:order-last reveal">
+        <div class="border border-gray-800 bg-gray-950 p-5 lg:sticky lg:top-24">
 
-        <!-- Product card -->
+          <!-- Currency toggle -->
+          <div class="flex items-center justify-between mb-5">
+            <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-widest">
+              {% if locale == 'id' %}Ringkasan Harga{% else %}Price Summary{% endif %}
+            </h3>
+            <div class="flex items-center border border-gray-700 overflow-hidden text-xs font-semibold">
+              {% for cur in supported_currencies %}
+              <a href="?type={{ order_type }}&cycle={{ billing_cycle }}&currency={{ cur }}"
+                 class="px-2.5 py-1 transition-colors {% if currency == cur %}bg-neon text-black{% else %}text-gray-500 hover:text-white{% endif %}">
+                {{ cur }}
+              </a>
+              {% endfor %}
+            </div>
+          </div>
+
+          <!-- Price breakdown -->
+          <div class="space-y-2.5 pb-4 border-b border-gray-800 text-sm">
+            <div class="flex justify-between">
+              <span class="text-gray-400">{% if locale == 'id' %}Harga{% else %}Price{% endif %}</span>
+              <span class="text-white">{{ pricing.formatted }}</span>
+            </div>
+
+            <!-- Discount row — shown when promo applied -->
+            <div x-show="promoApplied" x-cloak class="flex justify-between text-neon">
+              <span class="flex items-center gap-1.5 text-xs">
+                <i class="bi bi-tag"></i>
+                <span x-text="'Promo ' + appliedCode"></span>
+              </span>
+              <span class="font-semibold text-xs" x-text="'- Rp ' + formatNum(discountAmount)"></span>
+            </div>
+
+            <!-- Subtotal after discount -->
+            <div x-show="promoApplied" x-cloak class="flex justify-between text-xs text-gray-500">
+              <span>{% if locale == 'id' %}Subtotal{% else %}Subtotal{% endif %}</span>
+              <span x-text="'Rp ' + formatNum(subtotal)"></span>
+            </div>
+
+            <!-- VAT -->
+            {% if pricing.vat_rate > 0 %}
+            <div class="flex justify-between">
+              <span class="text-gray-500 text-xs">PPN {{ (pricing.vat_rate * 100) | int }}%</span>
+              <span class="text-gray-400 text-xs" x-text="'+ Rp ' + formatNum(vatAmount)">
+                + {{ format_price(pricing.vat_amount, 'IDR') }}
+              </span>
+            </div>
+            {% endif %}
+          </div>
+
+          <!-- Total -->
+          <div class="flex justify-between mt-4">
+            <span class="font-semibold text-white">Total</span>
+            <div class="text-right">
+              <div class="text-neon font-black text-xl" x-text="'Rp ' + formatNum(finalAmount)">
+                {{ pricing.formatted_total }}
+              </div>
+              {% if currency != 'IDR' %}
+              <div class="text-gray-600 text-xs mt-0.5">≈ Rp {{ "{:,.0f}".format(pricing.amount_idr) }}</div>
+              {% endif %}
+            </div>
+          </div>
+
+          <!-- Note -->
+          <div class="mt-4 text-xs text-gray-600 border border-gray-800 p-2.5">
+            {% if locale == 'id' %}Harga sudah termasuk PPN 11%.{% else %}Price includes 11% VAT (PPN).{% endif %}
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Order details (left/main column) ── -->
+      <div class="lg:col-span-3 space-y-4 reveal lg:order-first">
+
+        <!-- Product -->
         <div class="border border-gray-800 bg-gray-950 p-5 flex gap-4">
           {% if product.cover_image %}
             <img src="/static/uploads/products/images/{{ product.cover_image }}"
                  class="w-20 h-14 object-cover flex-shrink-0 bg-gray-800" alt="" />
           {% else %}
-            <div class="w-20 h-14 bg-gray-800 flex items-center justify-center flex-shrink-0 text-2xl opacity-30">📦</div>
+            <div class="w-20 h-14 bg-gray-800 flex items-center justify-center flex-shrink-0 opacity-30"><i class="bi bi-box-seam text-2xl"></i></div>
           {% endif %}
           <div>
             <div class="text-white font-semibold text-sm mb-1">{{ product['name_' + locale] }}</div>
@@ -43,7 +117,7 @@
           </div>
         </div>
 
-        <!-- Customer info -->
+        <!-- Buyer info -->
         <div class="border border-gray-800 bg-gray-950 p-5">
           <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">
             {% if locale == 'id' %}Informasi Pembeli{% else %}Buyer Information{% endif %}
@@ -63,13 +137,85 @@
           </div>
         </div>
 
-        <!-- Pay button -->
-        <div class="border border-gray-800 bg-gray-950 p-5" x-data="checkoutPop()">
+        <!-- ── Promo Code ── -->
+        <div class="border border-gray-800 bg-gray-950 p-5">
+          <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-4">
+            {% if locale == 'id' %}Kode Promo{% else %}Promo Code{% endif %}
+          </h3>
+
+          <!-- Available promos dropdown -->
+          {% if available_promos %}
+          <div class="mb-3">
+            <p class="text-xs text-gray-500 mb-2">
+              {% if locale == 'id' %}Promo tersedia untuk Anda:{% else %}Available promos for you:{% endif %}
+            </p>
+            <div class="flex flex-wrap gap-2">
+              {% for promo in available_promos %}
+              <button type="button"
+                      @click="applyPromoCode('{{ promo.code }}')"
+                      class="group flex items-center gap-2 border border-dashed border-gray-700 px-3 py-1.5 text-xs hover:border-neon hover:text-neon text-gray-400 transition-colors duration-200">
+                <span class="text-neon font-bold">{{ promo.code }}</span>
+                <span class="text-gray-600 group-hover:text-gray-400">
+                  {% if promo.discount_type.value == 'percent' %}
+                    {{ promo.discount_value | int }}% off
+                  {% else %}
+                    Rp {{ "{:,.0f}".format(promo.discount_value) }} off
+                  {% endif %}
+                </span>
+              </button>
+              {% endfor %}
+            </div>
+          </div>
+          {% endif %}
+
+          <!-- Manual input -->
+          <div class="flex gap-2">
+            <input type="text"
+                   x-model="promoInput"
+                   @keydown.enter.prevent="validatePromo()"
+                   :class="promoError ? 'border-red-700' : promoApplied ? 'border-neon' : ''"
+                   class="input flex-1 py-2.5 text-sm uppercase tracking-wider"
+                   placeholder="{% if locale == 'id' %}Masukkan kode promo{% else %}Enter promo code{% endif %}"
+                   :disabled="promoApplied" />
+            <button type="button"
+                    @click="promoApplied ? removePromo() : validatePromo()"
+                    :disabled="promoLoading"
+                    class="px-4 py-2.5 text-sm font-semibold border transition-colors duration-200 disabled:opacity-50"
+                    :class="promoApplied
+                      ? 'border-gray-700 text-gray-400 hover:border-red-700 hover:text-red-400'
+                      : 'border-neon text-neon hover:bg-neon hover:text-black'">
+              <span x-show="promoLoading">
+                <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 12 6.477 12 12h-4z"/>
+                </svg>
+              </span>
+              <span x-show="!promoLoading">
+                <template x-if="promoApplied"><i class="bi bi-x-lg"></i></template>
+                <template x-if="!promoApplied">{% if locale == 'id' %}<span>Pakai</span>{% else %}<span>Apply</span>{% endif %}</template>
+              </span>
+            </button>
+          </div>
+
+          <!-- Promo feedback -->
+          <div x-show="promoError" x-cloak class="mt-2 text-xs text-red-400 flex items-center gap-1.5">
+            <i class="bi bi-exclamation-triangle"></i><span x-text="promoError"></span>
+          </div>
+          <div x-show="promoApplied" x-cloak class="mt-2 text-xs text-neon flex items-center gap-1.5">
+            <i class="bi bi-check-lg"></i>
+            <span>
+              {% if locale == 'id' %}Promo berhasil diterapkan! Hemat{% else %}Promo applied! Save{% endif %}
+              <strong x-text="'Rp ' + formatNum(discountAmount)"></strong>
+            </span>
+          </div>
+        </div>
+
+        <!-- ── Payment button ── -->
+        <div class="border border-gray-800 bg-gray-950 p-5">
           <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-4">
             {% if locale == 'id' %}Pembayaran{% else %}Payment{% endif %}
           </h3>
 
-          <!-- Duitku branding -->
           <div class="flex items-center gap-2 mb-5 p-3 border border-gray-800 bg-black">
             <div class="flex items-center gap-2 flex-1">
               <span class="text-white text-sm font-semibold">Secured by</span>
@@ -78,22 +224,32 @@
             <div class="text-xs text-gray-600">VA · QRIS · CC · E-Wallet</div>
           </div>
 
-          <!-- Error message -->
-          <div x-show="error" x-cloak class="mb-4 border border-red-900 bg-red-950/30 p-3 text-red-400 text-xs" x-text="error"></div>
+          <!-- Error -->
+          <div x-show="payError" x-cloak class="mb-4 border border-red-900 bg-red-950/30 p-3 text-red-400 text-xs" x-text="payError"></div>
+
+          <!-- Total preview -->
+          <div class="flex justify-between items-center mb-4 p-3 bg-black border border-gray-800">
+            <span class="text-xs text-gray-500">
+              {% if locale == 'id' %}Yang akan dibayar{% else %}Amount to pay{% endif %}
+            </span>
+            <span class="text-neon font-black text-lg" x-text="'Rp ' + formatNum(finalAmount)">
+              {{ pricing.formatted_total }}
+            </span>
+          </div>
 
           <button @click="openPop()"
-                  :disabled="loading"
+                  :disabled="payLoading"
                   class="btn-primary w-full py-4 justify-center disabled:opacity-50 disabled:cursor-not-allowed">
-            <span x-show="!loading">
+            <span x-show="!payLoading">
               {% if locale == 'id' %}Bayar Sekarang{% else %}Pay Now{% endif %}
               <svg class="w-4 h-4 inline ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/>
               </svg>
             </span>
-            <span x-show="loading" class="flex items-center gap-2">
+            <span x-show="payLoading" class="flex items-center gap-2">
               <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 22 6.477 22 12h-4z"></path>
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 12 6.477 12 12h-4z"/>
               </svg>
               {% if locale == 'id' %}Memproses...{% else %}Processing...{% endif %}
             </span>
@@ -108,120 +264,150 @@
           </p>
         </div>
       </div>
-
-      <!-- Price summary -->
-      <div class="lg:col-span-2 reveal">
-        <div class="border border-gray-800 bg-gray-950 p-5 sticky top-24">
-          <div class="flex items-center justify-between mb-5">
-            <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-widest">
-              {% if locale == 'id' %}Ringkasan Harga{% else %}Price Summary{% endif %}
-            </h3>
-            <!-- Currency toggle -->
-            <div class="flex items-center border border-gray-700 overflow-hidden text-xs font-semibold">
-              {% for cur in supported_currencies %}
-              <a href="?type={{ order_type }}&cycle={{ billing_cycle }}&currency={{ cur }}"
-                 class="px-2.5 py-1 transition-colors {% if currency == cur %}bg-neon text-black{% else %}text-gray-500 hover:text-white{% endif %}">
-                {{ cur }}
-              </a>
-              {% endfor %}
-            </div>
-          </div>
-
-          <div class="space-y-3 pb-4 border-b border-gray-800 text-sm">
-            <div class="flex justify-between">
-              <span class="text-gray-400">
-                {% if locale == 'id' %}Harga{% else %}Price{% endif %}
-              </span>
-              <span class="text-white">{{ pricing.formatted }}</span>
-            </div>
-            {% if pricing.vat_rate > 0 %}
-            <div class="flex justify-between">
-              <span class="text-gray-500 text-xs">PPN {{ (pricing.vat_rate * 100) | int }}%</span>
-              <span class="text-gray-400 text-xs">+ {{ format_price(pricing.vat_amount, currency) }}</span>
-            </div>
-            {% endif %}
-          </div>
-
-          <div class="flex justify-between mt-4">
-            <span class="font-semibold text-white">Total</span>
-            <div class="text-right">
-              <div class="text-neon font-black text-xl">{{ pricing.formatted_total }}</div>
-              {% if currency != 'IDR' %}
-              <div class="text-gray-600 text-xs mt-0.5">≈ Rp {{ "{:,.0f}".format(pricing.amount_idr) }}</div>
-              {% endif %}
-            </div>
-          </div>
-
-          {% if pricing.vat_rate > 0 %}
-          <div class="mt-4 text-xs text-gray-600 border border-gray-800 p-2.5">
-            {% if locale == 'id' %}Harga sudah termasuk PPN 11%.{% else %}Price includes 11% VAT (PPN).{% endif %}
-          </div>
-          {% endif %}
-        </div>
-      </div>
     </div>
   </div>
 </section>
 {% endblock %}
 
 {% block extra_scripts %}
-<!-- Duitku Pop.js -->
 <script src="https://app-sandbox.duitku.com/lib/js/duitku.js"></script>
 
 <script>
-function checkoutPop() {
-  return {
-    loading: false,
-    error: '',
+function checkoutPage() {
+  // ── Initial values from server ──────────────────────────────────────────
+  const BASE_IDR   = {{ amount }};                          // base price IDR (excl. VAT)
+  const VAT_RATE   = {{ pricing.vat_rate }};                // 0.11
+  const LOCALE     = '{{ locale }}';
+  const PRODUCT_ID = '{{ product.id }}';
+  const ORDER_TYPE = '{{ order_type }}';
+  const BILLING    = '{{ billing_cycle }}';
 
-    async openPop() {
-      this.loading = true;
-      this.error = '';
+  function calcAmounts(discountIdr) {
+    const subtotal = BASE_IDR - discountIdr;
+    const vat      = Math.round(subtotal * VAT_RATE);
+    return { subtotal, vat, final: subtotal + vat };
+  }
+
+  const initial = calcAmounts(0);
+
+  return {
+    // Promo state
+    promoInput:     '',
+    promoLoading:   false,
+    promoApplied:   false,
+    promoError:     '',
+    appliedCode:    '',
+    discountAmount: 0,
+    subtotal:       initial.subtotal,
+    vatAmount:      initial.vat,
+    finalAmount:    initial.final,
+
+    // Pay state
+    payLoading: false,
+    payError:   '',
+
+    init() {},
+
+    formatNum(n) {
+      return Math.round(n).toLocaleString('id-ID');
+    },
+
+    applyPromoCode(code) {
+      this.promoInput = code;
+      this.validatePromo();
+    },
+
+    async validatePromo() {
+      const code = this.promoInput.trim().toUpperCase();
+      if (!code) return;
+      this.promoLoading = true;
+      this.promoError   = '';
 
       try {
-        const resp = await fetch('/{{ locale }}/checkout/{{ product.id }}/create-payment', {
+        const res  = await fetch('/checkout/promo/validate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ code, base_amount: BASE_IDR }),
+        });
+        const data = await res.json();
+
+        if (data.valid) {
+          this.promoApplied   = true;
+          this.appliedCode    = data.code;
+          this.discountAmount = data.discount_amount;
+          this.subtotal       = data.subtotal;
+          this.vatAmount      = data.vat_amount;
+          this.finalAmount    = data.final;
+          this.promoError     = '';
+        } else {
+          this.promoError   = data.message || 'Kode promo tidak valid.';
+          this.promoApplied = false;
+        }
+      } catch (e) {
+        this.promoError = 'Gagal memvalidasi promo. Coba lagi.';
+      } finally {
+        this.promoLoading = false;
+      }
+    },
+
+    removePromo() {
+      this.promoApplied   = false;
+      this.appliedCode    = '';
+      this.promoInput     = '';
+      this.promoError     = '';
+      this.discountAmount = 0;
+      const r = calcAmounts(0);
+      this.subtotal    = r.subtotal;
+      this.vatAmount   = r.vat;
+      this.finalAmount = r.final;
+    },
+
+    async openPop() {
+      this.payLoading = true;
+      this.payError   = '';
+
+      try {
+        const res = await fetch(`/${LOCALE}/checkout/${PRODUCT_ID}/create-payment`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            order_type: '{{ order_type }}',
-            billing_cycle: '{{ billing_cycle }}',
-            currency: '{{ currency }}',
-          })
+            order_type:   ORDER_TYPE,
+            billing_cycle: BILLING,
+            promo_code:   this.promoApplied ? this.appliedCode : '',
+          }),
         });
 
-        const data = await resp.json();
+        const data = await res.json();
 
-        if (!resp.ok || !data.payment_url) {
-          this.error = data.detail || '{% if locale == "id" %}Gagal membuat pembayaran. Coba lagi.{% else %}Failed to create payment. Please try again.{% endif %}';
-          this.loading = false;
+        if (!res.ok || !data.payment_url) {
+          this.payError   = data.detail || '{% if locale == "id" %}Gagal membuat pembayaran.{% else %}Failed to create payment.{% endif %}';
+          this.payLoading = false;
           return;
         }
 
-        // Open Duitku Pop
-        const reference = data.reference;
         const self = this;
-        window.checkout.process(reference, {
-          successEvent: function(result) {
-            window.location.href = '/{{ locale }}/checkout/return/' + data.order_id;
+        window.checkout.process(data.reference, {
+          successEvent(result) {
+            window.location.href = `/${LOCALE}/checkout/return/${data.order_id}`;
           },
-          pendingEvent: function(result) {
-            window.location.href = '/{{ locale }}/checkout/return/' + data.order_id;
+          pendingEvent(result) {
+            window.location.href = `/${LOCALE}/checkout/return/${data.order_id}`;
           },
-          errorEvent: function(result) {
-            self.error = '{% if locale == "id" %}Pembayaran gagal. Silakan coba lagi.{% else %}Payment failed. Please try again.{% endif %}';
-            self.loading = false;
+          errorEvent(result) {
+            self.payError   = '{% if locale == "id" %}Pembayaran gagal. Silakan coba lagi.{% else %}Payment failed. Please try again.{% endif %}';
+            self.payLoading = false;
           },
-          closeEvent: function() {
-            self.loading = false;
-          }
+          closeEvent() {
+            self.payLoading = false;
+          },
         });
 
       } catch (e) {
-        this.error = '{% if locale == "id" %}Terjadi kesalahan. Coba lagi.{% else %}An error occurred. Please try again.{% endif %}';
-        this.loading = false;
+        this.payError   = '{% if locale == "id" %}Terjadi kesalahan. Coba lagi.{% else %}An error occurred. Please try again.{% endif %}';
+        this.payLoading = false;
       }
-    }
-  }
+    },
+  };
 }
 </script>
 {% endblock %}

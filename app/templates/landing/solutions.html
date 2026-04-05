@@ -17,13 +17,13 @@
     </p>
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-16">
       {% for svc in [
-        {'id': 'Konsultasi IT & Strategi Digital', 'en': 'IT Consulting & Digital Strategy', 'icon': '🎯'},
-        {'id': 'Integrasi Sistem & API', 'en': 'System & API Integration', 'icon': '🔗'},
-        {'id': 'Pembuatan Website Profesional', 'en': 'Professional Website Development', 'icon': '🌐'},
-        {'id': 'Setup Infrastruktur Cloud', 'en': 'Cloud Infrastructure Setup', 'icon': '☁️'},
+        {'id': 'Konsultasi IT & Strategi Digital', 'en': 'IT Consulting & Digital Strategy', 'icon': 'bi-bullseye'},
+        {'id': 'Integrasi Sistem & API', 'en': 'System & API Integration', 'icon': 'bi-diagram-3'},
+        {'id': 'Pembuatan Website Profesional', 'en': 'Professional Website Development', 'icon': 'bi-globe2'},
+        {'id': 'Setup Infrastruktur Cloud', 'en': 'Cloud Infrastructure Setup', 'icon': 'bi-cloud-arrow-up'},
       ] %}
       <div class="card-hover p-6 reveal">
-        <div class="text-3xl mb-4">{{ svc.icon }}</div>
+        <i class="bi {{ svc.icon }} text-3xl mb-4 block text-neon"></i>
         <h3 class="heading-sm text-white mb-2">{{ svc[locale] }}</h3>
       </div>
       {% endfor %}

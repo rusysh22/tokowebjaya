@@ -161,3 +161,105 @@
     clip-path: polygon(0 0, 100% 0, 100% 88%, 0 100%);
   }
 }
+
+/* ===== Custom Keyframe Animations ===== */
+
+/* Hero text slide up on load */
+@keyframes heroSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(32px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.hero-slide-up {
+  opacity: 0;
+  animation: heroSlideUp 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+/* Floating cards in hero (decorative) */
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50%       { transform: translateY(-10px); }
+}
+
+.animate-float {
+  animation: float 4s ease-in-out infinite;
+}
+
+/* Marquee ticker */
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+
+.animate-marquee {
+  animation: marquee 28s linear infinite;
+}
+
+/* Carousel progress bar fill */
+@keyframes progressFill {
+  from { width: 0%; }
+  to   { width: 100%; }
+}
+
+.carousel-progress {
+  width: 0%;
+  background-color: #CAFF00;
+}
+
+.carousel-progress-play {
+  animation: progressFill linear forwards;
+}
+
+/* CTA section pulsing glow */
+@keyframes ctaGlow {
+  0%, 100% { opacity: 0.04; transform: scale(1); }
+  50%       { opacity: 0.08; transform: scale(1.1); }
+}
+
+.cta-glow {
+  animation: ctaGlow 5s ease-in-out infinite;
+}
+
+/* Humor section emoji bounce */
+@keyframes humorBounce {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  20%       { transform: translateY(-12px) rotate(-8deg); }
+  40%       { transform: translateY(-6px) rotate(6deg); }
+  60%       { transform: translateY(-10px) rotate(-4deg); }
+  80%       { transform: translateY(-4px) rotate(2deg); }
+}
+
+.humor-bounce {
+  animation: humorBounce 3s ease-in-out infinite;
+}
+
+/* Feature icon pop on parent hover */
+.feature-card:hover .feature-icon {
+  animation: iconPop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes iconPop {
+  0%   { transform: scale(1); }
+  50%  { transform: scale(1.3) rotate(-8deg); }
+  100% { transform: scale(1); }
+}
+
+/* Step card pulse ring on hover */
+@keyframes stepPing {
+  0%   { transform: scale(1);   opacity: 0.3; }
+  100% { transform: scale(2.5); opacity: 0; }
+}
+
+/* Staggered reveal for grid children */
+[data-stagger-grid] .reveal:nth-child(1) { animation-delay: 0.00s; }
+[data-stagger-grid] .reveal:nth-child(2) { animation-delay: 0.08s; }
+[data-stagger-grid] .reveal:nth-child(3) { animation-delay: 0.16s; }
+[data-stagger-grid] .reveal:nth-child(4) { animation-delay: 0.24s; }
+[data-stagger-grid] .reveal:nth-child(5) { animation-delay: 0.32s; }
+[data-stagger-grid] .reveal:nth-child(6) { animation-delay: 0.40s; }

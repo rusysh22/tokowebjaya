@@ -1,8 +1,13 @@
+"""
+Upload service — handle file uploads for product images and other assets.
+Saves files to UPLOAD_DIR (configured in settings) and returns the relative path.
+"""
 import os
-import uuid
 import shutil
+import uuid
 from pathlib import Path
-from fastapi import UploadFile, HTTPException
+
+from fastapi import HTTPException, UploadFile
 from PIL import Image
 
 from app.core.config import settings

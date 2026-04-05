@@ -1,0 +1,118 @@
+{% extends "admin/base_admin.html" %}
+{% block title %}Availability — {{ product['name_' + locale] }}{% endblock %}
+{% block content %}
+
+<div class="flex items-center gap-3 mb-2">
+  <a href="/{{ locale }}/admin/products" class="text-gray-600 hover:text-white text-xs">← Produk</a>
+  <span class="text-gray-700">/</span>
+  <span class="text-gray-400 text-xs">{{ product['name_' + locale] }}</span>
+</div>
+
+<div class="flex items-center justify-between mb-8">
+  <div>
+    <h1 class="text-2xl font-black text-white">Jadwal Ketersediaan</h1>
+    <p class="text-gray-500 text-sm mt-1">Atur hari dan jam booking untuk produk ini (WIB)</p>
+  </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+  <!-- Current slots -->
+  <div>
+    <h2 class="text-sm font-semibold text-white mb-4 pb-2 border-b border-gray-800">Jadwal Aktif</h2>
+    {% if slots %}
+    <div class="space-y-2">
+      {% for slot in slots %}
+      <div class="flex items-center justify-between border border-gray-800 px-4 py-3
+                  {% if not slot.is_active %}opacity-50{% endif %}">
+        <div>
+          <span class="text-white text-sm font-semibold">{{ day_names[slot.day_of_week] }}</span>
+          <span class="text-gray-500 text-xs ml-3">
+            {{ slot.start_time.strftime('%H:%M') }} – {{ slot.end_time.strftime('%H:%M') }} WIB
+          </span>
+          <span class="text-gray-600 text-xs ml-2">
+            <i class="bi bi-hourglass-split"></i> {{ slot.slot_duration_minutes }} menit/slot
+          </span>
+        </div>
+        <div class="flex items-center gap-2">
+          <!-- Toggle active -->
+          <form method="POST" action="/{{ locale }}/admin/availability/{{ slot.id }}/toggle">
+            <button type="submit"
+                    class="text-xs px-2 py-1 border transition-colors
+                           {% if slot.is_active %}border-neon/40 text-neon hover:bg-neon/10{% else %}border-gray-700 text-gray-500 hover:border-gray-500{% endif %}">
+              {% if slot.is_active %}<i class="bi bi-toggle-on"></i>{% else %}<i class="bi bi-toggle-off"></i>{% endif %}
+            </button>
+          </form>
+          <!-- Delete -->
+          <form method="POST" action="/{{ locale }}/admin/availability/{{ slot.id }}/delete"
+                onsubmit="return confirm('Hapus slot ini?')">
+            <button type="submit" class="text-xs px-2 py-1 border border-gray-800 text-red-400 hover:border-red-800 transition-colors">
+              <i class="bi bi-trash3"></i>
+            </button>
+          </form>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="border border-dashed border-gray-800 py-10 text-center">
+      <i class="bi bi-calendar-plus text-3xl text-gray-700 block mb-2"></i>
+      <p class="text-gray-600 text-sm">Belum ada jadwal. Tambahkan di sebelah kanan.</p>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Add new slot -->
+  <div>
+    <h2 class="text-sm font-semibold text-white mb-4 pb-2 border-b border-gray-800">Tambah Jadwal</h2>
+    <form method="POST" action="/{{ locale }}/admin/products/{{ product.id }}/availability/add"
+          class="space-y-4">
+
+      <div>
+        <label class="block text-xs font-medium text-gray-400 mb-2">Hari</label>
+        <select name="day_of_week" required class="input bg-gray-900">
+          {% for d in days %}
+          <option value="{{ d }}">{{ day_names[d] }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-xs font-medium text-gray-400 mb-2">Jam Mulai (WIB)</label>
+          <input type="time" name="start_time" value="09:00" required class="input" />
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-400 mb-2">Jam Selesai (WIB)</label>
+          <input type="time" name="end_time" value="17:00" required class="input" />
+        </div>
+      </div>
+
+      <div>
+        <label class="block text-xs font-medium text-gray-400 mb-2">
+          Durasi per Slot (menit)
+        </label>
+        <select name="slot_duration_minutes" class="input bg-gray-900">
+          <option value="30">30 menit</option>
+          <option value="45">45 menit</option>
+          <option value="60" selected>60 menit (1 jam)</option>
+          <option value="90">90 menit</option>
+          <option value="120">120 menit (2 jam)</option>
+        </select>
+      </div>
+
+      <button type="submit" class="btn-primary w-full justify-center py-3">
+        <i class="bi bi-plus-lg mr-1"></i> Tambah Jadwal
+      </button>
+    </form>
+
+    <div class="mt-6 border border-gray-800 p-4 text-xs text-gray-600 space-y-1">
+      <p><i class="bi bi-info-circle mr-1"></i> Semua waktu dalam WIB (UTC+7).</p>
+      <p><i class="bi bi-info-circle mr-1"></i> Slot yang sudah dibooking tidak akan muncul lagi.</p>
+      <p><i class="bi bi-info-circle mr-1"></i> Pengguna bisa melihat jadwal 30 hari ke depan.</p>
+    </div>
+  </div>
+
+</div>
+
+{% endblock %}

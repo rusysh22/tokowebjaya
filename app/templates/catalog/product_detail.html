@@ -28,25 +28,88 @@
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
 
       <!-- Left: Media -->
-      <div class="reveal">
-        <!-- Video / Cover -->
-        {% if product.preview_video %}
-        <div class="relative aspect-video bg-black border border-gray-800 overflow-hidden mb-4" x-data="{ playing: false }">
-          <video class="w-full h-full object-cover"
-                 data-src="/static/uploads/products/videos/{{ product.preview_video }}"
-                 controls
-                 poster="{% if product.cover_image %}/static/uploads/products/images/{{ product.cover_image }}{% endif %}">
-          </video>
+      <div class="reveal" x-data="productGallery()" x-init="init()">
+
+        <!-- Main viewer -->
+        <div class="relative aspect-video bg-gray-950 border border-gray-800 overflow-hidden mb-3 group">
+
+          <!-- Slides container -->
+          <div class="w-full h-full">
+            {% set all_media = [] %}
+            {% if product.preview_video %}
+              {# video slot handled separately #}
+            {% endif %}
+
+            <!-- All image slides -->
+            {% set slide_images = [] %}
+            {% if product.cover_image %}{% set _ = slide_images.append(product.cover_image) %}{% endif %}
+            {% for g in (product.gallery or []) %}{% set _ = slide_images.append(g) %}{% endfor %}
+
+            {% for img in slide_images %}
+            <div class="gallery-slide absolute inset-0 w-full h-full"
+                 data-index="{{ loop.index0 }}"
+                 style="opacity:{{ '1' if loop.first else '0' }}; z-index:{{ '2' if loop.first else '1' }}; transition: none;">
+              <img src="/static/uploads/products/images/{{ img }}"
+                   alt="{{ product['name_' + locale] }} — {{ loop.index }}"
+                   class="w-full h-full object-cover" loading="lazy" />
+            </div>
+            {% endfor %}
+
+            {% if product.preview_video %}
+            <div class="gallery-slide gallery-video-slide absolute inset-0 w-full h-full"
+                 data-index="{{ slide_images | length }}"
+                 style="opacity:0; z-index:1; transition:none;">
+              <video class="w-full h-full object-cover"
+                     data-src="/static/uploads/products/videos/{{ product.preview_video }}"
+                     controls
+                     poster="{% if product.cover_image %}/static/uploads/products/images/{{ product.cover_image }}{% endif %}">
+              </video>
+            </div>
+            {% endif %}
+
+            {% if not product.cover_image and not product.gallery and not product.preview_video %}
+            <div class="w-full h-full flex items-center justify-center">
+              <i class="bi bi-box-seam text-7xl opacity-20"></i>
+            </div>
+            {% endif %}
+          </div>
+
+          <!-- Nav arrows (show only if multiple slides) -->
+          {% set total_slides = (slide_images | length) + (1 if product.preview_video else 0) %}
+          {% if total_slides > 1 %}
+          <button type="button" @click="prev()"
+                  class="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center bg-black/70 text-white opacity-0 group-hover:opacity-100 transition-opacity z-10 hover:bg-black">
+            <i class="bi bi-chevron-left text-sm"></i>
+          </button>
+          <button type="button" @click="next()"
+                  class="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center bg-black/70 text-white opacity-0 group-hover:opacity-100 transition-opacity z-10 hover:bg-black">
+            <i class="bi bi-chevron-right text-sm"></i>
+          </button>
+          <!-- Slide counter -->
+          <div class="absolute bottom-2 right-3 text-xs text-white/60 bg-black/60 px-2 py-0.5 z-10" x-text="(current+1) + ' / {{ total_slides }}'"></div>
+          {% endif %}
         </div>
-        {% elif product.cover_image %}
-        <div class="aspect-video bg-gray-900 border border-gray-800 overflow-hidden mb-4">
-          <img src="/static/uploads/products/images/{{ product.cover_image }}"
-               alt="{{ product['name_' + locale] }}"
-               class="w-full h-full object-cover" />
-        </div>
-        {% else %}
-        <div class="aspect-video bg-gray-900 border border-gray-800 flex items-center justify-center mb-4">
-          <span class="text-7xl opacity-20">📦</span>
+
+        <!-- Thumbnails strip -->
+        {% if total_slides > 1 %}
+        <div class="flex gap-2 mb-4 overflow-x-auto no-scrollbar">
+          {% for img in slide_images %}
+          <button type="button"
+                  @click="goTo({{ loop.index0 }})"
+                  class="flex-shrink-0 w-16 h-11 border-2 overflow-hidden transition-all duration-200"
+                  :class="current === {{ loop.index0 }} ? 'border-neon' : 'border-gray-700 opacity-60 hover:opacity-100'">
+            <img src="/static/uploads/products/images/{{ img }}"
+                 class="w-full h-full object-cover" loading="lazy" />
+          </button>
+          {% endfor %}
+          {% if product.preview_video %}
+          <button type="button"
+                  @click="goTo({{ slide_images | length }})"
+                  class="flex-shrink-0 w-16 h-11 border-2 overflow-hidden bg-gray-900 flex items-center justify-center transition-all duration-200"
+                  :class="current === {{ slide_images | length }} ? 'border-neon' : 'border-gray-700 opacity-60 hover:opacity-100'">
+            <i class="bi bi-play-circle text-xl text-gray-400"></i>
+          </button>
+          {% endif %}
         </div>
         {% endif %}
 
@@ -103,6 +166,62 @@
         <!-- Pricing card -->
         <div class="border border-gray-800 bg-gray-950 p-6 mb-6"
              x-data="{ billingCycle: '{% if product.pricing_model.value == 'both' %}otf{% elif product.pricing_model.value == 'subscription' %}monthly{% else %}otf{% endif %}' }">
+
+          {% if product.pricing_model.value == 'contact_seller' %}
+          <!-- ── Contact Seller Panel ── -->
+          <p class="text-xs text-gray-500 uppercase tracking-widest font-semibold mb-4">
+            {% if locale == 'id' %}Hubungi Penjual{% else %}Contact Seller{% endif %}
+          </p>
+          <p class="text-gray-400 text-sm leading-relaxed mb-5">
+            {% if locale == 'id' %}
+              Produk ini memerlukan diskusi lebih lanjut. Pilih cara yang paling nyaman untuk Anda.
+            {% else %}
+              This product requires further discussion. Choose the most convenient way for you.
+            {% endif %}
+          </p>
+          <div class="space-y-3">
+
+            {% if product.contact_whatsapp %}
+            <a href="https://wa.me/{{ product.contact_whatsapp }}?text={{ ('Halo, saya tertarik dengan produk ' + product['name_' + locale]) | urlencode }}"
+               target="_blank" rel="noopener"
+               class="flex items-center gap-3 w-full border border-green-800 bg-green-950/40 hover:bg-green-950/80 text-green-400 hover:text-green-300 px-4 py-3 text-sm font-semibold transition-colors duration-200">
+              <i class="bi bi-whatsapp text-lg"></i>
+              <span>{% if locale == 'id' %}Chat via WhatsApp{% else %}Chat via WhatsApp{% endif %}</span>
+              <i class="bi bi-arrow-up-right ml-auto text-xs"></i>
+            </a>
+            {% endif %}
+
+            {% if product.contact_email %}
+            <a href="mailto:{{ product.contact_email }}?subject={{ ('Tanya produk: ' + product['name_' + locale]) | urlencode }}"
+               class="flex items-center gap-3 w-full border border-gray-700 hover:border-neon bg-gray-900 hover:bg-gray-800 text-gray-300 hover:text-neon px-4 py-3 text-sm font-semibold transition-colors duration-200">
+              <i class="bi bi-envelope text-lg"></i>
+              <span>{{ product.contact_email }}</span>
+              <i class="bi bi-arrow-up-right ml-auto text-xs"></i>
+            </a>
+            {% endif %}
+
+            {% if product.contact_address %}
+            <div class="border border-gray-800 bg-gray-900/50 px-4 py-3 text-sm">
+              <div class="flex items-start gap-3">
+                <i class="bi bi-geo-alt text-blue-400 text-lg mt-0.5 flex-shrink-0"></i>
+                <div>
+                  <p class="text-xs text-gray-500 mb-1 uppercase tracking-wide font-semibold">
+                    {% if locale == 'id' %}Kunjungi / Buat Janji{% else %}Visit / Schedule Meeting{% endif %}
+                  </p>
+                  <p class="text-gray-300 leading-relaxed">{{ product.contact_address }}</p>
+                  <a href="https://maps.google.com/?q={{ product.contact_address | urlencode }}"
+                     target="_blank" rel="noopener"
+                     class="inline-flex items-center gap-1 text-blue-400 hover:text-blue-300 text-xs mt-2 transition-colors">
+                    <i class="bi bi-map"></i>
+                    {% if locale == 'id' %}Buka di Maps{% else %}Open in Maps{% endif %}
+                  </a>
+                </div>
+              </div>
+            </div>
+            {% endif %}
+
+          </div>
+          {% else %}
 
           {% if product.pricing_model.value == 'both' %}
           <!-- Toggle OTF / Subscription -->
@@ -190,6 +309,138 @@
             {% endif %}
           </p>
           {% endif %}
+          {% endif %}{# end contact_seller else #}
+        </div>
+
+        <!-- Appointment Booking -->
+        <div class="border border-gray-800 bg-gray-950 p-6 mb-6"
+             x-data="appointmentBooker('{{ product.id }}', '{{ locale }}')"
+             x-init="init()">
+
+          <button @click="open = !open"
+                  class="flex items-center justify-between w-full text-left group">
+            <div class="flex items-center gap-2">
+              <i class="bi bi-calendar-check text-neon"></i>
+              <span class="text-sm font-semibold text-white group-hover:text-neon transition-colors">
+                {% if locale == 'id' %}Jadwalkan Demo / Call{% else %}Schedule a Demo / Call{% endif %}
+              </span>
+            </div>
+            <i class="bi text-gray-500 transition-transform duration-200"
+               :class="open ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
+          </button>
+
+          <div x-show="open" x-cloak x-transition class="mt-5 space-y-4">
+
+            <!-- Step 1: Type -->
+            <div>
+              <p class="text-xs text-gray-500 uppercase tracking-widest font-semibold mb-2">
+                {% if locale == 'id' %}Tipe{% else %}Type{% endif %}
+              </p>
+              <div class="flex gap-2 flex-wrap">
+                <template x-for="t in types" :key="t.value">
+                  <button type="button"
+                          @click="form.type = t.value"
+                          :class="form.type === t.value
+                            ? 'bg-neon text-black border-neon'
+                            : 'bg-transparent text-gray-400 border-gray-700 hover:border-gray-500'"
+                          class="flex items-center gap-1.5 border px-3 py-1.5 text-xs font-semibold transition-colors">
+                    <i :class="t.icon"></i>
+                    <span x-text="t.label"></span>
+                  </button>
+                </template>
+              </div>
+            </div>
+
+            <!-- Step 2: Date picker -->
+            <div>
+              <p class="text-xs text-gray-500 uppercase tracking-widest font-semibold mb-2">
+                {% if locale == 'id' %}Pilih Tanggal{% else %}Select Date{% endif %}
+              </p>
+              <input type="date"
+                     :min="minDate" :max="maxDate"
+                     x-model="form.date"
+                     @change="fetchSlots()"
+                     class="input w-full text-sm" />
+              <p x-show="noAvailability" class="text-xs text-yellow-500 mt-2">
+                <i class="bi bi-exclamation-circle"></i>
+                {% if locale == 'id' %}Tidak ada slot di tanggal ini.{% else %}No slots available on this date.{% endif %}
+              </p>
+            </div>
+
+            <!-- Step 3: Time slots -->
+            <div x-show="slots.length > 0" x-cloak>
+              <p class="text-xs text-gray-500 uppercase tracking-widest font-semibold mb-2">
+                {% if locale == 'id' %}Pilih Waktu <span class="normal-case font-normal">(WIB)</span>{% else %}Select Time <span class="normal-case font-normal">(WIB / UTC+7)</span>{% endif %}
+              </p>
+              <div class="flex flex-wrap gap-2">
+                <template x-for="slot in slots" :key="slot">
+                  <button type="button"
+                          @click="form.time = slot"
+                          :class="form.time === slot
+                            ? 'bg-neon text-black border-neon'
+                            : 'border-gray-700 text-gray-300 hover:border-gray-500'"
+                          class="border px-3 py-1.5 text-xs font-mono font-semibold transition-colors"
+                          x-text="slot + ' WIB'">
+                  </button>
+                </template>
+              </div>
+              <!-- User local time hint -->
+              <p x-show="form.time && localOffset !== 0" class="text-xs text-gray-600 mt-2">
+                <i class="bi bi-clock"></i>
+                <span x-text="localTimeHint()"></span>
+              </p>
+            </div>
+
+            <!-- Step 4: Notes -->
+            <div x-show="form.time" x-cloak>
+              <p class="text-xs text-gray-500 uppercase tracking-widest font-semibold mb-2">
+                {% if locale == 'id' %}Catatan (opsional){% else %}Notes (optional){% endif %}
+              </p>
+              <textarea x-model="form.notes" rows="2"
+                        placeholder="{% if locale == 'id' %}Topik yang ingin dibahas...{% else %}Topics you'd like to discuss...{% endif %}"
+                        class="input w-full text-sm resize-none"></textarea>
+            </div>
+
+            <!-- Submit -->
+            <div x-show="form.time" x-cloak>
+              {% if current_user %}
+              <button type="button" @click="submit()"
+                      :disabled="loading"
+                      class="btn-primary w-full justify-center py-3 text-sm">
+                <span x-show="!loading">
+                  <i class="bi bi-calendar-plus mr-1"></i>
+                  {% if locale == 'id' %}Buat Janji{% else %}Book Appointment{% endif %}
+                </span>
+                <span x-show="loading" x-cloak>
+                  <i class="bi bi-arrow-clockwise animate-spin mr-1"></i>
+                  {% if locale == 'id' %}Memproses...{% else %}Processing...{% endif %}
+                </span>
+              </button>
+              {% else %}
+              <a href="/{{ locale }}/login"
+                 class="btn-secondary w-full justify-center py-3 text-sm text-center block">
+                <i class="bi bi-box-arrow-in-right mr-1"></i>
+                {% if locale == 'id' %}Masuk untuk membuat janji{% else %}Sign in to book{% endif %}
+              </a>
+              {% endif %}
+            </div>
+
+            <!-- Success -->
+            <div x-show="success" x-cloak
+                 class="border border-green-800 bg-green-950/30 p-4 text-sm text-green-400 flex items-start gap-3">
+              <i class="bi bi-check-circle text-lg flex-shrink-0"></i>
+              <div>
+                <p class="font-semibold mb-1">
+                  {% if locale == 'id' %}Janji berhasil dibuat!{% else %}Appointment booked!{% endif %}
+                </p>
+                <p class="text-green-600 text-xs" x-text="successMsg"></p>
+              </div>
+            </div>
+
+            <!-- Error -->
+            <p x-show="error" x-cloak class="text-xs text-red-400" x-text="error"></p>
+
+          </div>
         </div>
 
         <!-- Meta info -->
@@ -204,14 +455,31 @@
             <span class="text-gray-300">{{ product.category }}</span>
           </div>
           {% endif %}
+          {% if product.pricing_model.value == 'contact_seller' %}
+          <div class="flex justify-between">
+            <span>{% if locale == 'id' %}Harga{% else %}Price{% endif %}</span>
+            <span class="text-neon font-semibold">{% if locale == 'id' %}Hubungi Penjual{% else %}Contact Seller{% endif %}</span>
+          </div>
+          {% else %}
           <div class="flex justify-between">
             <span>{% if locale == 'id' %}Pembayaran{% else %}Payment{% endif %}</span>
             <span class="text-gray-300">Duitku / Mayar.id</span>
           </div>
+          {% endif %}
           {% if product.download_file %}
           <div class="flex justify-between">
             <span>Download</span>
-            <span class="text-green-400">✓ {% if locale == 'id' %}Tersedia{% else %}Available{% endif %}</span>
+            <span class="text-green-400"><i class="bi bi-check-lg"></i> {% if locale == 'id' %}Tersedia{% else %}Available{% endif %}</span>
+          </div>
+          {% endif %}
+          {% if product.demo_url %}
+          <div class="flex justify-between items-center">
+            <span>Demo</span>
+            <a href="{{ product.demo_url }}" target="_blank" rel="noopener noreferrer"
+               class="text-neon hover:underline flex items-center gap-1">
+              <i class="bi bi-box-arrow-up-right text-xs"></i>
+              {% if locale == 'id' %}Coba Demo{% else %}Try Demo{% endif %}
+            </a>
           </div>
           {% endif %}
         </div>
@@ -250,7 +518,7 @@
                  class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                  loading="lazy" alt="{{ p['name_' + locale] }}" />
           {% else %}
-            <div class="w-full h-full flex items-center justify-center text-3xl opacity-20">📦</div>
+            <div class="w-full h-full flex items-center justify-center opacity-20"><i class="bi bi-box-seam text-3xl"></i></div>
           {% endif %}
         </div>
         <div class="p-4">
@@ -270,4 +538,178 @@
 </section>
 {% endif %}
 
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+function appointmentBooker(productId, locale) {
+  const today = new Date();
+  const maxD  = new Date(); maxD.setDate(today.getDate() + 30);
+  const fmt   = d => d.toISOString().split('T')[0];
+  const localOffset = -(new Date().getTimezoneOffset() / 60);
+  const wibOffset   = 7;
+
+  return {
+    open:           false,
+    slots:          [],
+    loading:        false,
+    success:        false,
+    successMsg:     '',
+    error:          '',
+    noAvailability: false,
+    localOffset,
+    minDate: fmt(today),
+    maxDate: fmt(maxD),
+    form: {
+      type:     'demo',
+      date:     '',
+      time:     '',
+      notes:    '',
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'Asia/Jakarta',
+    },
+    types: [
+      { value: 'demo',    label: locale === 'id' ? 'Demo Produk'      : 'Product Demo',     icon: 'bi bi-display'   },
+      { value: 'call',    label: locale === 'id' ? 'Video/Phone Call'  : 'Video/Phone Call', icon: 'bi bi-telephone' },
+      { value: 'meeting', label: locale === 'id' ? 'Meeting Offline'   : 'Offline Meeting',  icon: 'bi bi-people'    },
+    ],
+
+    init() {},
+
+    async fetchSlots() {
+      if (!this.form.date) return;
+      this.slots          = [];
+      this.form.time      = '';
+      this.noAvailability = false;
+      try {
+        const res  = await fetch(`/api/appointments/slots?product_id=${productId}&date_str=${this.form.date}`);
+        const data = await res.json();
+        this.slots          = data.slots || [];
+        this.noAvailability = this.slots.length === 0;
+      } catch(e) {
+        this.noAvailability = true;
+      }
+    },
+
+    localTimeHint() {
+      if (!this.form.time) return '';
+      const [h, m] = this.form.time.split(':').map(Number);
+      const diffH  = this.localOffset - wibOffset;
+      let lh = h + diffH;
+      if (lh < 0)   lh += 24;
+      if (lh >= 24) lh -= 24;
+      const pad = n => String(n).padStart(2, '0');
+      return `${locale === 'id' ? 'Waktu lokal Anda' : 'Your local time'}: ${pad(lh)}:${pad(m)} (${this.form.timezone})`;
+    },
+
+    async submit() {
+      this.loading = true;
+      this.error   = '';
+      try {
+        const res  = await fetch(`/${locale}/appointments/${productId}/book`, {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body:    JSON.stringify(this.form),
+        });
+        const data = await res.json();
+        if (res.ok && data.ok) {
+          this.success    = true;
+          this.successMsg = data.message || '';
+          this.form.time  = '';
+          this.slots      = [];
+        } else {
+          this.error = data.detail || (locale === 'id' ? 'Gagal membuat janji.' : 'Failed to book.');
+        }
+      } catch(e) {
+        this.error = locale === 'id' ? 'Terjadi kesalahan.' : 'An error occurred.';
+      } finally {
+        this.loading = false;
+      }
+    },
+  };
+}
+
+function productGallery() {
+  return {
+    current: 0,
+    total: 0,
+    slides: [],
+    animating: false,
+
+    init() {
+      this.slides = Array.from(this.$el.querySelectorAll('.gallery-slide'));
+      this.total  = this.slides.length;
+      if (this.total <= 1) return;
+      // ensure first slide visible
+      this._applyState(0, -1);
+    },
+
+    goTo(idx) {
+      if (this.animating || idx === this.current || this.total <= 1) return;
+      const prev = this.current;
+      this.current = idx;
+      this._transition(prev, idx);
+    },
+
+    next() { this.goTo((this.current + 1) % this.total); },
+    prev() { this.goTo((this.current - 1 + this.total) % this.total); },
+
+    _applyState(active, _prev) {
+      this.slides.forEach((s, i) => {
+        s.style.opacity   = i === active ? '1' : '0';
+        s.style.zIndex    = i === active ? '2' : '1';
+        s.style.transform = 'none';
+        s.style.transition = 'none';
+        s.style.clipPath  = 'none';
+      });
+    },
+
+    _transition(from, to) {
+      if (this.animating) return;
+      this.animating = true;
+      const outEl = this.slides[from];
+      const inEl  = this.slides[to];
+
+      // Anti-mainstream: diagonal slice reveal (top-left → bottom-right)
+      // Outgoing: clip-path shrinks from full → empty via diagonal
+      // Incoming: clip-path expands via diagonal simultaneously
+      const dur = 560; // ms
+
+      // Bring incoming on top, reset its clip
+      inEl.style.zIndex    = '3';
+      inEl.style.opacity   = '1';
+      inEl.style.transform = 'none';
+      inEl.style.transition = 'none';
+      inEl.style.clipPath  = 'polygon(0% 0%, 0% 0%, 0% 100%, 0% 100%)';
+
+      outEl.style.zIndex   = '2';
+      outEl.style.opacity  = '1';
+      outEl.style.clipPath = 'none';
+      outEl.style.transition = 'none';
+
+      // Trigger reflow
+      void inEl.offsetWidth;
+
+      const easing = 'cubic-bezier(0.77, 0, 0.175, 1)';
+      inEl.style.transition  = `clip-path ${dur}ms ${easing}`;
+      inEl.style.clipPath    = 'polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%)';
+
+      outEl.style.transition = `opacity ${dur * 0.4}ms ${easing} ${dur * 0.6}ms`;
+      outEl.style.opacity    = '0';
+
+      setTimeout(() => {
+        // Cleanup
+        this.slides.forEach((s, i) => {
+          const active = i === to;
+          s.style.zIndex    = active ? '2' : '1';
+          s.style.opacity   = active ? '1' : '0';
+          s.style.clipPath  = 'none';
+          s.style.transition = 'none';
+          s.style.transform = 'none';
+        });
+        this.animating = false;
+      }, dur + 80);
+    },
+  };
+}
+</script>
 {% endblock %}

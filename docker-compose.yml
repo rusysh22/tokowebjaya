@@ -6,9 +6,9 @@ services:
     container_name: twj_db
     restart: unless-stopped
     environment:
-      POSTGRES_USER: openpg
-      POSTGRES_PASSWORD: openpgpwd
-      POSTGRES_DB: tokowebjaya
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
@@ -16,7 +16,7 @@ services:
     networks:
       - evolution_api_server_default
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U openpg -d tokowebjaya"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -30,9 +30,6 @@ services:
       - "7777:7777"
     env_file:
       - .env
-    environment:
-      DATABASE_URL: postgresql://openpg:openpgpwd@db:5432/tokowebjaya
-      REDIS_URL: redis://rocdesk_redis:6379/0
     volumes:
       - ./static/uploads:/app/static/uploads
     networks:
@@ -51,9 +48,6 @@ services:
     restart: unless-stopped
     env_file:
       - .env
-    environment:
-      DATABASE_URL: postgresql://openpg:openpgpwd@db:5432/tokowebjaya
-      REDIS_URL: redis://rocdesk_redis:6379/0
     volumes:
       - ./static/uploads:/app/static/uploads
     networks:
@@ -70,9 +64,6 @@ services:
     restart: unless-stopped
     env_file:
       - .env
-    environment:
-      DATABASE_URL: postgresql://openpg:openpgpwd@db:5432/tokowebjaya
-      REDIS_URL: redis://rocdesk_redis:6379/0
     networks:
       - evolution_api_server_default
     depends_on:

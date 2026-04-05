@@ -62,7 +62,7 @@ jinja_env.globals["get_vat_rate"] = get_vat_rate
 templates = Jinja2Templates(env=jinja_env)
 
 # Register routers
-from app.routers import auth, landing, catalog, admin, checkout, dashboard, api_v1, notifications  # noqa: E402
+from app.routers import auth, landing, catalog, admin, checkout, dashboard, api_v1, notifications, appointments  # noqa: E402
 app.include_router(auth.router)
 app.include_router(landing.router)
 app.include_router(catalog.router)
@@ -71,6 +71,7 @@ app.include_router(checkout.router)
 app.include_router(dashboard.router)
 app.include_router(api_v1.router)
 app.include_router(notifications.router)
+app.include_router(appointments.router)
 
 
 def _get_locale_from_request(request: Request) -> str:

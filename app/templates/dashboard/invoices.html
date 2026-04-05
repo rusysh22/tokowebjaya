@@ -11,7 +11,7 @@
     <h1 class="heading-md text-white mb-8">{{ t(locale, 'dashboard_invoices') }}</h1>
     <div class="border border-gray-800">
       <div class="overflow-x-auto">
-        <table class="w-full text-sm">
+        <table class="w-full text-sm min-w-[560px]">
           <thead class="bg-gray-950 border-b border-gray-800">
             <tr>
               {% for col in ['Invoice #', 'Amount', 'Status', 'Due Date', 'Tanggal' if locale=='id' else 'Date', ''] %}

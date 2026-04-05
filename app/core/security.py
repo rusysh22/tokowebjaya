@@ -1,7 +1,19 @@
-import hashlib
+"""
+Security utilities — password hashing and session token management.
+
+Password hashing:
+  SHA-256 + base64 pre-hash before bcrypt to avoid the 72-byte bcrypt limit.
+  This is the same approach used by Django and Devise.
+
+Session tokens:
+  Signed with itsdangerous URLSafeTimedSerializer (SECRET_KEY, max_age = 7 days).
+"""
 import base64
+import hashlib
+
 import bcrypt
 from itsdangerous import URLSafeTimedSerializer
+
 from app.core.config import settings
 
 serializer = URLSafeTimedSerializer(settings.SECRET_KEY)
