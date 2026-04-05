@@ -41,6 +41,14 @@ services:
       sh -c "alembic upgrade head &&
              uvicorn app.main:app --host 0.0.0.0 --port 7777"
 
+  # ─── Redis ───────────────────────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: twj_redis
+    restart: unless-stopped
+    networks:
+      - twj_internal
+
   # ─── Celery Worker ───────────────────────────────────────────────────────────
   celery_worker:
     build: .
