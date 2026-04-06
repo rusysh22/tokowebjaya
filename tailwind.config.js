@@ -88,6 +88,14 @@ module.exports = {
     // brightness filter
     "brightness-75", "brightness-100",
     "scale-110",
+    // Stats + How It Works combined section
+    "lg:grid", "lg:grid-cols-2", "lg:gap-16", "lg:items-center", "lg:hidden",
+    // Slide animation classes (Alpine :class)
+    "slide-enter-right", "slide-enter-left",
+    "slide-leave-left", "slide-leave-right",
+    "slide-hidden-right", "slide-hidden-left",
+    "pointer-events-auto", "pointer-events-none",
+    "z-[5]",
   ],
   plugins: [
     require("@tailwindcss/typography"),

@@ -253,22 +253,24 @@ async def login_email(
     email: str = Form(...),
     password: str = Form(...),
     locale: str = Form(default="id"),
+    next: str = Form(default=""),
     db: Session = Depends(get_db),
 ):
     email = email.strip().lower()
     user = db.query(User).filter(User.email == email).first()
 
+    next_param = f"&next={next}" if next else ""
+
     if not user or not user.password_hash or not verify_password(password, user.password_hash):
         return RedirectResponse(
-            url=f"/{locale}/login?error=invalid_credentials&tab=email",
+            url=f"/{locale}/login?error=invalid_credentials&tab=email{next_param}",
             status_code=302,
         )
 
     if user.status == UserStatus.banned:
-        return RedirectResponse(url=f"/{locale}/login?error=banned", status_code=302)
+        return RedirectResponse(url=f"/{locale}/login?error=banned{next_param}", status_code=302)
 
     if not user.email_verified:
-        # Resend OTP and redirect to verify
         otp = generate_otp("verify_email", email)
         send_otp_email(email, user.name, otp, purpose="verify", locale=locale)
         return RedirectResponse(
@@ -276,7 +278,8 @@ async def login_email(
             status_code=302,
         )
 
-    return _make_session_response(user, f"/{locale}/dashboard")
+    redirect_to = next if next else f"/{locale}/dashboard"
+    return _make_session_response(user, redirect_to)
 
 
 @router.post("/forgot-password")

@@ -28,9 +28,13 @@ def require_login(request: Request, db: Session) -> User:
     user = get_current_user(request, db)
     if not user:
         locale = _get_locale_from_path(request.url.path)
+        next_url = str(request.url.path)
+        if request.url.query:
+            next_url += f"?{request.url.query}"
+        from urllib.parse import quote
         raise HTTPException(
             status_code=status.HTTP_302_FOUND,
-            headers={"Location": f"/{locale}/login"},
+            headers={"Location": f"/{locale}/login?next={quote(next_url)}"},
         )
     return user
 

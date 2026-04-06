@@ -1,0 +1,309 @@
+{% extends "base.html" %}
+{% block title %}{% if locale == 'id' %}Kebijakan Privasi{% else %}Privacy Policy{% endif %} — Toko Web Jaya{% endblock %}
+{% block meta_description %}{% if locale == 'id' %}Kebijakan privasi dan perlindungan data pengguna Toko Web Jaya.{% else %}Toko Web Jaya privacy policy and user data protection.{% endif %}{% endblock %}
+
+{% block content %}
+<section class="bg-black min-h-screen pt-28 pb-20">
+  <div class="container-main max-w-3xl">
+
+    <!-- Header -->
+    <div class="mb-12 reveal">
+      <span class="text-label block mb-3">{% if locale == 'id' %}Dokumen Legal{% else %}Legal Document{% endif %}</span>
+      <h1 class="heading-lg text-white mb-3">
+        {% if locale == 'id' %}Kebijakan Privasi{% else %}Privacy Policy{% endif %}
+      </h1>
+      <p class="text-gray-500 text-sm">
+        {% if locale == 'id' %}Terakhir diperbarui: 1 Januari 2025{% else %}Last updated: January 1, 2025{% endif %}
+      </p>
+      <div class="h-px bg-gray-800 mt-6"></div>
+    </div>
+
+    <!-- Content -->
+    <div class="prose-legal reveal">
+
+      {% if locale == 'id' %}
+
+      <div class="legal-section">
+        <h2>1. Komitmen Kami</h2>
+        <p>Toko Web Jaya berkomitmen untuk melindungi privasi Anda. Kebijakan Privasi ini menjelaskan bagaimana kami mengumpulkan, menggunakan, menyimpan, dan melindungi informasi pribadi Anda saat menggunakan Platform kami, sesuai dengan Undang-Undang Perlindungan Data Pribadi (UU PDP) Indonesia.</p>
+      </div>
+
+      <div class="legal-section">
+        <h2>2. Data yang Kami Kumpulkan</h2>
+        <h3>2.1 Data yang Anda Berikan</h3>
+        <ul>
+          <li><strong>Data Akun</strong>: Nama lengkap, alamat email, foto profil (dari Google OAuth jika digunakan)</li>
+          <li><strong>Data Transaksi</strong>: Riwayat pembelian, detail pesanan, informasi pembayaran (tidak termasuk nomor kartu — diproses oleh gateway pembayaran)</li>
+          <li><strong>Data Komunikasi</strong>: Pesan yang Anda kirim melalui formulir kontak atau dukungan pelanggan</li>
+          <li><strong>Data Janji Temu</strong>: Informasi yang Anda berikan saat membuat appointment/konsultasi</li>
+        </ul>
+        <h3>2.2 Data yang Dikumpulkan Otomatis</h3>
+        <ul>
+          <li><strong>Data Teknis</strong>: Alamat IP, jenis browser, sistem operasi, halaman yang dikunjungi, durasi kunjungan</li>
+          <li><strong>Data Cookies</strong>: Cookie sesi untuk mempertahankan login dan preferensi Anda</li>
+          <li><strong>Data Log</strong>: Log akses server untuk keamanan dan pemecahan masalah</li>
+        </ul>
+        <h3>2.3 Data dari Pihak Ketiga</h3>
+        <ul>
+          <li><strong>Google OAuth</strong>: Nama, email, dan foto profil jika Anda memilih masuk dengan Google</li>
+          <li><strong>Gateway Pembayaran</strong>: Konfirmasi status pembayaran (bukan detail kartu)</li>
+        </ul>
+      </div>
+
+      <div class="legal-section">
+        <h2>3. Penggunaan Data</h2>
+        <p>Kami menggunakan data Anda untuk:</p>
+        <ul>
+          <li>Menyediakan, mengelola, dan meningkatkan layanan Platform</li>
+          <li>Memproses transaksi dan mengirimkan invoice</li>
+          <li>Mengirimkan notifikasi terkait pesanan, langganan, dan akun</li>
+          <li>Memberikan dukungan pelanggan</li>
+          <li>Mengirimkan pembaruan produk dan informasi layanan (dapat dinonaktifkan)</li>
+          <li>Mendeteksi dan mencegah penipuan atau penyalahgunaan</li>
+          <li>Memenuhi kewajiban hukum</li>
+          <li>Menganalisis penggunaan Platform untuk peningkatan layanan (data agregat anonim)</li>
+        </ul>
+      </div>
+
+      <div class="legal-section">
+        <h2>4. Dasar Hukum Pemrosesan</h2>
+        <p>Kami memproses data pribadi Anda berdasarkan:</p>
+        <ul>
+          <li><strong>Pelaksanaan Kontrak</strong>: Pemrosesan diperlukan untuk memenuhi layanan yang Anda minta</li>
+          <li><strong>Persetujuan</strong>: Untuk komunikasi pemasaran yang memerlukan persetujuan eksplisit</li>
+          <li><strong>Kepentingan Sah</strong>: Untuk keamanan platform dan pencegahan penipuan</li>
+          <li><strong>Kewajiban Hukum</strong>: Untuk memenuhi ketentuan peraturan perundang-undangan</li>
+        </ul>
+      </div>
+
+      <div class="legal-section">
+        <h2>5. Penyimpanan dan Keamanan Data</h2>
+        <h3>5.1 Lokasi Penyimpanan</h3>
+        <p>Data disimpan di server yang berlokasi di Indonesia atau negara dengan standar perlindungan data yang memadai.</p>
+        <h3>5.2 Durasi Penyimpanan</h3>
+        <ul>
+          <li>Data akun aktif: Selama akun aktif</li>
+          <li>Data transaksi: Minimal 5 tahun sesuai ketentuan perpajakan Indonesia</li>
+          <li>Log sistem: 90 hari</li>
+          <li>Data akun yang dihapus: Dianonimkan dalam 30 hari setelah permintaan penghapusan</li>
+        </ul>
+        <h3>5.3 Langkah Keamanan</h3>
+        <p>Kami menerapkan langkah-langkah keamanan teknis dan organisasi, termasuk:</p>
+        <ul>
+          <li>Enkripsi data dalam transit (HTTPS/TLS)</li>
+          <li>Hash password menggunakan bcrypt</li>
+          <li>Pembatasan akses berdasarkan peran (role-based access control)</li>
+          <li>Pemantauan aktivitas mencurigakan secara berkelanjutan</li>
+          <li>Backup data secara berkala</li>
+        </ul>
+      </div>
+
+      <div class="legal-section">
+        <h2>6. Berbagi Data dengan Pihak Ketiga</h2>
+        <p>Kami tidak menjual data pribadi Anda. Data hanya dibagikan kepada:</p>
+        <ul>
+          <li><strong>Penyedia Pembayaran</strong> (Duitku): Informasi minimum yang diperlukan untuk memproses transaksi</li>
+          <li><strong>Penyedia Email</strong> (Sumopod): Untuk pengiriman email transaksional</li>
+          <li><strong>Google</strong>: Jika Anda menggunakan fitur masuk dengan Google</li>
+          <li><strong>Otoritas Hukum</strong>: Jika diwajibkan oleh hukum yang berlaku atau perintah pengadilan</li>
+        </ul>
+        <p>Semua pihak ketiga wajib mematuhi standar keamanan data yang setara.</p>
+      </div>
+
+      <div class="legal-section">
+        <h2>7. Cookies</h2>
+        <h3>7.1 Jenis Cookie yang Digunakan</h3>
+        <ul>
+          <li><strong>Cookie Esensial</strong>: Diperlukan untuk fungsi dasar platform (login, keranjang, preferensi bahasa) — tidak dapat dinonaktifkan</li>
+          <li><strong>Cookie Analitik</strong>: Membantu kami memahami cara penggunaan Platform (dapat dinonaktifkan)</li>
+        </ul>
+        <h3>7.2 Mengelola Cookie</h3>
+        <p>Anda dapat mengatur preferensi cookie melalui pengaturan browser. Menonaktifkan cookie esensial dapat mengganggu fungsi Platform.</p>
+      </div>
+
+      <div class="legal-section">
+        <h2>8. Hak-Hak Anda</h2>
+        <p>Sesuai UU PDP Indonesia, Anda memiliki hak untuk:</p>
+        <ul>
+          <li><strong>Akses</strong>: Mengetahui data pribadi apa yang kami simpan tentang Anda</li>
+          <li><strong>Koreksi</strong>: Memperbarui data yang tidak akurat melalui pengaturan akun</li>
+          <li><strong>Penghapusan</strong>: Meminta penghapusan data Anda (subject to legal retention requirements)</li>
+          <li><strong>Portabilitas</strong>: Menerima salinan data Anda dalam format yang dapat dibaca mesin</li>
+          <li><strong>Keberatan</strong>: Menolak pemrosesan untuk tujuan pemasaran langsung</li>
+          <li><strong>Pembatasan</strong>: Membatasi pemrosesan data dalam kondisi tertentu</li>
+        </ul>
+        <p>Untuk menggunakan hak-hak ini, hubungi kami di <a href="mailto:privacy@tokowebjaya.com" class="text-neon hover:underline">privacy@tokowebjaya.com</a>. Kami akan merespons dalam 30 hari kerja.</p>
+      </div>
+
+      <div class="legal-section">
+        <h2>9. Privasi Anak-Anak</h2>
+        <p>Platform kami tidak ditujukan untuk anak-anak di bawah 18 tahun. Kami tidak secara sadar mengumpulkan data dari anak-anak. Jika Anda mengetahui bahwa anak di bawah umur telah memberikan data kepada kami, segera hubungi kami.</p>
+      </div>
+
+      <div class="legal-section">
+        <h2>10. Perubahan Kebijakan</h2>
+        <p>Kami dapat memperbarui Kebijakan Privasi ini secara berkala. Versi terbaru selalu tersedia di halaman ini dengan tanggal pembaruan. Untuk perubahan signifikan, kami akan memberikan notifikasi melalui email atau Platform.</p>
+      </div>
+
+      <div class="legal-section">
+        <h2>11. Hubungi Kami</h2>
+        <p>Untuk pertanyaan atau keluhan terkait privasi data, hubungi kami di:</p>
+        <ul>
+          <li>Email Privasi: <a href="mailto:privacy@tokowebjaya.com" class="text-neon hover:underline">privacy@tokowebjaya.com</a></li>
+          <li>Email Umum: <a href="mailto:support@tokowebjaya.com" class="text-neon hover:underline">support@tokowebjaya.com</a></li>
+          <li>Halaman Kontak: <a href="/{{ locale }}/contact" class="text-neon hover:underline">tokowebjaya.com/kontak</a></li>
+        </ul>
+      </div>
+
+      {% else %}
+
+      <div class="legal-section">
+        <h2>1. Our Commitment</h2>
+        <p>Toko Web Jaya is committed to protecting your privacy. This Privacy Policy explains how we collect, use, store, and protect your personal information when using our Platform, in accordance with Indonesia's Personal Data Protection Law (UU PDP).</p>
+      </div>
+
+      <div class="legal-section">
+        <h2>2. Data We Collect</h2>
+        <h3>2.1 Data You Provide</h3>
+        <ul>
+          <li><strong>Account Data</strong>: Full name, email address, profile photo (from Google OAuth if used)</li>
+          <li><strong>Transaction Data</strong>: Purchase history, order details, payment information (excluding card numbers — processed by payment gateway)</li>
+          <li><strong>Communication Data</strong>: Messages you send via contact forms or customer support</li>
+          <li><strong>Appointment Data</strong>: Information provided when booking appointments/consultations</li>
+        </ul>
+        <h3>2.2 Automatically Collected Data</h3>
+        <ul>
+          <li><strong>Technical Data</strong>: IP address, browser type, OS, pages visited, visit duration</li>
+          <li><strong>Cookie Data</strong>: Session cookies to maintain login and preferences</li>
+          <li><strong>Log Data</strong>: Server access logs for security and troubleshooting</li>
+        </ul>
+        <h3>2.3 Data from Third Parties</h3>
+        <ul>
+          <li><strong>Google OAuth</strong>: Name, email, and profile photo if you choose Google sign-in</li>
+          <li><strong>Payment Gateway</strong>: Payment status confirmation (not card details)</li>
+        </ul>
+      </div>
+
+      <div class="legal-section">
+        <h2>3. How We Use Your Data</h2>
+        <p>We use your data to:</p>
+        <ul>
+          <li>Provide, manage, and improve Platform services</li>
+          <li>Process transactions and send invoices</li>
+          <li>Send notifications about orders, subscriptions, and accounts</li>
+          <li>Provide customer support</li>
+          <li>Send product updates and service information (can be disabled)</li>
+          <li>Detect and prevent fraud or abuse</li>
+          <li>Comply with legal obligations</li>
+          <li>Analyze Platform usage for service improvement (anonymized aggregate data)</li>
+        </ul>
+      </div>
+
+      <div class="legal-section">
+        <h2>4. Legal Basis for Processing</h2>
+        <p>We process your personal data based on:</p>
+        <ul>
+          <li><strong>Contract Performance</strong>: Processing necessary to fulfill requested services</li>
+          <li><strong>Consent</strong>: For marketing communications requiring explicit consent</li>
+          <li><strong>Legitimate Interests</strong>: For platform security and fraud prevention</li>
+          <li><strong>Legal Obligation</strong>: To comply with applicable regulations</li>
+        </ul>
+      </div>
+
+      <div class="legal-section">
+        <h2>5. Data Storage and Security</h2>
+        <h3>5.1 Storage Location</h3>
+        <p>Data is stored on servers located in Indonesia or countries with adequate data protection standards.</p>
+        <h3>5.2 Retention Period</h3>
+        <ul>
+          <li>Active account data: While account remains active</li>
+          <li>Transaction data: Minimum 5 years per Indonesian tax regulations</li>
+          <li>System logs: 90 days</li>
+          <li>Deleted account data: Anonymized within 30 days of deletion request</li>
+        </ul>
+        <h3>5.3 Security Measures</h3>
+        <p>We implement technical and organizational security measures, including:</p>
+        <ul>
+          <li>Data encryption in transit (HTTPS/TLS)</li>
+          <li>Password hashing using bcrypt</li>
+          <li>Role-based access control</li>
+          <li>Continuous monitoring for suspicious activity</li>
+          <li>Regular data backups</li>
+        </ul>
+      </div>
+
+      <div class="legal-section">
+        <h2>6. Data Sharing with Third Parties</h2>
+        <p>We do not sell your personal data. Data is only shared with:</p>
+        <ul>
+          <li><strong>Payment Provider</strong> (Duitku): Minimum information required to process transactions</li>
+          <li><strong>Email Provider</strong> (Sumopod): For transactional email delivery</li>
+          <li><strong>Google</strong>: If you use the Google sign-in feature</li>
+          <li><strong>Legal Authorities</strong>: If required by applicable law or court order</li>
+        </ul>
+        <p>All third parties are required to comply with equivalent data security standards.</p>
+      </div>
+
+      <div class="legal-section">
+        <h2>7. Cookies</h2>
+        <h3>7.1 Types of Cookies Used</h3>
+        <ul>
+          <li><strong>Essential Cookies</strong>: Required for basic Platform functions (login, cart, language preference) — cannot be disabled</li>
+          <li><strong>Analytics Cookies</strong>: Help us understand Platform usage (can be disabled)</li>
+        </ul>
+        <h3>7.2 Managing Cookies</h3>
+        <p>You can set cookie preferences through browser settings. Disabling essential cookies may impair Platform functionality.</p>
+      </div>
+
+      <div class="legal-section">
+        <h2>8. Your Rights</h2>
+        <p>Under Indonesia's UU PDP, you have the right to:</p>
+        <ul>
+          <li><strong>Access</strong>: Know what personal data we hold about you</li>
+          <li><strong>Correction</strong>: Update inaccurate data via account settings</li>
+          <li><strong>Deletion</strong>: Request deletion of your data (subject to legal retention requirements)</li>
+          <li><strong>Portability</strong>: Receive a copy of your data in machine-readable format</li>
+          <li><strong>Objection</strong>: Opt out of direct marketing processing</li>
+          <li><strong>Restriction</strong>: Limit data processing under certain conditions</li>
+        </ul>
+        <p>To exercise these rights, contact us at <a href="mailto:privacy@tokowebjaya.com" class="text-neon hover:underline">privacy@tokowebjaya.com</a>. We will respond within 30 business days.</p>
+      </div>
+
+      <div class="legal-section">
+        <h2>9. Children's Privacy</h2>
+        <p>Our Platform is not intended for children under 18. We do not knowingly collect data from children. If you believe a minor has provided data to us, please contact us immediately.</p>
+      </div>
+
+      <div class="legal-section">
+        <h2>10. Policy Changes</h2>
+        <p>We may update this Privacy Policy periodically. The latest version is always available on this page with the update date. For significant changes, we will notify you via email or Platform notification.</p>
+      </div>
+
+      <div class="legal-section">
+        <h2>11. Contact Us</h2>
+        <p>For privacy-related questions or complaints, contact us at:</p>
+        <ul>
+          <li>Privacy Email: <a href="mailto:privacy@tokowebjaya.com" class="text-neon hover:underline">privacy@tokowebjaya.com</a></li>
+          <li>General Email: <a href="mailto:support@tokowebjaya.com" class="text-neon hover:underline">support@tokowebjaya.com</a></li>
+          <li>Contact Page: <a href="/{{ locale }}/contact" class="text-neon hover:underline">tokowebjaya.com/contact</a></li>
+        </ul>
+      </div>
+
+      {% endif %}
+
+    </div>
+
+    <!-- Back link -->
+    <div class="mt-12 pt-8 border-t border-gray-800 flex items-center justify-between reveal">
+      <a href="javascript:history.back()" class="text-gray-500 hover:text-white text-sm flex items-center gap-2 transition-colors">
+        <i class="bi bi-arrow-left"></i>
+        {% if locale == 'id' %}Kembali{% else %}Go Back{% endif %}
+      </a>
+      <a href="/{{ locale }}/terms" class="text-neon hover:underline text-sm">
+        {% if locale == 'id' %}← Syarat & Ketentuan{% else %}← Terms of Service{% endif %}
+      </a>
+    </div>
+
+  </div>
+</section>
+{% endblock %}

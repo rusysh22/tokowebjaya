@@ -6,12 +6,10 @@
   <div class="container-main max-w-3xl">
 
     <div class="mb-8 reveal">
-      <a href="/{{ locale }}/dashboard" class="text-xs text-gray-600 hover:text-white mb-4 inline-block">
-        ← Dashboard
-      </a>
-      <h1 class="heading-md text-white">
+      <h1 class="heading-md text-white mb-8">
         {% if locale == 'id' %}Janji Temu Saya{% else %}My Appointments{% endif %}
       </h1>
+      {% include "dashboard/_tabs.html" %}
     </div>
 
     {% if appointments %}

@@ -191,6 +191,38 @@
   animation: float 4s ease-in-out infinite;
 }
 
+/* 3D Display slide animations — next direction (enter from right, leave to left) */
+@keyframes slideEnterRight {
+  from { opacity: 0; transform: scale(1.07) translateX(6%); }
+  to   { opacity: 1; transform: scale(1)    translateX(0);   }
+}
+@keyframes slideLeaveLeft {
+  from { opacity: 1; transform: scale(1)    translateX(0);    }
+  to   { opacity: 0; transform: scale(1.03) translateX(-5%); }
+}
+/* prev direction (enter from left, leave to right) */
+@keyframes slideEnterLeft {
+  from { opacity: 0; transform: scale(1.07) translateX(-6%); }
+  to   { opacity: 1; transform: scale(1)    translateX(0);    }
+}
+@keyframes slideLeaveRight {
+  from { opacity: 1; transform: scale(1)    translateX(0);   }
+  to   { opacity: 0; transform: scale(1.03) translateX(5%); }
+}
+@keyframes infoEnter {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0);    }
+}
+
+.slide-enter-right { animation: slideEnterRight 0.65s cubic-bezier(0.25,0.46,0.45,0.94) forwards; }
+.slide-leave-left  { animation: slideLeaveLeft  0.55s cubic-bezier(0.25,0.46,0.45,0.94) forwards; }
+.slide-enter-left  { animation: slideEnterLeft  0.65s cubic-bezier(0.25,0.46,0.45,0.94) forwards; }
+.slide-leave-right { animation: slideLeaveRight 0.55s cubic-bezier(0.25,0.46,0.45,0.94) forwards; }
+.slide-hidden-right { opacity: 0; transform: scale(1.07) translateX(6%); }
+.slide-hidden-left  { opacity: 0; transform: scale(1.07) translateX(-6%); }
+.info-enter   { animation: infoEnter 0.45s cubic-bezier(0.25,0.46,0.45,0.94) 0.2s both; }
+.info-hidden  { opacity: 0; transform: translateY(14px); }
+
 /* Marquee ticker */
 @keyframes marquee {
   from { transform: translateX(0); }
@@ -263,3 +295,55 @@
 [data-stagger-grid] .reveal:nth-child(4) { animation-delay: 0.24s; }
 [data-stagger-grid] .reveal:nth-child(5) { animation-delay: 0.32s; }
 [data-stagger-grid] .reveal:nth-child(6) { animation-delay: 0.40s; }
+
+/* Stats + How It Works combined layout */
+.stats-how-mobile { display: block; }
+.stats-how-desktop { display: none; }
+
+@media (min-width: 1024px) {
+  .stats-how-mobile  { display: none; }
+  .stats-how-desktop {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4rem;
+    align-items: center;
+  }
+}
+
+/* Legal pages (Terms & Privacy) */
+.prose-legal { color: #888888; font-size: 0.9rem; line-height: 1.75; }
+.legal-section { margin-bottom: 2.5rem; }
+.legal-section h2 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #ffffff;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #1E1E1E;
+}
+.legal-section h3 {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #CCCCCC;
+  margin-top: 1rem;
+  margin-bottom: 0.4rem;
+}
+.legal-section p { margin-bottom: 0.75rem; }
+.legal-section ul {
+  list-style: none;
+  padding: 0;
+  margin-bottom: 0.75rem;
+}
+.legal-section ul li {
+  padding-left: 1.25rem;
+  position: relative;
+  margin-bottom: 0.4rem;
+}
+.legal-section ul li::before {
+  content: '—';
+  position: absolute;
+  left: 0;
+  color: #CAFF00;
+  font-weight: 700;
+}
+.legal-section strong { color: #ffffff; }

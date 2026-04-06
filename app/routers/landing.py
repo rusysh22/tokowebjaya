@@ -163,6 +163,7 @@ async def contact_submit(
 async def login_page(
     request: Request, locale: str,
     error: str = None, tab: str = "google", email: str = None,
+    next: str = None,
     db: Session = Depends(get_db),
 ):
     if locale not in settings.SUPPORTED_LOCALES:
@@ -170,10 +171,11 @@ async def login_page(
     from app.main import templates
     current_user = get_current_user(request, db)
     if current_user:
-        return RedirectResponse(url=f"/{locale}/dashboard")
+        return RedirectResponse(url=next or f"/{locale}/dashboard")
     return templates.TemplateResponse(
         request, "auth/login.html",
-        {"locale": locale, "current_user": None, "error": error, "tab": tab, "prefill_email": email},
+        {"locale": locale, "current_user": None, "error": error, "tab": tab,
+         "prefill_email": email, "next": next or ""},
     )
 
 
@@ -237,6 +239,30 @@ async def reset_password_page(
     return templates.TemplateResponse(
         request, "auth/reset_password.html",
         {"locale": locale, "current_user": None, "email": email, "error": error},
+    )
+
+
+@router.get("/{locale}/terms")
+async def terms_page(request: Request, locale: str, db: Session = Depends(get_db)):
+    if locale not in settings.SUPPORTED_LOCALES:
+        return RedirectResponse(url=f"/{settings.DEFAULT_LOCALE}/terms")
+    from app.main import templates
+    user = get_current_user(request, db)
+    return templates.TemplateResponse(
+        request, "legal/terms.html",
+        {"locale": locale, "current_user": user, "active_page": ""},
+    )
+
+
+@router.get("/{locale}/privacy")
+async def privacy_page(request: Request, locale: str, db: Session = Depends(get_db)):
+    if locale not in settings.SUPPORTED_LOCALES:
+        return RedirectResponse(url=f"/{settings.DEFAULT_LOCALE}/privacy")
+    from app.main import templates
+    user = get_current_user(request, db)
+    return templates.TemplateResponse(
+        request, "legal/privacy.html",
+        {"locale": locale, "current_user": user, "active_page": ""},
     )
 
 

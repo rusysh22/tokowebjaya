@@ -337,7 +337,7 @@ async def checkout_process(
 ):
     current_user = get_current_user(request, db)
     if not current_user:
-        return RedirectResponse(url=f"/{locale}/login")
+        return RedirectResponse(url=f"/{locale}/login?next=/{locale}/checkout/{product_id}")
 
     product = db.query(Product).filter(
         Product.id == product_id, Product.status == ProductStatus.active

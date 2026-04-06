@@ -3,12 +3,8 @@
 {% block content %}
 <section class="bg-black min-h-[calc(100vh-4rem)] pt-24 pb-16">
   <div class="container-main max-w-3xl">
-    <div class="flex items-center gap-3 mb-8">
-      <a href="/{{ locale }}/dashboard" class="text-gray-500 hover:text-white text-xs">← Dashboard</a>
-      <span class="text-gray-700">/</span>
-      <span class="text-xs text-white">API Keys</span>
-    </div>
     <h1 class="heading-md text-white mb-2">API Keys</h1>
+    {% include "dashboard/_tabs.html" %}
     <p class="text-gray-500 text-sm mb-8">
       {% if locale == 'id' %}
         Gunakan API key untuk mengakses data Anda secara programatik. Base URL: <code class="text-neon font-mono">/api/v1</code>

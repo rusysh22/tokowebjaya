@@ -53,32 +53,36 @@
       </div>
 
       <!-- Right: 3D Perspective Display -->
-      <div class="hidden lg:block" style="min-width:0; opacity:0; animation: heroSlideUp 0.8s cubic-bezier(0.22,1,0.36,1) 0.4s forwards;">
+      <div class="hidden lg:flex lg:items-center lg:justify-center" style="opacity:0; animation: heroSlideUp 0.8s cubic-bezier(0.22,1,0.36,1) 0.4s forwards;">
         {% if featured_products %}
         {% set fp = featured_products[:6] %}
-        <div x-data="perspectiveDisplay({{ fp | length }})" x-init="init()"
-             class="relative select-none"
-             style="width:100%;"
+        {% set slugs = fp | map(attribute='slug') | list %}
+        <div x-data="perspectiveDisplay({{ fp | length }}, {{ slugs | tojson }})" x-init="init()"
+             class="relative"
+             style="width: clamp(320px, 45vw, 560px);"
              @mouseenter="pause()" @mouseleave="resume()">
 
           <!-- Outer 3D perspective wrapper — tilted like a screen/monitor -->
-          <div style="perspective: 1200px; width:100%;">
-            <div style="width:100%; transform: rotateY(-18deg) rotateX(4deg); transform-style: preserve-3d;"
+          <div style="perspective: 1400px;">
+            <div style="transform: rotateY(-28deg) rotateX(6deg); transform-style: preserve-3d;"
                  class="relative">
 
               <!-- Main screen frame -->
               <div class="relative overflow-hidden border border-gray-700 bg-gray-950"
-                   style="width:100%; border-radius:6px; box-shadow: 8px 12px 40px rgba(0,0,0,0.8), 0 0 0 1px rgba(202,255,0,0.08), inset 0 1px 0 rgba(255,255,255,0.05);">
+                   style="border-radius:6px; box-shadow: 8px 12px 40px rgba(0,0,0,0.8), 0 0 0 1px rgba(202,255,0,0.08), inset 0 1px 0 rgba(255,255,255,0.05);">
 
                 <!-- Slides -->
-                <div class="relative" style="aspect-ratio: 16/10; width:100%; overflow:hidden;">
+                <div class="relative" style="aspect-ratio: 16/10; overflow:hidden;">
                   {% for product in fp %}
-                  <div class="absolute inset-0 transition-all duration-700 ease-in-out"
-                       :class="current === {{ loop.index0 }}
-                         ? 'opacity-100 z-10 scale-100'
-                         : leaving === {{ loop.index0 }}
-                           ? 'opacity-0 z-5 scale-[1.04]'
-                           : 'opacity-0 z-0 scale-100'">
+                  <div class="absolute inset-0"
+                       :class="{
+                         'slide-enter-right z-10 pointer-events-auto':  current === {{ loop.index0 }} && dir === 'next',
+                         'slide-enter-left  z-10 pointer-events-auto':  current === {{ loop.index0 }} && dir === 'prev',
+                         'slide-leave-left  z-[5] pointer-events-none': leaving === {{ loop.index0 }} && current !== {{ loop.index0 }} && dir === 'next',
+                         'slide-leave-right z-[5] pointer-events-none': leaving === {{ loop.index0 }} && current !== {{ loop.index0 }} && dir === 'prev',
+                         'slide-hidden-right z-0 pointer-events-none':  current !== {{ loop.index0 }} && leaving !== {{ loop.index0 }} && dir === 'next',
+                         'slide-hidden-left  z-0 pointer-events-none':  current !== {{ loop.index0 }} && leaving !== {{ loop.index0 }} && dir === 'prev'
+                       }">
                     {% if product.cover_image %}
                       <img src="/static/uploads/products/images/{{ product.cover_image }}"
                            alt="{{ product['name_' + locale] }}"
@@ -89,26 +93,25 @@
                       </div>
                     {% endif %}
                     <!-- Overlay -->
-                    <div class="absolute inset-0" style="background: linear-gradient(to top, rgba(0,0,0,0.88) 0%, rgba(0,0,0,0.2) 50%, transparent 100%)"></div>
-                    <!-- Product info -->
-                    <div class="absolute bottom-0 left-0 right-0 p-5">
+                    <div class="absolute inset-0" style="background: linear-gradient(to top, rgba(0,0,0,0.88) 0%, rgba(0,0,0,0.15) 55%, transparent 100%)"></div>
+                    <!-- Product info — animates up on enter -->
+                    <div class="absolute bottom-0 left-0 right-0 p-5"
+                         :class="current === {{ loop.index0 }} ? 'info-enter' : 'info-hidden'">
                       <span class="inline-block text-[10px] font-mono uppercase tracking-widest text-gray-400 border border-gray-700 px-2 py-0.5 mb-2">{{ product.type.value }}</span>
-                      <h3 class="text-white font-bold text-lg leading-tight mb-2 line-clamp-2">{{ product['name_' + locale] }}</h3>
-                      <div class="flex items-center justify-between">
-                        <div>
-                          {% if product.price_otf %}
-                            <span class="text-neon font-black text-xl">Rp {{ "{:,.0f}".format(product.price_otf) }}</span>
-                          {% elif product.price_monthly %}
-                            <span class="text-neon font-black text-xl">Rp {{ "{:,.0f}".format(product.price_monthly) }}</span>
-                            <span class="text-gray-400 text-sm">/bln</span>
-                          {% elif product.pricing_model.value == 'contact_seller' %}
-                            <span class="text-gray-300 text-sm">Hubungi Penjual</span>
-                          {% endif %}
-                        </div>
-                        <a href="/{{ locale }}/product/{{ product.slug }}"
-                           class="flex items-center gap-1.5 bg-neon text-black text-xs font-bold px-3 py-1.5 hover:bg-white transition-colors">
-                          Detail <i class="bi bi-arrow-right text-xs"></i>
-                        </a>
+                      <h3 class="text-white font-bold text-lg leading-tight mb-1 line-clamp-1">{{ product['name_' + locale] }}</h3>
+                      {% set sdesc = product['short_desc_' + locale] %}
+                      {% if sdesc %}
+                      <p class="text-gray-400 text-xs leading-relaxed line-clamp-2">{{ sdesc }}</p>
+                      {% endif %}
+                      <div class="mt-2">
+                        {% if product.price_otf %}
+                          <span class="text-neon font-black text-xl">Rp {{ "{:,.0f}".format(product.price_otf) }}</span>
+                        {% elif product.price_monthly %}
+                          <span class="text-neon font-black text-xl">Rp {{ "{:,.0f}".format(product.price_monthly) }}</span>
+                          <span class="text-gray-400 text-sm">/bln</span>
+                        {% elif product.pricing_model.value == 'contact_seller' %}
+                          <span class="text-gray-300 text-sm">Hubungi Penjual</span>
+                        {% endif %}
                       </div>
                     </div>
                     <!-- Neon top bar -->
@@ -124,7 +127,7 @@
                 </div>
 
                 <!-- Screen bottom bezel -->
-                <div class="flex items-center justify-between px-5 py-2.5 bg-gray-950 border-t border-gray-800">
+                <div class="flex items-center justify-between px-4 py-2 bg-gray-950 border-t border-gray-800">
                   <!-- Dots -->
                   <div class="flex items-center gap-1.5">
                     {% for product in fp %}
@@ -134,8 +137,12 @@
                     </button>
                     {% endfor %}
                   </div>
-                  <!-- Counter + nav -->
+                  <!-- Detail button + nav -->
                   <div class="flex items-center gap-2">
+                    <a :href="'/' + '{{ locale }}' + '/product/' + slugs[current]"
+                       class="flex items-center gap-1 bg-neon text-black text-[11px] font-bold px-3 py-1 hover:bg-white transition-colors">
+                      Detail <i class="bi bi-arrow-right text-[10px]"></i>
+                    </a>
                     <button @click="prev()" class="w-6 h-6 flex items-center justify-center text-gray-500 hover:text-neon transition-colors">
                       <i class="bi bi-chevron-left text-xs"></i>
                     </button>
@@ -154,29 +161,6 @@
               <!-- 3D bottom face -->
               <div class="absolute bottom-0 left-0 right-0 bg-gray-900"
                    style="height:14px; transform: rotateX(-90deg) translateZ(7px); transform-origin: bottom center; opacity:0.7;">
-              </div>
-            </div>
-          </div>
-
-          <!-- Reflection below the screen -->
-          <div class="relative mt-1 pointer-events-none" style="perspective:1200px; width:100%;">
-            <div style="width:100%; transform: rotateY(-18deg) rotateX(4deg);">
-              <div class="overflow-hidden" style="border-radius:6px; height:60px; position:relative;">
-                {% for product in fp %}
-                <div class="absolute inset-0 transition-opacity duration-700"
-                     :class="current === {{ loop.index0 }} ? 'opacity-100' : 'opacity-0'">
-                  {% if product.cover_image %}
-                    <img src="/static/uploads/products/images/{{ product.cover_image }}"
-                         aria-hidden="true"
-                         class="w-full object-cover object-bottom"
-                         style="height:200px; margin-top:-140px; transform:scaleY(-1);
-                                opacity:0.18;
-                                mask-image:linear-gradient(to bottom,rgba(0,0,0,0.6) 0%,transparent 100%);
-                                -webkit-mask-image:linear-gradient(to bottom,rgba(0,0,0,0.6) 0%,transparent 100%);" />
-                  {% endif %}
-                </div>
-                {% endfor %}
-                <div class="absolute inset-0" style="background:linear-gradient(to bottom,rgba(0,0,0,0.3),rgba(0,0,0,1))"></div>
               </div>
             </div>
           </div>
@@ -389,85 +373,157 @@
   </div>
 </section>
 
-<!-- ===== STATS COUNTER ===== -->
+<!-- ===== STATS + HOW IT WORKS (combined) ===== -->
 <section class="py-16 bg-black border-y border-gray-800">
   <div class="container-main">
-    <div class="grid grid-cols-2 lg:grid-cols-4 gap-px bg-gray-800">
+
+    {% set steps = [
+      {"num":"1","title_id":"Daftar & Pilih Produk","title_en":"Sign Up & Choose Product",
+       "desc_id":"Buat akun gratis dan jelajahi katalog produk digital kami.",
+       "desc_en":"Create a free account and browse our digital product catalog.",
+       "icon":"bi-person-plus","pos":"top"},
+      {"num":"2","title_id":"Checkout & Bayar","title_en":"Checkout & Pay",
+       "desc_id":"Pilih metode pembayaran. Proses aman dan instan via Duitku.",
+       "desc_en":"Choose your payment method. Secure and instant via Duitku.",
+       "icon":"bi-credit-card","pos":"right"},
+      {"num":"3","title_id":"Akses Produk","title_en":"Access Product",
+       "desc_id":"Invoice otomatis dikirim ke email. Produk langsung bisa diakses.",
+       "desc_en":"Invoice sent to email automatically. Product instantly accessible.",
+       "icon":"bi-cloud-download","pos":"bottom"},
+      {"num":"4","title_id":"Langganan & Kelola","title_en":"Subscribe & Manage",
+       "desc_id":"Pantau pesanan, invoice, dan langganan dari dashboard Anda.",
+       "desc_en":"Monitor orders, invoices, and subscriptions from your dashboard.",
+       "icon":"bi-grid-1x2","pos":"left"},
+    ] %}
+
+    <!-- Desktop: side-by-side -->
+    <div class="stats-how-desktop">
+
+      <!-- Left: Stats + heading -->
+      <div class="reveal">
+        <span class="text-label block mb-3">
+          {% if locale == 'id' %}Cara Kerja{% else %}How It Works{% endif %}
+        </span>
+        <h2 class="heading-lg text-white mb-10">
+          {% if locale == 'id' %}Empat Langkah Mudah{% else %}Four Simple Steps{% endif %}
+        </h2>
+
+        <!-- Stats grid 2x2 -->
+        {% set stats = [
+          {"num": 500,  "suffix": "+", "label_id": "Produk Aktif",      "label_en": "Active Products"},
+          {"num": 2000, "suffix": "+", "label_id": "Pengguna Terdaftar", "label_en": "Registered Users"},
+          {"num": 9800, "suffix": "+", "label_id": "Transaksi Berhasil", "label_en": "Successful Orders"},
+          {"num": 99,   "suffix": "%", "label_id": "Uptime Platform",    "label_en": "Platform Uptime"},
+        ] %}
+        <div class="grid grid-cols-2 gap-px bg-gray-800 border border-gray-800">
+          {% for stat in stats %}
+          <div class="bg-black px-6 py-8 reveal" style="animation-delay: {{ loop.index0 * 0.1 }}s">
+            <div class="text-3xl font-black text-neon mb-1">
+              <span data-counter data-target="{{ stat.num }}">0</span>{{ stat.suffix }}
+            </div>
+            <div class="text-sm text-gray-500">{{ stat['label_' + locale] }}</div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- Right: Orbital diagram -->
+      <div class="flex items-center justify-center reveal">
+        <div class="relative" style="width:580px; height:520px; flex-shrink:0;">
+
+          <!-- Dashed orbit circle -->
+          <div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none rounded-full"
+               style="width:300px; height:300px; border:1.5px dashed rgba(202,255,0,0.2);"></div>
+
+          <!-- Center hub -->
+          <div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10" style="width:90px; height:90px;">
+            <div class="w-full h-full rounded-2xl bg-black border-2 border-neon flex flex-col items-center justify-center gap-1"
+                 style="box-shadow: 0 0 0 8px rgba(202,255,0,0.06), 0 0 50px rgba(202,255,0,0.12);">
+              <i class="bi bi-lightning-charge-fill text-2xl text-neon"></i>
+              <span class="text-neon text-[9px] font-bold tracking-widest uppercase">TWJ</span>
+            </div>
+            <div class="absolute inset-0 rounded-2xl border border-neon/30 animate-ping" style="animation-duration:2.5s;"></div>
+          </div>
+
+          <!-- Step cards -->
+          {% for step in steps %}
+          <div class="absolute" style="
+            {% if step.pos == 'top'    %}top:0;    left:50%; transform:translateX(-50%); width:180px;
+            {% elif step.pos == 'right'%}right:0;  top:50%;  transform:translateY(-50%); width:180px;
+            {% elif step.pos == 'bottom'%}bottom:0; left:50%; transform:translateX(-50%); width:180px;
+            {% else                    %}left:0;   top:50%;  transform:translateY(-50%); width:180px;
+            {% endif %}
+          ">
+            <div class="relative bg-gray-950 border border-gray-700 p-4 group hover:border-neon/60 transition-all duration-300"
+                 style="border-radius:12px; box-shadow:0 4px 20px rgba(0,0,0,0.5);">
+              <div class="absolute -top-3 -right-3 w-6 h-6 rounded-full bg-neon text-black text-xs font-black flex items-center justify-center z-10"
+                   style="box-shadow:0 0 10px rgba(202,255,0,0.5);">{{ step.num }}</div>
+              <div style="width:40px; height:40px; border-radius:9px; flex-shrink:0;"
+                   class="bg-black border border-neon/30 flex items-center justify-center mb-3 group-hover:bg-neon/5 transition-colors duration-300">
+                <i class="bi {{ step.icon }} text-base text-neon"></i>
+              </div>
+              <h3 class="text-white font-bold text-xs mb-1 leading-snug">{{ step['title_' + locale] }}</h3>
+              <p class="text-gray-500 text-[11px] leading-relaxed">{{ step['desc_' + locale] }}</p>
+            </div>
+            <!-- Dashed connector -->
+            {% if step.pos == 'top' %}
+            <div style="position:absolute;left:50%;top:100%;transform:translateX(-50%);width:1.5px;height:50px;background:repeating-linear-gradient(to bottom,rgba(202,255,0,0.35) 0,rgba(202,255,0,0.35) 5px,transparent 5px,transparent 10px);"></div>
+            {% elif step.pos == 'bottom' %}
+            <div style="position:absolute;left:50%;bottom:100%;transform:translateX(-50%);width:1.5px;height:50px;background:repeating-linear-gradient(to bottom,rgba(202,255,0,0.35) 0,rgba(202,255,0,0.35) 5px,transparent 5px,transparent 10px);"></div>
+            {% elif step.pos == 'right' %}
+            <div style="position:absolute;top:50%;right:100%;transform:translateY(-50%);height:1.5px;width:50px;background:repeating-linear-gradient(to right,rgba(202,255,0,0.35) 0,rgba(202,255,0,0.35) 5px,transparent 5px,transparent 10px);"></div>
+            {% else %}
+            <div style="position:absolute;top:50%;left:100%;transform:translateY(-50%);height:1.5px;width:50px;background:repeating-linear-gradient(to right,rgba(202,255,0,0.35) 0,rgba(202,255,0,0.35) 5px,transparent 5px,transparent 10px);"></div>
+            {% endif %}
+          </div>
+          {% endfor %}
+
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Mobile / tablet: stacked -->
+    <div class="stats-how-mobile">
+      <!-- Stats -->
       {% set stats = [
         {"num": 500,  "suffix": "+", "label_id": "Produk Aktif",      "label_en": "Active Products"},
         {"num": 2000, "suffix": "+", "label_id": "Pengguna Terdaftar", "label_en": "Registered Users"},
         {"num": 9800, "suffix": "+", "label_id": "Transaksi Berhasil", "label_en": "Successful Orders"},
         {"num": 99,   "suffix": "%", "label_id": "Uptime Platform",    "label_en": "Platform Uptime"},
       ] %}
-      {% for stat in stats %}
-      <div class="bg-black px-8 py-10 text-center reveal" style="animation-delay: {{ loop.index0 * 0.1 }}s">
-        <div class="text-4xl font-black text-neon mb-2">
-          <span data-counter data-target="{{ stat.num }}">0</span>{{ stat.suffix }}
-        </div>
-        <div class="text-sm text-gray-400 tracking-wide">{{ stat['label_' + locale] }}</div>
-      </div>
-      {% endfor %}
-    </div>
-  </div>
-</section>
-
-<!-- ===== HOW IT WORKS ===== -->
-<section class="section bg-black border-b border-gray-800">
-  <div class="container-main">
-    <div class="text-center mb-16 reveal">
-      <span class="text-label block mb-3">
-        {% if locale == 'id' %}Cara Kerja{% else %}How It Works{% endif %}
-      </span>
-      <h2 class="heading-lg text-white">
-        {% if locale == 'id' %}Tiga Langkah Mudah{% else %}Three Simple Steps{% endif %}
-      </h2>
-    </div>
-
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-      {% set steps = [
-        {"num": "01", "title_id": "Pilih Produk", "title_en": "Choose a Product",
-         "desc_id": "Jelajahi katalog dan temukan produk digital yang sesuai kebutuhan bisnis Anda.",
-         "desc_en": "Browse the catalog and find the digital product that fits your business needs.",
-         "icon": "bi-cart3"},
-        {"num": "02", "title_id": "Checkout & Bayar", "title_en": "Checkout & Pay",
-         "desc_id": "Pilih metode pembayaran via Duitku atau Mayar.id. Proses aman dan instan.",
-         "desc_en": "Choose payment via Duitku or Mayar.id. Secure and instant processing.",
-         "icon": "bi-credit-card"},
-        {"num": "03", "title_id": "Akses Langsung", "title_en": "Instant Access",
-         "desc_id": "Invoice dikirim otomatis ke email. Produk langsung bisa diakses atau didownload.",
-         "desc_en": "Invoice sent automatically to email. Product immediately accessible or downloadable.",
-         "icon": "bi-lightning-charge"},
-      ] %}
-
-      {% for step in steps %}
-      <div class="reveal step-card group" style="animation-delay: {{ loop.index0 * 0.15 }}s">
-        <div class="relative border border-gray-800 p-8 bg-black group-hover:border-gray-600 group-hover:bg-gray-900 transition-all duration-400 overflow-hidden">
-          <!-- Connector line -->
-          {% if not loop.last %}
-          <div class="hidden md:block absolute top-12 left-full w-8 h-px bg-gray-800 z-10" style="transform:translateX(-100%)"></div>
-          {% endif %}
-
-          <!-- Step number -->
-          <div class="text-6xl font-black text-gray-800 group-hover:text-gray-700 transition-colors duration-300 mb-2 select-none">{{ step.num }}</div>
-
-          <!-- Icon with pulse ring -->
-          <div class="relative inline-flex mb-5">
-            <i class="bi {{ step.icon }} text-3xl text-neon"></i>
-            <div class="absolute inset-0 rounded-full opacity-0 group-hover:opacity-100 group-hover:animate-ping bg-neon/10 transition-opacity duration-300"></div>
+      <div class="grid grid-cols-2 gap-px bg-gray-800 border border-gray-800 mb-12">
+        {% for stat in stats %}
+        <div class="bg-black px-6 py-8 text-center">
+          <div class="text-3xl font-black text-neon mb-1">
+            <span data-counter data-target="{{ stat.num }}">0</span>{{ stat.suffix }}
           </div>
-
-          <h3 class="heading-sm text-white mb-3 group-hover:text-neon transition-colors duration-300">
-            {{ step['title_' + locale] }}
-          </h3>
-          <p class="text-gray-500 text-sm leading-relaxed">{{ step['desc_' + locale] }}</p>
-
-          <!-- Corner accent -->
-          <div class="absolute bottom-0 right-0 w-16 h-16 bg-neon opacity-0 group-hover:opacity-[0.04] transition-opacity duration-500"
-               style="clip-path:polygon(100% 0,100% 100%,0 100%)"></div>
+          <div class="text-sm text-gray-500">{{ stat['label_' + locale] }}</div>
         </div>
+        {% endfor %}
       </div>
-      {% endfor %}
+      <!-- Steps vertical -->
+      <div class="space-y-4">
+        {% for step in steps %}
+        <div class="flex gap-4 border border-gray-800 bg-gray-950 p-4" style="border-radius:10px;">
+          <div class="flex-shrink-0" style="width:40px;height:40px;border-radius:9px;"
+               class_="bg-neon/10 border border-neon/20 flex items-center justify-center">
+            <div style="width:40px;height:40px;border-radius:9px;background:rgba(202,255,0,0.08);border:1px solid rgba(202,255,0,0.2);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+              <i class="bi {{ step.icon }} text-base text-neon"></i>
+            </div>
+          </div>
+          <div>
+            <div class="flex items-center gap-2 mb-1">
+              <span class="w-5 h-5 rounded-full bg-neon text-black text-[10px] font-black flex items-center justify-center flex-shrink-0">{{ step.num }}</span>
+              <h3 class="text-white font-bold text-sm">{{ step['title_' + locale] }}</h3>
+            </div>
+            <p class="text-gray-500 text-xs leading-relaxed">{{ step['desc_' + locale] }}</p>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
     </div>
+
   </div>
 </section>
 
@@ -695,14 +751,16 @@
 <script src="/static/js/hero-particles.js"></script>
 <script>
 // ── Alpine.js: 3D Perspective Display ──────────────────────────────────────
-function perspectiveDisplay(total) {
-  const DURATION = 4500; // ms per slide
-  const TICK     = 80;   // progress update interval ms
+function perspectiveDisplay(total, slugs) {
+  const DURATION = 4500;
+  const TICK     = 80;
 
   return {
     current:  0,
     leaving:  -1,
+    dir:      'next',
     total,
+    slugs:    slugs || [],
     progress: 0,
     _slideTimer: null,
     _progTimer:  null,
@@ -733,27 +791,22 @@ function perspectiveDisplay(total) {
       clearInterval(this._progTimer);
     },
 
-    goTo(i) {
+    goTo(i, direction) {
       if (i === this.current) return;
       this._clear();
-      this.leaving  = this.current;
-      this.current  = i;
+      this.dir     = direction || (i > this.current ? 'next' : 'prev');
+      this.leaving = this.current;
+      this.current = i;
       this.progress = 0;
       setTimeout(() => { this.leaving = -1; }, 750);
       if (!this._paused) this._startSlide();
     },
 
-    next() { this.goTo((this.current + 1) % this.total); },
-    prev() { this.goTo((this.current - 1 + this.total) % this.total); },
+    next() { this.goTo((this.current + 1) % this.total, 'next'); },
+    prev() { this.goTo((this.current - 1 + this.total) % this.total, 'prev'); },
 
-    pause()  {
-      this._paused = true;
-      this._clear();
-    },
-    resume() {
-      this._paused = false;
-      this._startSlide();
-    },
+    pause()  { this._paused = true;  this._clear(); },
+    resume() { this._paused = false; this._startSlide(); },
   };
 }
 </script>

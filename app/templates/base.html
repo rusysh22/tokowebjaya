@@ -30,8 +30,8 @@
   <meta name="twitter:image" content="{% block twitter_image %}{{ settings.BASE_URL }}/static/og-default.png{% endblock %}" />
 
   <!-- Canonical hreflang -->
-  <link rel="alternate" hreflang="id" href="/id{{ request.url.path.lstrip('/id').lstrip('/en') or '/' }}" />
-  <link rel="alternate" hreflang="en" href="/en{{ request.url.path.lstrip('/id').lstrip('/en') or '/' }}" />
+  <link rel="alternate" hreflang="id" href="/id{{ request.url.path | replace('/id/', '/', 1) | replace('/en/', '/', 1) or '/' }}" />
+  <link rel="alternate" hreflang="en" href="/en{{ request.url.path | replace('/id/', '/', 1) | replace('/en/', '/', 1) or '/' }}" />
 
   <!-- Favicon -->
   <link rel="icon" type="image/svg+xml" href="/static/favicon.svg" />
@@ -95,11 +95,11 @@
       <div class="hidden md:flex items-center gap-4">
         <!-- Language toggle -->
         <div class="flex items-center border border-gray-700 text-xs font-semibold overflow-hidden">
-          <a href="/id{{ request.url.path.lstrip('/id').lstrip('/en') or '/' }}"
+          <a href="/id{{ request.url.path | replace('/id/', '/', 1) | replace('/en/', '/', 1) or '/' }}"
              class="px-3 py-1.5 transition-colors duration-200 {% if locale == 'id' %}bg-neon text-black{% else %}text-gray-400 hover:text-white{% endif %}">
             ID
           </a>
-          <a href="/en{{ request.url.path.lstrip('/id').lstrip('/en') or '/' }}"
+          <a href="/en{{ request.url.path | replace('/id/', '/', 1) | replace('/en/', '/', 1) or '/' }}"
              class="px-3 py-1.5 transition-colors duration-200 {% if locale == 'en' %}bg-neon text-black{% else %}text-gray-400 hover:text-white{% endif %}">
             EN
           </a>
@@ -154,9 +154,9 @@
         <a href="/{{ locale }}/contact" class="nav-link py-3 border-b border-gray-900">{{ t(locale, 'nav_contact') }}</a>
         <div class="flex items-center gap-3 pt-4">
           <div class="flex items-center border border-gray-700 text-xs font-semibold overflow-hidden">
-            <a href="/id{{ request.url.path.lstrip('/id').lstrip('/en') or '/' }}"
+            <a href="/id{{ request.url.path | replace('/id/', '/', 1) | replace('/en/', '/', 1) or '/' }}"
                class="px-3 py-1.5 {% if locale == 'id' %}bg-neon text-black{% else %}text-gray-400{% endif %}">ID</a>
-            <a href="/en{{ request.url.path.lstrip('/id').lstrip('/en') or '/' }}"
+            <a href="/en{{ request.url.path | replace('/id/', '/', 1) | replace('/en/', '/', 1) or '/' }}"
                class="px-3 py-1.5 {% if locale == 'en' %}bg-neon text-black{% else %}text-gray-400{% endif %}">EN</a>
           </div>
           {% if current_user %}

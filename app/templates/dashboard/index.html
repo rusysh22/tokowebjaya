@@ -41,23 +41,7 @@
     </div>
 
     <!-- Nav tabs -->
-    <div class="flex border-b border-gray-800 mb-8 gap-0 overflow-x-auto no-scrollbar">
-      {% set tabs = [
-        {'href': '/' + locale + '/dashboard', 'label_id': 'Overview', 'label_en': 'Overview', 'active': request.url.path.endswith('/dashboard') or request.url.path.endswith('/dashboard/')},
-        {'href': '/' + locale + '/dashboard/orders', 'label_id': 'Pesanan', 'label_en': 'Orders', 'active': 'orders' in request.url.path},
-        {'href': '/' + locale + '/dashboard/invoices', 'label_id': 'Invoice', 'label_en': 'Invoices', 'active': 'invoices' in request.url.path},
-        {'href': '/' + locale + '/dashboard/subscriptions', 'label_id': 'Langganan', 'label_en': 'Subscriptions', 'active': 'subscriptions' in request.url.path},
-        {'href': '/' + locale + '/dashboard/api-keys', 'label_id': 'API Keys', 'label_en': 'API Keys', 'active': 'api-keys' in request.url.path},
-        {'href': '/' + locale + '/appointments', 'label_id': 'Appointments', 'label_en': 'Appointments', 'active': 'appointments' in request.url.path},
-      ] %}
-      {% for tab in tabs %}
-      <a href="{{ tab.href }}"
-         class="px-5 py-3 text-sm font-medium whitespace-nowrap border-b-2 transition-colors duration-200
-                {% if tab.active %}border-neon text-white{% else %}border-transparent text-gray-500 hover:text-white{% endif %}">
-        {{ tab['label_' + locale] }}
-      </a>
-      {% endfor %}
-    </div>
+    {% include "dashboard/_tabs.html" %}
 
     <!-- Recent orders -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">

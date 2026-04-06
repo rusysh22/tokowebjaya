@@ -1,0 +1,267 @@
+{% extends "base.html" %}
+{% block title %}{% if locale == 'id' %}Syarat & Ketentuan Layanan{% else %}Terms of Service{% endif %} — Toko Web Jaya{% endblock %}
+{% block meta_description %}{% if locale == 'id' %}Syarat dan ketentuan penggunaan layanan Toko Web Jaya.{% else %}Terms and conditions for using Toko Web Jaya services.{% endif %}{% endblock %}
+
+{% block content %}
+<section class="bg-black min-h-screen pt-28 pb-20">
+  <div class="container-main max-w-3xl">
+
+    <!-- Header -->
+    <div class="mb-12 reveal">
+      <span class="text-label block mb-3">{% if locale == 'id' %}Dokumen Legal{% else %}Legal Document{% endif %}</span>
+      <h1 class="heading-lg text-white mb-3">
+        {% if locale == 'id' %}Syarat & Ketentuan Layanan{% else %}Terms of Service{% endif %}
+      </h1>
+      <p class="text-gray-500 text-sm">
+        {% if locale == 'id' %}Terakhir diperbarui: 1 Januari 2025{% else %}Last updated: January 1, 2025{% endif %}
+      </p>
+      <div class="h-px bg-gray-800 mt-6"></div>
+    </div>
+
+    <!-- Content -->
+    <div class="prose-legal reveal">
+
+      {% if locale == 'id' %}
+
+      <div class="legal-section">
+        <h2>1. Penerimaan Syarat</h2>
+        <p>Dengan mengakses dan menggunakan platform Toko Web Jaya ("Platform"), Anda menyetujui untuk terikat oleh Syarat dan Ketentuan Layanan ini. Jika Anda tidak menyetujui syarat-syarat ini, mohon untuk tidak menggunakan layanan kami.</p>
+        <p>Kami berhak mengubah syarat ini sewaktu-waktu. Perubahan akan diberitahukan melalui email terdaftar atau notifikasi dalam platform. Penggunaan berkelanjutan setelah perubahan dianggap sebagai penerimaan.</p>
+      </div>
+
+      <div class="legal-section">
+        <h2>2. Definisi</h2>
+        <ul>
+          <li><strong>Platform</strong>: Website dan layanan yang dioperasikan oleh Toko Web Jaya di domain tokowebjaya.com dan subdomain terkait.</li>
+          <li><strong>Pengguna</strong>: Individu atau entitas yang mendaftar dan menggunakan Platform.</li>
+          <li><strong>Produk Digital</strong>: Barang non-fisik yang tersedia di Platform, termasuk perangkat lunak, template, e-book, kursus, dan layanan berbasis langganan.</li>
+          <li><strong>Konten</strong>: Semua informasi, teks, gambar, dan materi lain yang tersedia di Platform.</li>
+        </ul>
+      </div>
+
+      <div class="legal-section">
+        <h2>3. Akun Pengguna</h2>
+        <h3>3.1 Pendaftaran</h3>
+        <p>Untuk menggunakan layanan tertentu, Anda diwajibkan membuat akun. Anda bertanggung jawab untuk menjaga kerahasiaan kredensial akun dan semua aktivitas yang terjadi di bawah akun Anda.</p>
+        <h3>3.2 Persyaratan Usia</h3>
+        <p>Anda harus berusia minimal 18 tahun atau memiliki persetujuan dari orang tua/wali untuk menggunakan Platform. Dengan mendaftar, Anda menyatakan telah memenuhi persyaratan usia ini.</p>
+        <h3>3.3 Informasi Akun</h3>
+        <p>Anda wajib memberikan informasi yang akurat, lengkap, dan terkini saat mendaftar. Penipuan identitas atau pemberian informasi palsu dapat mengakibatkan penangguhan atau penghapusan akun.</p>
+        <h3>3.4 Keamanan Akun</h3>
+        <p>Anda wajib segera memberitahu kami jika terdapat penggunaan akun yang tidak sah. Kami tidak bertanggung jawab atas kerugian akibat kegagalan Anda menjaga keamanan akun.</p>
+      </div>
+
+      <div class="legal-section">
+        <h2>4. Pembelian dan Pembayaran</h2>
+        <h3>4.1 Harga</h3>
+        <p>Semua harga tercantum dalam Rupiah Indonesia (IDR) dan sudah termasuk PPN jika berlaku. Kami berhak mengubah harga sewaktu-waktu tanpa pemberitahuan sebelumnya, namun perubahan tidak berlaku untuk pesanan yang sudah dikonfirmasi.</p>
+        <h3>4.2 Metode Pembayaran</h3>
+        <p>Kami menerima pembayaran melalui berbagai metode yang tersedia di gateway pembayaran kami (Duitku), termasuk transfer bank, kartu kredit/debit, e-wallet, dan QRIS. Semua transaksi diproses secara aman.</p>
+        <h3>4.3 Konfirmasi Pesanan</h3>
+        <p>Pesanan dianggap sah setelah pembayaran berhasil dikonfirmasi. Invoice otomatis akan dikirimkan ke email terdaftar Anda.</p>
+        <h3>4.4 Langganan</h3>
+        <p>Untuk produk berbasis langganan, pembayaran akan ditagihkan secara otomatis sesuai siklus yang dipilih (bulanan/tahunan). Anda dapat membatalkan langganan kapan saja melalui dashboard akun.</p>
+      </div>
+
+      <div class="legal-section">
+        <h2>5. Kebijakan Pengembalian Dana</h2>
+        <h3>5.1 Produk Digital</h3>
+        <p>Mengingat sifat produk digital yang tidak dapat "dikembalikan" setelah diakses, kami umumnya tidak menawarkan pengembalian dana setelah produk berhasil diunduh atau diakses.</p>
+        <h3>5.2 Pengecualian</h3>
+        <p>Pengembalian dana dapat dipertimbangkan dalam kondisi berikut:</p>
+        <ul>
+          <li>Produk tidak dapat diakses karena kesalahan teknis dari pihak kami</li>
+          <li>Pembelian duplikat yang tidak disengaja</li>
+          <li>Produk tidak sesuai dengan deskripsi yang tercantum secara signifikan</li>
+        </ul>
+        <h3>5.3 Proses Klaim</h3>
+        <p>Permintaan pengembalian dana harus diajukan dalam 7 hari kalender setelah pembelian melalui halaman kontak kami, disertai bukti pembelian dan penjelasan detail.</p>
+        <h3>5.4 Langganan</h3>
+        <p>Pembatalan langganan berlaku untuk periode berikutnya. Biaya periode berjalan tidak dapat dikembalikan.</p>
+      </div>
+
+      <div class="legal-section">
+        <h2>6. Hak Kekayaan Intelektual</h2>
+        <h3>6.1 Konten Platform</h3>
+        <p>Semua konten di Platform, termasuk logo, teks, desain, dan kode, adalah milik Toko Web Jaya dan dilindungi oleh hukum hak cipta Indonesia. Reproduksi tanpa izin tertulis dilarang.</p>
+        <h3>6.2 Lisensi Produk</h3>
+        <p>Pembelian produk digital memberikan Anda lisensi penggunaan non-eksklusif, tidak dapat dipindahtangankan, sesuai ketentuan yang tercantum pada masing-masing produk. Hak kepemilikan tetap pada pembuat konten.</p>
+        <h3>6.3 Larangan</h3>
+        <p>Anda dilarang untuk mendistribusikan ulang, menjual kembali, menyewakan, atau menyublisensikan produk yang dibeli kepada pihak ketiga tanpa izin tertulis dari pemilik produk.</p>
+      </div>
+
+      <div class="legal-section">
+        <h2>7. Larangan Penggunaan</h2>
+        <p>Platform tidak boleh digunakan untuk:</p>
+        <ul>
+          <li>Melanggar hukum yang berlaku di Indonesia atau negara asal Anda</li>
+          <li>Menyebarkan konten yang melanggar hak cipta, fitnah, atau tidak senonoh</li>
+          <li>Melakukan penipuan, phishing, atau aktivitas fraud lainnya</li>
+          <li>Mengganggu, merusak, atau membebani infrastruktur Platform secara berlebihan</li>
+          <li>Mengumpulkan data pengguna lain tanpa izin</li>
+          <li>Menggunakan bot atau alat otomatis tanpa persetujuan tertulis kami</li>
+        </ul>
+      </div>
+
+      <div class="legal-section">
+        <h2>8. Batasan Tanggung Jawab</h2>
+        <p>Sejauh diizinkan hukum yang berlaku, Toko Web Jaya tidak bertanggung jawab atas:</p>
+        <ul>
+          <li>Kerugian tidak langsung, insidental, atau konsekuensial</li>
+          <li>Kehilangan data, pendapatan, atau peluang bisnis</li>
+          <li>Gangguan layanan akibat force majeure (bencana alam, gangguan infrastruktur, dll.)</li>
+          <li>Keputusan bisnis yang diambil berdasarkan informasi dari Platform</li>
+        </ul>
+        <p>Tanggung jawab maksimum kami dibatasi pada jumlah yang Anda bayarkan dalam 12 bulan terakhir.</p>
+      </div>
+
+      <div class="legal-section">
+        <h2>9. Penghentian Layanan</h2>
+        <p>Kami berhak menangguhkan atau menghapus akun Anda jika terbukti melanggar Syarat dan Ketentuan ini, tanpa pemberitahuan sebelumnya. Anda dapat menghapus akun Anda kapan saja melalui pengaturan akun.</p>
+      </div>
+
+      <div class="legal-section">
+        <h2>10. Hukum yang Berlaku</h2>
+        <p>Syarat dan Ketentuan ini diatur oleh hukum Republik Indonesia. Sengketa yang timbul akan diselesaikan melalui musyawarah mufakat, atau jika tidak berhasil, melalui Pengadilan Negeri yang berwenang di Indonesia.</p>
+      </div>
+
+      <div class="legal-section">
+        <h2>11. Hubungi Kami</h2>
+        <p>Jika Anda memiliki pertanyaan tentang Syarat dan Ketentuan ini, silakan hubungi kami melalui:</p>
+        <ul>
+          <li>Email: <a href="mailto:support@tokowebjaya.com" class="text-neon hover:underline">support@tokowebjaya.com</a></li>
+          <li>Halaman Kontak: <a href="/{{ locale }}/contact" class="text-neon hover:underline">tokowebjaya.com/kontak</a></li>
+        </ul>
+      </div>
+
+      {% else %}
+
+      <div class="legal-section">
+        <h2>1. Acceptance of Terms</h2>
+        <p>By accessing and using the Toko Web Jaya platform ("Platform"), you agree to be bound by these Terms of Service. If you do not agree to these terms, please do not use our services.</p>
+        <p>We reserve the right to modify these terms at any time. Changes will be communicated via registered email or in-platform notifications. Continued use after changes constitutes acceptance.</p>
+      </div>
+
+      <div class="legal-section">
+        <h2>2. Definitions</h2>
+        <ul>
+          <li><strong>Platform</strong>: The website and services operated by Toko Web Jaya at tokowebjaya.com and related subdomains.</li>
+          <li><strong>User</strong>: Any individual or entity that registers and uses the Platform.</li>
+          <li><strong>Digital Products</strong>: Non-physical goods available on the Platform, including software, templates, e-books, courses, and subscription-based services.</li>
+          <li><strong>Content</strong>: All information, text, images, and other materials available on the Platform.</li>
+        </ul>
+      </div>
+
+      <div class="legal-section">
+        <h2>3. User Accounts</h2>
+        <h3>3.1 Registration</h3>
+        <p>Certain services require account creation. You are responsible for maintaining the confidentiality of your credentials and all activities under your account.</p>
+        <h3>3.2 Age Requirement</h3>
+        <p>You must be at least 18 years old or have parental/guardian consent to use the Platform. By registering, you confirm you meet this requirement.</p>
+        <h3>3.3 Account Information</h3>
+        <p>You must provide accurate, complete, and current information when registering. Identity fraud or false information may result in account suspension or deletion.</p>
+        <h3>3.4 Account Security</h3>
+        <p>You must immediately notify us of any unauthorized account use. We are not responsible for losses due to your failure to maintain account security.</p>
+      </div>
+
+      <div class="legal-section">
+        <h2>4. Purchases and Payments</h2>
+        <h3>4.1 Pricing</h3>
+        <p>All prices are listed in Indonesian Rupiah (IDR) and include applicable VAT. We reserve the right to change prices at any time, though changes do not apply to confirmed orders.</p>
+        <h3>4.2 Payment Methods</h3>
+        <p>We accept payments via our payment gateway (Duitku), including bank transfers, credit/debit cards, e-wallets, and QRIS. All transactions are processed securely.</p>
+        <h3>4.3 Order Confirmation</h3>
+        <p>Orders are valid once payment is successfully confirmed. An invoice will be automatically sent to your registered email.</p>
+        <h3>4.4 Subscriptions</h3>
+        <p>For subscription products, payments are automatically billed per your chosen cycle (monthly/yearly). You may cancel anytime via your account dashboard.</p>
+      </div>
+
+      <div class="legal-section">
+        <h2>5. Refund Policy</h2>
+        <h3>5.1 Digital Products</h3>
+        <p>Given the nature of digital products that cannot be "returned" once accessed, we generally do not offer refunds after a product has been downloaded or accessed.</p>
+        <h3>5.2 Exceptions</h3>
+        <p>Refunds may be considered under the following conditions:</p>
+        <ul>
+          <li>Product inaccessible due to technical errors on our end</li>
+          <li>Unintentional duplicate purchases</li>
+          <li>Product significantly differs from its listed description</li>
+        </ul>
+        <h3>5.3 Claim Process</h3>
+        <p>Refund requests must be submitted within 7 calendar days of purchase via our contact page, with proof of purchase and detailed explanation.</p>
+        <h3>5.4 Subscriptions</h3>
+        <p>Subscription cancellations take effect for the next billing period. Current period fees are non-refundable.</p>
+      </div>
+
+      <div class="legal-section">
+        <h2>6. Intellectual Property</h2>
+        <h3>6.1 Platform Content</h3>
+        <p>All Platform content, including logos, text, designs, and code, is owned by Toko Web Jaya and protected by Indonesian copyright law. Reproduction without written permission is prohibited.</p>
+        <h3>6.2 Product License</h3>
+        <p>Purchasing a digital product grants you a non-exclusive, non-transferable usage license per the terms stated for each product. Ownership rights remain with the content creator.</p>
+        <h3>6.3 Restrictions</h3>
+        <p>You may not redistribute, resell, rent, or sublicense purchased products to third parties without written permission from the product owner.</p>
+      </div>
+
+      <div class="legal-section">
+        <h2>7. Prohibited Use</h2>
+        <p>The Platform must not be used to:</p>
+        <ul>
+          <li>Violate laws applicable in Indonesia or your country of origin</li>
+          <li>Distribute copyright-infringing, defamatory, or obscene content</li>
+          <li>Engage in fraud, phishing, or other fraudulent activities</li>
+          <li>Disrupt, damage, or excessively burden Platform infrastructure</li>
+          <li>Collect other users' data without consent</li>
+          <li>Use bots or automated tools without our written consent</li>
+        </ul>
+      </div>
+
+      <div class="legal-section">
+        <h2>8. Limitation of Liability</h2>
+        <p>To the extent permitted by applicable law, Toko Web Jaya is not liable for:</p>
+        <ul>
+          <li>Indirect, incidental, or consequential damages</li>
+          <li>Loss of data, revenue, or business opportunities</li>
+          <li>Service disruptions due to force majeure</li>
+          <li>Business decisions made based on Platform information</li>
+        </ul>
+        <p>Our maximum liability is limited to the amount you paid in the last 12 months.</p>
+      </div>
+
+      <div class="legal-section">
+        <h2>9. Termination</h2>
+        <p>We reserve the right to suspend or delete your account if found in violation of these Terms, without prior notice. You may delete your account at any time via account settings.</p>
+      </div>
+
+      <div class="legal-section">
+        <h2>10. Governing Law</h2>
+        <p>These Terms are governed by the laws of the Republic of Indonesia. Disputes will be resolved through deliberation, or if unsuccessful, through the competent Indonesian court.</p>
+      </div>
+
+      <div class="legal-section">
+        <h2>11. Contact Us</h2>
+        <p>If you have questions about these Terms, please contact us via:</p>
+        <ul>
+          <li>Email: <a href="mailto:support@tokowebjaya.com" class="text-neon hover:underline">support@tokowebjaya.com</a></li>
+          <li>Contact Page: <a href="/{{ locale }}/contact" class="text-neon hover:underline">tokowebjaya.com/contact</a></li>
+        </ul>
+      </div>
+
+      {% endif %}
+
+    </div>
+
+    <!-- Back link -->
+    <div class="mt-12 pt-8 border-t border-gray-800 flex items-center justify-between reveal">
+      <a href="javascript:history.back()" class="text-gray-500 hover:text-white text-sm flex items-center gap-2 transition-colors">
+        <i class="bi bi-arrow-left"></i>
+        {% if locale == 'id' %}Kembali{% else %}Go Back{% endif %}
+      </a>
+      <a href="/{{ locale }}/privacy" class="text-neon hover:underline text-sm">
+        {% if locale == 'id' %}Kebijakan Privasi →{% else %}Privacy Policy →{% endif %}
+      </a>
+    </div>
+
+  </div>
+</section>
+{% endblock %}

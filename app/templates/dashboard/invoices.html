@@ -3,12 +3,8 @@
 {% block content %}
 <section class="bg-black min-h-[calc(100vh-4rem)] pt-24 pb-16">
   <div class="container-main">
-    <div class="flex items-center gap-3 mb-8">
-      <a href="/{{ locale }}/dashboard" class="text-gray-500 hover:text-white text-xs">← Dashboard</a>
-      <span class="text-gray-700">/</span>
-      <span class="text-xs text-white">{{ t(locale, 'dashboard_invoices') }}</span>
-    </div>
     <h1 class="heading-md text-white mb-8">{{ t(locale, 'dashboard_invoices') }}</h1>
+    {% include "dashboard/_tabs.html" %}
     <div class="border border-gray-800">
       <div class="overflow-x-auto">
         <table class="w-full text-sm min-w-[560px]">

@@ -25,11 +25,13 @@ router = APIRouter(tags=["notifications"])
 def _require_user(request: Request, db: Session):
     user = get_current_user(request, db)
     if not user:
+        from urllib.parse import quote
         path = request.url.path
+        next_url = path + (f"?{request.url.query}" if request.url.query else "")
         for loc in ["id", "en"]:
             if path.startswith(f"/{loc}/"):
-                return RedirectResponse(url=f"/{loc}/login"), None
-        return RedirectResponse(url="/id/login"), None
+                return RedirectResponse(url=f"/{loc}/login?next={quote(next_url)}"), None
+        return RedirectResponse(url=f"/id/login?next={quote(next_url)}"), None
     return None, user
 
 

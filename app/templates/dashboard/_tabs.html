@@ -1,0 +1,20 @@
+{% set dash_tabs = [
+  {'href': '/' + locale + '/dashboard',               'key': 'overview',       'label_id': 'Overview',      'label_en': 'Overview',       'icon': 'bi-grid'},
+  {'href': '/' + locale + '/dashboard/orders',        'key': 'orders',         'label_id': 'Pesanan',       'label_en': 'Orders',         'icon': 'bi-receipt'},
+  {'href': '/' + locale + '/dashboard/invoices',      'key': 'invoices',       'label_id': 'Invoice',       'label_en': 'Invoices',       'icon': 'bi-file-earmark-text'},
+  {'href': '/' + locale + '/dashboard/subscriptions', 'key': 'subscriptions',  'label_id': 'Langganan',     'label_en': 'Subscriptions',  'icon': 'bi-arrow-repeat'},
+  {'href': '/' + locale + '/appointments',            'key': 'appointments',   'label_id': 'Appointments',  'label_en': 'Appointments',   'icon': 'bi-calendar-check'},
+  {'href': '/' + locale + '/dashboard/api-keys',      'key': 'api-keys',       'label_id': 'API Keys',      'label_en': 'API Keys',       'icon': 'bi-key'},
+] %}
+<div class="flex border-b border-gray-800 mb-8 gap-0 overflow-x-auto no-scrollbar">
+  {% for tab in dash_tabs %}
+  {% set is_active = (tab.key == 'overview' and (request.url.path.endswith('/dashboard') or request.url.path.endswith('/dashboard/')))
+                  or (tab.key != 'overview' and tab.key in request.url.path) %}
+  <a href="{{ tab.href }}"
+     class="flex items-center gap-1.5 px-4 py-3 text-sm font-medium whitespace-nowrap border-b-2 transition-colors duration-200
+            {% if is_active %}border-neon text-white{% else %}border-transparent text-gray-500 hover:text-white hover:border-gray-600{% endif %}">
+    <i class="bi {{ tab.icon }} text-xs"></i>
+    <span>{{ tab['label_' + locale] }}</span>
+  </a>
+  {% endfor %}
+</div>

@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(docker exec:*)",
+      "Bash(git add:*)",
+      "Bash(npx tailwindcss:*)",
+      "Bash(python3 -c ':*)"
+    ]
+  }
+}

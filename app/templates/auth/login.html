@@ -6,9 +6,9 @@
 {% block content %}
 <section class="min-h-[calc(100vh-4rem)] flex items-center justify-center bg-black py-20">
 
-  <!-- Background pattern -->
-  <div class="absolute inset-0 opacity-[0.03]"
-       style="background-image: linear-gradient(#CAFF00 1px, transparent 1px), linear-gradient(90deg, #CAFF00 1px, transparent 1px); background-size: 48px 48px;">
+  <!-- Background glow -->
+  <div class="absolute inset-0 pointer-events-none"
+       style="background: radial-gradient(ellipse 70% 50% at 50% 0%, rgba(202,255,0,0.07) 0%, transparent 70%), radial-gradient(ellipse 40% 40% at 85% 85%, rgba(202,255,0,0.04) 0%, transparent 60%);">
   </div>
 
   <div class="relative z-10 w-full max-w-md px-4" x-data="{ tab: '{{ tab or 'google' }}' }">
@@ -62,7 +62,7 @@
 
       <!-- Google tab -->
       <div x-show="tab === 'google'">
-        <a href="/auth/google/login?next=/{{ locale }}/dashboard"
+        <a href="/auth/google/login?next={{ next if next else '/' + locale + '/dashboard' }}"
            class="flex items-center justify-center gap-3 w-full border border-gray-700 bg-gray-900 hover:bg-gray-800 hover:border-gray-600 text-white font-medium text-sm py-3.5 px-6 transition-all duration-200 active:scale-[0.98]">
           <svg class="w-5 h-5 flex-shrink-0" viewBox="0 0 24 24">
             <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -85,6 +85,7 @@
       <div x-show="tab === 'email'" x-cloak>
         <form method="POST" action="/auth/login-email" class="space-y-4">
           <input type="hidden" name="locale" value="{{ locale }}" />
+          <input type="hidden" name="next" value="{{ next }}" />
           <div>
             <label class="block text-xs text-gray-400 mb-1.5">Email</label>
             <input type="email" name="email" required
@@ -130,12 +131,12 @@
       <p class="text-center text-xs text-gray-600 leading-relaxed">
         {% if locale == 'id' %}
           Dengan masuk, Anda menyetujui
-          <a href="#" class="text-gray-400 hover:text-white underline">Syarat Layanan</a>
-          dan <a href="#" class="text-gray-400 hover:text-white underline">Kebijakan Privasi</a> kami.
+          <a href="/{{ locale }}/terms" class="text-gray-400 hover:text-neon underline">Syarat Layanan</a>
+          dan <a href="/{{ locale }}/privacy" class="text-gray-400 hover:text-neon underline">Kebijakan Privasi</a> kami.
         {% else %}
           By signing in, you agree to our
-          <a href="#" class="text-gray-400 hover:text-white underline">Terms of Service</a>
-          and <a href="#" class="text-gray-400 hover:text-white underline">Privacy Policy</a>.
+          <a href="/{{ locale }}/terms" class="text-gray-400 hover:text-neon underline">Terms of Service</a>
+          and <a href="/{{ locale }}/privacy" class="text-gray-400 hover:text-neon underline">Privacy Policy</a>.
         {% endif %}
       </p>
     </div>
