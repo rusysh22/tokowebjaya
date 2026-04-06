@@ -6,7 +6,8 @@ Password hashing:
   This is the same approach used by Django and Devise.
 
 Session tokens:
-  Signed with itsdangerous URLSafeTimedSerializer (SECRET_KEY, max_age = 7 days).
+  Signed with itsdangerous URLSafeTimedSerializer (SECRET_KEY).
+  Default session: 1 day. Remember Me: 30 days.
 """
 import base64
 import hashlib
@@ -25,11 +26,16 @@ def _prepare(plain: str) -> bytes:
     return base64.b64encode(digest)
 
 
+SESSION_SHORT = 86400        # 1 day  (default)
+SESSION_LONG  = 86400 * 30   # 30 days (remember me)
+
+
 def create_session_token(data: dict) -> str:
     return serializer.dumps(data)
 
 
-def verify_session_token(token: str, max_age: int = 86400) -> dict | None:
+def verify_session_token(token: str, max_age: int = SESSION_LONG) -> dict | None:
+    """Verify token. max_age must be >= the longest possible session duration."""
     try:
         return serializer.loads(token, max_age=max_age)
     except Exception:

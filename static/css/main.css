@@ -2203,14 +2203,9 @@ body {
   margin-right: 0.25rem;
 }
 
-.mx-2 {
-  margin-left: 0.5rem;
-  margin-right: 0.5rem;
-}
-
-.mx-8 {
-  margin-left: 2rem;
-  margin-right: 2rem;
+.mx-4 {
+  margin-left: 1rem;
+  margin-right: 1rem;
 }
 
 .mx-auto {
@@ -2449,6 +2444,10 @@ body {
   height: 0.75rem;
 }
 
+.h-3\.5 {
+  height: 0.875rem;
+}
+
 .h-32 {
   height: 8rem;
 }
@@ -2489,16 +2488,16 @@ body {
   height: 2rem;
 }
 
+.h-\[150px\] {
+  height: 150px;
+}
+
+.h-\[200px\] {
+  height: 200px;
+}
+
 .h-\[2px\] {
   height: 2px;
-}
-
-.h-\[350px\] {
-  height: 350px;
-}
-
-.h-\[500px\] {
-  height: 500px;
 }
 
 .h-full {
@@ -2553,6 +2552,10 @@ body {
   width: 0.75rem;
 }
 
+.w-3\.5 {
+  width: 0.875rem;
+}
+
 .w-3\/5 {
   width: 60%;
 }
@@ -2597,12 +2600,12 @@ body {
   width: 2rem;
 }
 
-.w-\[350px\] {
-  width: 350px;
+.w-\[150px\] {
+  width: 150px;
 }
 
-.w-\[500px\] {
-  width: 500px;
+.w-\[200px\] {
+  width: 200px;
 }
 
 .w-full {
@@ -4412,7 +4415,7 @@ body {
   display: none;
 }
 
-@media (min-width: 1024px) {
+@media (min-width: 1280px) {
   .stats-how-mobile  {
     display: none;
   }
@@ -4422,6 +4425,20 @@ body {
     grid-template-columns: 1fr 1fr;
     gap: 4rem;
     align-items: center;
+  }
+}
+
+/* Orbital diagram responsive sizing */
+
+.orbital-diagram {
+  width: 480px;
+  height: 440px;
+}
+
+@media (min-width: 1440px) {
+  .orbital-diagram {
+    width: 580px;
+    height: 520px;
   }
 }
 
@@ -4749,8 +4766,34 @@ body {
 }
 
 @media (min-width: 640px) {
+  .sm\:mx-2 {
+    margin-left: 0.5rem;
+    margin-right: 0.5rem;
+  }
+
+  .sm\:mx-8 {
+    margin-left: 2rem;
+    margin-right: 2rem;
+  }
+
   .sm\:block {
     display: block;
+  }
+
+  .sm\:h-\[250px\] {
+    height: 250px;
+  }
+
+  .sm\:h-\[350px\] {
+    height: 350px;
+  }
+
+  .sm\:w-\[250px\] {
+    width: 250px;
+  }
+
+  .sm\:w-\[350px\] {
+    width: 350px;
   }
 
   .sm\:grid-cols-2 {
@@ -4871,8 +4914,24 @@ body {
     display: none;
   }
 
+  .lg\:h-\[350px\] {
+    height: 350px;
+  }
+
+  .lg\:h-\[500px\] {
+    height: 500px;
+  }
+
   .lg\:w-56 {
     width: 14rem;
+  }
+
+  .lg\:w-\[350px\] {
+    width: 350px;
+  }
+
+  .lg\:w-\[500px\] {
+    width: 500px;
   }
 
   .lg\:translate-x-0 {

@@ -4,7 +4,12 @@
       "Bash(docker exec:*)",
       "Bash(git add:*)",
       "Bash(npx tailwindcss:*)",
-      "Bash(python3 -c ':*)"
+      "Bash(python3 -c ':*)",
+      "Bash(sort -k5 -rn)",
+      "Bash(python3 -c \"from PIL import Image; print\\('Pillow OK'\\)\")",
+      "Bash(py --version)",
+      "Bash(py -c \"from PIL import Image; print\\('Pillow OK'\\)\")",
+      "Bash(docker cp:*)"
     ]
   }
 }

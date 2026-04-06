@@ -50,10 +50,10 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
 
   <!-- Alpine.js -->
-  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.9/dist/cdn.min.js"></script>
 
   <!-- HTMX -->
-  <script src="https://unpkg.com/htmx.org@2.0.4/dist/htmx.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/htmx.org@2.0.4/dist/htmx.min.js"></script>
 
   {% block extra_head %}{% endblock %}
 </head>
@@ -228,8 +228,8 @@
           &copy; {{ now().year if now is defined else "2025" }} Toko Web Jaya. {{ t(locale, 'footer_rights') }}.
         </p>
         <div class="flex items-center gap-6">
-          <a href="#" class="text-xs text-gray-600 hover:text-gray-400 transition-colors">Privacy Policy</a>
-          <a href="#" class="text-xs text-gray-600 hover:text-gray-400 transition-colors">Terms of Service</a>
+          <a href="/{{ locale }}/privacy" class="text-xs text-gray-600 hover:text-gray-400 transition-colors">Privacy Policy</a>
+          <a href="/{{ locale }}/terms" class="text-xs text-gray-600 hover:text-gray-400 transition-colors">Terms of Service</a>
         </div>
       </div>
     </div>

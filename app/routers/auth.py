@@ -26,7 +26,7 @@ from starlette.config import Config
 
 from app.core.config import settings
 from app.core.database import get_db
-from app.core.security import create_session_token, hash_password, verify_password
+from app.core.security import SESSION_LONG, SESSION_SHORT, create_session_token, hash_password, verify_password
 from app.models.user import AuthProvider, User, UserRole, UserStatus
 from app.services.email import send_otp_email
 from app.services.otp import generate_otp, verify_otp
@@ -113,7 +113,7 @@ async def google_callback(request: Request, db: Session = Depends(get_db)):
         httponly=True,
         secure=settings.APP_ENV == "production",
         samesite="lax",
-        max_age=86400 * 7,  # 7 days
+        max_age=SESSION_LONG,  # Google OAuth always 30 days
     )
     return response
 
@@ -128,7 +128,8 @@ async def logout(request: Request):
 
 # ─── Email+Password auth ──────────────────────────────────────────────────────
 
-def _make_session_response(user: User, next_url: str) -> RedirectResponse:
+def _make_session_response(user: User, next_url: str, remember: bool = False) -> RedirectResponse:
+    max_age = SESSION_LONG if remember else SESSION_SHORT
     token_data = {"user_id": str(user.id), "role": user.role.value}
     session_token = create_session_token(token_data)
     response = RedirectResponse(url=next_url, status_code=302)
@@ -138,7 +139,7 @@ def _make_session_response(user: User, next_url: str) -> RedirectResponse:
         httponly=True,
         secure=settings.APP_ENV == "production",
         samesite="lax",
-        max_age=86400 * 7,
+        max_age=max_age,
     )
     return response
 
@@ -254,6 +255,7 @@ async def login_email(
     password: str = Form(...),
     locale: str = Form(default="id"),
     next: str = Form(default=""),
+    remember_me: str = Form(default=""),
     db: Session = Depends(get_db),
 ):
     email = email.strip().lower()
@@ -279,7 +281,7 @@ async def login_email(
         )
 
     redirect_to = next if next else f"/{locale}/dashboard"
-    return _make_session_response(user, redirect_to)
+    return _make_session_response(user, redirect_to, remember=bool(remember_me))
 
 
 @router.post("/forgot-password")
