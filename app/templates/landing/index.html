@@ -11,7 +11,7 @@
 {% block content %}
 
 <!-- ===== HERO ===== -->
-<section class="relative min-h-screen flex items-center bg-black overflow-hidden">
+<section class="relative min-h-screen flex items-center bg-black" style="overflow:clip;">{# overflow:clip allows stacking context without clipping 3D children on x-axis #}
 
   <!-- Particle canvas -->
   <canvas id="hero-canvas" class="absolute inset-0 w-full h-full pointer-events-none" style="z-index:1"></canvas>
@@ -22,10 +22,10 @@
   <div class="absolute bottom-0 left-0 w-[350px] h-[350px] bg-neon opacity-[0.03] blur-[120px] pointer-events-none" style="z-index:0"></div>
 
   <div class="container-main py-20 sm:py-28 lg:py-32" style="position:relative;z-index:2">
-    <div class="grid grid-cols-1 xl:grid-cols-2 gap-16 items-center">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
 
       <!-- Left: copy -->
-      <div>
+      <div class="min-w-0">
         <div class="overflow-hidden mb-6">
           <h1 class="heading-xl text-white hero-slide-up" style="animation-delay:0.15s">
             {{ t(locale, 'hero_title') }}
@@ -52,97 +52,135 @@
 
       </div>
 
-      <!-- Right: product image carousel -->
-      <div class="hidden xl:block hero-slide-up" style="animation-delay:0.3s">
+      <!-- Right: 3D Perspective Display -->
+      <div class="hidden lg:block" style="min-width:0; opacity:0; animation: heroSlideUp 0.8s cubic-bezier(0.22,1,0.36,1) 0.4s forwards;">
         {% if featured_products %}
-        <div class="relative" x-data="productCarousel()" x-init="init()">
+        {% set fp = featured_products[:6] %}
+        <div x-data="perspectiveDisplay({{ fp | length }})" x-init="init()"
+             class="relative select-none"
+             style="width:100%;"
+             @mouseenter="pause()" @mouseleave="resume()">
 
-          <!-- Main slide -->
-          <div class="relative overflow-hidden border border-gray-800 bg-gray-900" style="aspect-ratio:4/3">
-            {% for product in featured_products[:5] %}
-            <div class="absolute inset-0 transition-all duration-700 ease-in-out"
-                 :class="current === {{ loop.index0 }} ? 'opacity-100 scale-100 z-10' : 'opacity-0 scale-[1.03] z-0'">
-              {% if product.cover_image %}
-                <img src="/static/uploads/products/images/{{ product.cover_image }}"
-                     alt="{{ product['name_' + locale] }}"
-                     class="w-full h-full object-cover" />
-              {% else %}
-                <div class="w-full h-full flex items-center justify-center bg-gray-800">
-                  <i class="bi bi-box-seam text-6xl opacity-20"></i>
-                </div>
-              {% endif %}
-              <!-- Overlay gradient -->
-              <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
-              <!-- Product info overlay -->
-              <div class="absolute bottom-0 left-0 right-0 p-6">
-                <span class="badge-gray text-xs mb-2 inline-block">{{ product.type.value | upper }}</span>
-                <h3 class="text-white font-semibold text-lg mb-1 line-clamp-1">{{ product['name_' + locale] }}</h3>
-                <div class="flex items-center justify-between">
-                  <div>
-                    {% if product.price_otf %}
-                      <span class="text-neon font-bold">Rp {{ "{:,.0f}".format(product.price_otf) }}</span>
-                    {% elif product.price_monthly %}
-                      <span class="text-neon font-bold">Rp {{ "{:,.0f}".format(product.price_monthly) }}</span>
-                      <span class="text-gray-400 text-xs">/bln</span>
+          <!-- Outer 3D perspective wrapper — tilted like a screen/monitor -->
+          <div style="perspective: 1200px; width:100%;">
+            <div style="width:100%; transform: rotateY(-18deg) rotateX(4deg); transform-style: preserve-3d;"
+                 class="relative">
+
+              <!-- Main screen frame -->
+              <div class="relative overflow-hidden border border-gray-700 bg-gray-950"
+                   style="width:100%; border-radius:6px; box-shadow: 8px 12px 40px rgba(0,0,0,0.8), 0 0 0 1px rgba(202,255,0,0.08), inset 0 1px 0 rgba(255,255,255,0.05);">
+
+                <!-- Slides -->
+                <div class="relative" style="aspect-ratio: 16/10; width:100%; overflow:hidden;">
+                  {% for product in fp %}
+                  <div class="absolute inset-0 transition-all duration-700 ease-in-out"
+                       :class="current === {{ loop.index0 }}
+                         ? 'opacity-100 z-10 scale-100'
+                         : leaving === {{ loop.index0 }}
+                           ? 'opacity-0 z-5 scale-[1.04]'
+                           : 'opacity-0 z-0 scale-100'">
+                    {% if product.cover_image %}
+                      <img src="/static/uploads/products/images/{{ product.cover_image }}"
+                           alt="{{ product['name_' + locale] }}"
+                           class="w-full h-full object-cover" />
+                    {% else %}
+                      <div class="w-full h-full bg-gray-800 flex items-center justify-center">
+                        <i class="bi bi-box-seam text-6xl opacity-10 text-white"></i>
+                      </div>
                     {% endif %}
+                    <!-- Overlay -->
+                    <div class="absolute inset-0" style="background: linear-gradient(to top, rgba(0,0,0,0.88) 0%, rgba(0,0,0,0.2) 50%, transparent 100%)"></div>
+                    <!-- Product info -->
+                    <div class="absolute bottom-0 left-0 right-0 p-5">
+                      <span class="inline-block text-[10px] font-mono uppercase tracking-widest text-gray-400 border border-gray-700 px-2 py-0.5 mb-2">{{ product.type.value }}</span>
+                      <h3 class="text-white font-bold text-lg leading-tight mb-2 line-clamp-2">{{ product['name_' + locale] }}</h3>
+                      <div class="flex items-center justify-between">
+                        <div>
+                          {% if product.price_otf %}
+                            <span class="text-neon font-black text-xl">Rp {{ "{:,.0f}".format(product.price_otf) }}</span>
+                          {% elif product.price_monthly %}
+                            <span class="text-neon font-black text-xl">Rp {{ "{:,.0f}".format(product.price_monthly) }}</span>
+                            <span class="text-gray-400 text-sm">/bln</span>
+                          {% elif product.pricing_model.value == 'contact_seller' %}
+                            <span class="text-gray-300 text-sm">Hubungi Penjual</span>
+                          {% endif %}
+                        </div>
+                        <a href="/{{ locale }}/product/{{ product.slug }}"
+                           class="flex items-center gap-1.5 bg-neon text-black text-xs font-bold px-3 py-1.5 hover:bg-white transition-colors">
+                          Detail <i class="bi bi-arrow-right text-xs"></i>
+                        </a>
+                      </div>
+                    </div>
+                    <!-- Neon top bar -->
+                    <div class="absolute top-0 left-0 right-0 h-[2px] bg-neon opacity-80"></div>
                   </div>
-                  <a href="/{{ locale }}/product/{{ product.slug }}"
-                     class="text-xs font-semibold text-neon hover:underline flex items-center gap-1">
-                    {% if locale == 'id' %}Detail{% else %}View{% endif %}
-                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/>
-                    </svg>
-                  </a>
+                  {% endfor %}
+
+                  <!-- Progress bar -->
+                  <div class="absolute bottom-0 left-0 right-0 h-[2px] bg-gray-800 z-20">
+                    <div class="h-full bg-neon/60 transition-all duration-100 ease-linear"
+                         :style="'width:' + progress + '%'"></div>
+                  </div>
+                </div>
+
+                <!-- Screen bottom bezel -->
+                <div class="flex items-center justify-between px-5 py-2.5 bg-gray-950 border-t border-gray-800">
+                  <!-- Dots -->
+                  <div class="flex items-center gap-1.5">
+                    {% for product in fp %}
+                    <button @click="goTo({{ loop.index0 }})"
+                            class="transition-all duration-300 rounded-full"
+                            :class="current === {{ loop.index0 }} ? 'w-5 h-1.5 bg-neon' : 'w-1.5 h-1.5 bg-gray-600 hover:bg-gray-400'">
+                    </button>
+                    {% endfor %}
+                  </div>
+                  <!-- Counter + nav -->
+                  <div class="flex items-center gap-2">
+                    <button @click="prev()" class="w-6 h-6 flex items-center justify-center text-gray-500 hover:text-neon transition-colors">
+                      <i class="bi bi-chevron-left text-xs"></i>
+                    </button>
+                    <span class="text-[10px] text-gray-600 font-mono" x-text="(current+1) + '/' + total"></span>
+                    <button @click="next()" class="w-6 h-6 flex items-center justify-center text-gray-500 hover:text-neon transition-colors">
+                      <i class="bi bi-chevron-right text-xs"></i>
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
-            {% endfor %}
 
-            <!-- Prev/Next buttons -->
-            <button @click="prev()" class="absolute left-3 top-1/2 -translate-y-1/2 z-20 w-8 h-8 bg-black/60 border border-gray-700 flex items-center justify-center hover:border-neon hover:text-neon text-white transition-colors duration-200">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
-            </button>
-            <button @click="next()" class="absolute right-3 top-1/2 -translate-y-1/2 z-20 w-8 h-8 bg-black/60 border border-gray-700 flex items-center justify-center hover:border-neon hover:text-neon text-white transition-colors duration-200">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
-            </button>
-
-            <!-- Progress bar -->
-            <div class="absolute bottom-0 left-0 right-0 h-0.5 bg-gray-800 z-20">
-              <div class="h-full bg-neon carousel-progress" :style="'animation-duration:' + duration + 'ms'"
-                   :key="current" :class="playing ? 'carousel-progress-play' : ''"></div>
+              <!-- 3D side face (right edge depth) -->
+              <div class="absolute top-0 right-0 bottom-0 bg-gray-900 border-r border-gray-700 border-t border-b"
+                   style="width:18px; transform: rotateY(90deg) translateZ(9px); transform-origin: right center; border-radius: 0 6px 6px 0;">
+              </div>
+              <!-- 3D bottom face -->
+              <div class="absolute bottom-0 left-0 right-0 bg-gray-900"
+                   style="height:14px; transform: rotateX(-90deg) translateZ(7px); transform-origin: bottom center; opacity:0.7;">
+              </div>
             </div>
           </div>
 
-          <!-- Thumbnail strip -->
-          <div class="flex gap-2 mt-3">
-            {% for product in featured_products[:5] %}
-            <button @click="goTo({{ loop.index0 }}); pause()"
-                    class="flex-1 aspect-video overflow-hidden border-2 transition-all duration-300"
-                    :class="current === {{ loop.index0 }} ? 'border-neon' : 'border-gray-800 opacity-50 hover:opacity-80'">
-              {% if product.cover_image %}
-                <img src="/static/uploads/products/images/{{ product.cover_image }}"
-                     alt="{{ product['name_' + locale] }}"
-                     class="w-full h-full object-cover" loading="lazy" />
-              {% else %}
-                <div class="w-full h-full bg-gray-800 flex items-center justify-center">
-                  <i class="bi bi-box-seam text-xl opacity-20"></i>
+          <!-- Reflection below the screen -->
+          <div class="relative mt-1 pointer-events-none" style="perspective:1200px; width:100%;">
+            <div style="width:100%; transform: rotateY(-18deg) rotateX(4deg);">
+              <div class="overflow-hidden" style="border-radius:6px; height:60px; position:relative;">
+                {% for product in fp %}
+                <div class="absolute inset-0 transition-opacity duration-700"
+                     :class="current === {{ loop.index0 }} ? 'opacity-100' : 'opacity-0'">
+                  {% if product.cover_image %}
+                    <img src="/static/uploads/products/images/{{ product.cover_image }}"
+                         aria-hidden="true"
+                         class="w-full object-cover object-bottom"
+                         style="height:200px; margin-top:-140px; transform:scaleY(-1);
+                                opacity:0.18;
+                                mask-image:linear-gradient(to bottom,rgba(0,0,0,0.6) 0%,transparent 100%);
+                                -webkit-mask-image:linear-gradient(to bottom,rgba(0,0,0,0.6) 0%,transparent 100%);" />
+                  {% endif %}
                 </div>
-              {% endif %}
-            </button>
-            {% endfor %}
+                {% endfor %}
+                <div class="absolute inset-0" style="background:linear-gradient(to bottom,rgba(0,0,0,0.3),rgba(0,0,0,1))"></div>
+              </div>
+            </div>
           </div>
 
-          <!-- Slide counter -->
-          <div class="flex items-center justify-between mt-3">
-            <div class="flex gap-1.5">
-              {% for product in featured_products[:5] %}
-              <button @click="goTo({{ loop.index0 }})"
-                      class="w-5 h-0.5 transition-all duration-300"
-                      :class="current === {{ loop.index0 }} ? 'bg-neon' : 'bg-gray-700'"></button>
-              {% endfor %}
-            </div>
-            <span class="text-xs text-gray-500 font-mono" x-text="(current+1) + ' / ' + total"></span>
-          </div>
         </div>
         {% endif %}
       </div>
@@ -656,37 +694,65 @@
 {% block extra_scripts %}
 <script src="/static/js/hero-particles.js"></script>
 <script>
-// ── Alpine.js: Product Carousel ────────────────────────────────────────────
-function productCarousel() {
+// ── Alpine.js: 3D Perspective Display ──────────────────────────────────────
+function perspectiveDisplay(total) {
+  const DURATION = 4500; // ms per slide
+  const TICK     = 80;   // progress update interval ms
+
   return {
-    current: 0,
-    total: {{ featured_products | length if featured_products else 0 }},
-    duration: 4000,
-    playing: true,
-    _timer: null,
+    current:  0,
+    leaving:  -1,
+    total,
+    progress: 0,
+    _slideTimer: null,
+    _progTimer:  null,
+    _paused: false,
 
     init() {
-      if (this.total > 1) this._start();
+      if (this.total > 1) this._startSlide();
     },
-    _start() {
-      this._timer = setInterval(() => {
-        if (this.playing) this.next();
-      }, this.duration);
+
+    _startSlide() {
+      this._startProgress();
+      this._slideTimer = setTimeout(() => {
+        if (!this._paused) this.next();
+      }, DURATION);
     },
-    next() {
-      this.current = (this.current + 1) % this.total;
+
+    _startProgress() {
+      this.progress = 0;
+      clearInterval(this._progTimer);
+      const step = (TICK / DURATION) * 100;
+      this._progTimer = setInterval(() => {
+        if (!this._paused) this.progress = Math.min(100, this.progress + step);
+      }, TICK);
     },
-    prev() {
-      this.current = (this.current - 1 + this.total) % this.total;
+
+    _clear() {
+      clearTimeout(this._slideTimer);
+      clearInterval(this._progTimer);
     },
+
     goTo(i) {
-      this.current = i;
+      if (i === this.current) return;
+      this._clear();
+      this.leaving  = this.current;
+      this.current  = i;
+      this.progress = 0;
+      setTimeout(() => { this.leaving = -1; }, 750);
+      if (!this._paused) this._startSlide();
     },
-    pause() {
-      this.playing = false;
-      clearInterval(this._timer);
-      // Resume after 8 seconds of inactivity
-      setTimeout(() => { this.playing = true; this._start(); }, 8000);
+
+    next() { this.goTo((this.current + 1) % this.total); },
+    prev() { this.goTo((this.current - 1 + this.total) % this.total); },
+
+    pause()  {
+      this._paused = true;
+      this._clear();
+    },
+    resume() {
+      this._paused = false;
+      this._startSlide();
     },
   };
 }
