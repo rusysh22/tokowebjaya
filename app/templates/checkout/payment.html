@@ -274,7 +274,7 @@
 
 {% block extra_scripts %}
 {% if method_type == 'qris' and order.qr_string %}
-<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
 {% endif %}
 <script>
 // Copy to clipboard helper
@@ -287,31 +287,39 @@ function copyText(text, btn) {
   });
 }
 
-// Render QR using qrcode.js (client-side, no external image API)
 {% if method_type == 'qris' and order.qr_string %}
 (function() {
   const qrString = {{ order.qr_string | tojson }};
   if (!qrString) return;
+
   function renderQR() {
     const el = document.getElementById('qr-canvas');
-    if (!el || typeof QRCode === 'undefined') return;
-    el.innerHTML = '';
-    QRCode.toCanvas(el, qrString, {
-      width: 192,
-      margin: 0,
-      color: { dark: '#000000', light: '#ffffff' },
-    }, function(err) {
-      if (err) {
-        // Fallback to img tag via qrserver if QRCode lib fails
-        el.innerHTML = '<img src="https://api.qrserver.com/v1/create-qr-code/?size=192x192&data=' + encodeURIComponent(qrString) + '" width="192" height="192" />';
+    if (!el) return;
+    try {
+      // qrcode-generator API
+      const qr = qrcode(0, 'M');
+      qr.addData(qrString);
+      qr.make();
+      // Render as table-based SVG, then convert to img
+      const svg = qr.createSvgTag({ scalable: true });
+      el.innerHTML = svg;
+      const svgEl = el.querySelector('svg');
+      if (svgEl) {
+        svgEl.style.width = '192px';
+        svgEl.style.height = '192px';
+        svgEl.style.display = 'block';
       }
-    });
+    } catch(e) {
+      // Fallback: img via qrserver
+      el.innerHTML = '<img src="https://api.qrserver.com/v1/create-qr-code/?size=192x192&data=' + encodeURIComponent(qrString) + '" width="192" height="192" />';
+    }
   }
-  // Wait for qrcode.js to load
-  if (typeof QRCode !== 'undefined') {
+
+  if (typeof qrcode !== 'undefined') {
     renderQR();
   } else {
-    document.querySelector('script[src*="qrcode"]').addEventListener('load', renderQR);
+    const s = document.querySelector('script[src*="qrcode"]');
+    if (s) s.addEventListener('load', renderQR);
   }
 })();
 {% endif %}
