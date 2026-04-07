@@ -177,10 +177,24 @@
         </div>
         {% endif %}
 
-        <!-- Fallback: no instruction data yet (edge case) -->
+        <!-- Fallback: open Duitku payment page -->
         {% if not order.va_number and not order.qr_string and not order.payment_code %}
-        <div class="border border-gray-800 p-5 text-center text-gray-500 text-sm">
-          {% if locale == 'id' %}Instruksi pembayaran sedang diproses...{% else %}Payment instructions are being processed...{% endif %}
+        <div class="border border-gray-800 bg-gray-950 p-5">
+          <p class="text-white text-sm font-semibold mb-1">
+            {% if order.payment_method_name %}{{ order.payment_method_name }}{% else %}{% if locale == 'id' %}Lanjutkan Pembayaran{% else %}Continue Payment{% endif %}{% endif %}
+          </p>
+          <p class="text-gray-500 text-xs mb-4">
+            {% if locale == 'id' %}Selesaikan pembayaran di halaman Duitku. Halaman ini otomatis terupdate setelah pembayaran berhasil.{% else %}Complete your payment on Duitku's page. This page auto-updates once payment is confirmed.{% endif %}
+          </p>
+          {% if order.gateway_payment_url %}
+          <a href="{{ order.gateway_payment_url }}" target="_blank" rel="noopener"
+             class="btn-primary w-full py-3 justify-center flex items-center gap-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+            </svg>
+            {% if locale == 'id' %}Buka Halaman Pembayaran{% else %}Open Payment Page{% endif %}
+          </a>
+          {% endif %}
         </div>
         {% endif %}
 

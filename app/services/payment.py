@@ -68,23 +68,30 @@ class DuitkuService:
         }
         return headers, timestamp
 
+    def _payment_method_url(self) -> str:
+        """Return correct getPaymentMethod URL based on environment."""
+        if "sandbox" in settings.DUITKU_BASE_URL:
+            return "https://sandbox.duitku.com/webapi/api/merchant/paymentmethod/getpaymentmethod"
+        return "https://passport.duitku.com/webapi/api/merchant/paymentmethod/getpaymentmethod"
+
     async def get_payment_methods(self, amount: int) -> list[dict]:
         """
-        Fetch active payment methods from Duitku V2 API.
-        Returns list of method dicts with extra 'method_type' field.
+        Fetch active payment methods from Duitku API.
+        Uses separate endpoint with its own signature formula:
+        sha256(merchantCode + amount + datetime + apiKey)
         """
-        headers, _ = self._build_headers()
+        dt = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+        raw = f"{settings.DUITKU_MERCHANT_CODE}{amount}{dt}{settings.DUITKU_API_KEY}"
+        sig = hashlib.sha256(raw.encode()).hexdigest()
         payload = {
             "merchantcode": settings.DUITKU_MERCHANT_CODE,
             "amount": amount,
-            "datetime": datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"),
+            "datetime": dt,
+            "signature": sig,
         }
+        url = self._payment_method_url()
         async with httpx.AsyncClient(timeout=15) as client:
-            resp = await client.post(
-                f"{settings.DUITKU_BASE_URL}/api/merchant/paymentmethod/getPaymentMethod",
-                json=payload,
-                headers=headers,
-            )
+            resp = await client.post(url, json=payload)
             logger.info(f"[duitku:get_payment_methods] status={resp.status_code}")
             resp.raise_for_status()
             data = resp.json()
