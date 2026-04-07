@@ -45,6 +45,15 @@ class Order(Base):
     gateway_reference = Column(String(255), nullable=True)
     gateway_payment_url = Column(Text, nullable=True)
 
+    payment_expired_at = Column(DateTime, nullable=True)   # when the Duitku invoice expires
+
+    # V2 payment fields
+    payment_method_code = Column(String(20), nullable=True)   # e.g. "VC", "BT", "QRIS"
+    payment_method_name = Column(String(100), nullable=True)  # e.g. "BCA Virtual Account"
+    va_number           = Column(String(100), nullable=True)  # Virtual Account number
+    qr_string           = Column(Text, nullable=True)         # QRIS string (for QR image)
+    payment_code        = Column(String(100), nullable=True)  # Retail payment code
+
     paid_at = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

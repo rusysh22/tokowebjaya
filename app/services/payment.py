@@ -19,8 +19,28 @@ from app.core.config import settings
 logger = logging.getLogger(__name__)
 
 
+def _method_type(code: str) -> str:
+    """
+    Classify a Duitku payment method code into display type.
+    Returns: 'va', 'qris', 'retail', or 'other'
+    """
+    code = (code or "").upper()
+    if code in ("VC", "BT", "M2", "A1", "B1", "I1", "VA"):
+        return "va"
+    if code in ("QRIS", "SP", "LA", "DA", "OV", "SB", "LT", "FT", "AG"):
+        return "qris"
+    if code in ("ALFMART", "INDOMARET", "AG", "FT", "LT"):
+        return "retail"
+    # Fallback heuristic
+    if code.startswith("Q"):
+        return "qris"
+    if code.startswith("A") or code.startswith("I"):
+        return "retail"
+    return "va"
+
+
 class DuitkuService:
-    """Duitku Pop API integration (api-sandbox.duitku.com)."""
+    """Duitku V2 API integration."""
 
     @staticmethod
     def _header_signature(merchant_code: str, timestamp: str, api_key: str) -> str:
@@ -29,20 +49,12 @@ class DuitkuService:
 
     @staticmethod
     def _callback_signature(merchant_code: str, amount: int, merchant_order_id: str, api_key: str) -> str:
-        # Callback signature still uses MD5
         raw = f"{merchant_code}{amount}{merchant_order_id}{api_key}"
         return hashlib.md5(raw.encode()).hexdigest()
 
-    async def create_payment(
-        self,
-        order_number: str,
-        amount: int,
-        product_name: str,
-        customer_name: str,
-        customer_email: str,
-        return_url: str,
-    ) -> dict:
-        timestamp = str(int(time.time() * 1000))  # milliseconds
+    def _build_headers(self) -> tuple[dict, str]:
+        """Build signed request headers. Returns (headers, timestamp)."""
+        timestamp = str(int(time.time() * 1000))
         signature = self._header_signature(
             settings.DUITKU_MERCHANT_CODE,
             timestamp,
@@ -54,6 +66,83 @@ class DuitkuService:
             "x-duitku-timestamp": timestamp,
             "x-duitku-signature": signature,
         }
+        return headers, timestamp
+
+    async def get_payment_methods(self, amount: int) -> list[dict]:
+        """
+        Fetch active payment methods from Duitku V2 API.
+        Returns list of method dicts with extra 'method_type' field.
+        """
+        headers, _ = self._build_headers()
+        payload = {
+            "merchantcode": settings.DUITKU_MERCHANT_CODE,
+            "amount": amount,
+            "datetime": datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"),
+        }
+        async with httpx.AsyncClient(timeout=15) as client:
+            resp = await client.post(
+                f"{settings.DUITKU_BASE_URL}/api/merchant/paymentmethod/getPaymentMethod",
+                json=payload,
+                headers=headers,
+            )
+            logger.info(f"[duitku:get_payment_methods] status={resp.status_code}")
+            resp.raise_for_status()
+            data = resp.json()
+
+        methods = data.get("paymentFee", [])
+        for m in methods:
+            m["method_type"] = _method_type(m.get("paymentMethod", ""))
+        return methods
+
+    async def create_payment_v2(
+        self,
+        order_number: str,
+        amount: int,
+        payment_method: str,
+        product_name: str,
+        customer_name: str,
+        customer_email: str,
+        return_url: str,
+    ) -> dict:
+        """
+        Create a Duitku V2 transaction for a specific payment method.
+        Returns the full API response dict.
+        """
+        headers, _ = self._build_headers()
+        payload = {
+            "merchantCode":   settings.DUITKU_MERCHANT_CODE,
+            "paymentAmount":  amount,
+            "merchantOrderId": order_number,
+            "productDetails": product_name[:255],
+            "customerVaName": customer_name[:20],
+            "email":          customer_email,
+            "paymentMethod":  payment_method,
+            "callbackUrl":    settings.DUITKU_CALLBACK_URL,
+            "returnUrl":      return_url,
+            "expiryPeriod":   1440,
+        }
+        logger.info(f"[duitku:create_payment_v2] method={payment_method} order={order_number} amount={amount}")
+        async with httpx.AsyncClient(timeout=30) as client:
+            resp = await client.post(
+                f"{settings.DUITKU_BASE_URL}/api/merchant/createInvoice",
+                json=payload,
+                headers=headers,
+            )
+            logger.warning(f"[duitku:create_payment_v2] status={resp.status_code} body={resp.text}")
+            resp.raise_for_status()
+            return resp.json()
+
+    # Keep legacy create_payment for backward compat (used by /process route)
+    async def create_payment(
+        self,
+        order_number: str,
+        amount: int,
+        product_name: str,
+        customer_name: str,
+        customer_email: str,
+        return_url: str,
+    ) -> dict:
+        headers, _ = self._build_headers()
         payload = {
             "merchantCode": settings.DUITKU_MERCHANT_CODE,
             "paymentAmount": amount,

@@ -2213,6 +2213,11 @@ body {
   margin-right: auto;
 }
 
+.my-0\.5 {
+  margin-top: 0.125rem;
+  margin-bottom: 0.125rem;
+}
+
 .my-6 {
   margin-top: 1.5rem;
   margin-bottom: 1.5rem;
@@ -2776,6 +2781,16 @@ body {
   animation: ping 1s cubic-bezier(0, 0, 0.2, 1) infinite;
 }
 
+@keyframes pulse {
+  50% {
+    opacity: .5;
+  }
+}
+
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
 @keyframes spin {
   to {
     transform: rotate(360deg);
@@ -3110,6 +3125,10 @@ body {
   border-color: rgb(239 68 68 / var(--tw-border-opacity, 1));
 }
 
+.border-red-500\/30 {
+  border-color: rgb(239 68 68 / 0.3);
+}
+
 .border-red-600 {
   --tw-border-opacity: 1;
   border-color: rgb(220 38 38 / var(--tw-border-opacity, 1));
@@ -3146,6 +3165,10 @@ body {
 .border-yellow-500 {
   --tw-border-opacity: 1;
   border-color: rgb(234 179 8 / var(--tw-border-opacity, 1));
+}
+
+.border-yellow-500\/30 {
+  border-color: rgb(234 179 8 / 0.3);
 }
 
 .border-yellow-800 {
@@ -3278,6 +3301,10 @@ body {
   background-color: rgb(239 68 68 / 0.1);
 }
 
+.bg-red-500\/5 {
+  background-color: rgb(239 68 68 / 0.05);
+}
+
 .bg-red-600 {
   --tw-bg-opacity: 1;
   background-color: rgb(220 38 38 / var(--tw-bg-opacity, 1));
@@ -3325,8 +3352,17 @@ body {
   background-color: rgb(255 255 255 / 0.4);
 }
 
+.bg-yellow-400 {
+  --tw-bg-opacity: 1;
+  background-color: rgb(250 204 21 / var(--tw-bg-opacity, 1));
+}
+
 .bg-yellow-500\/10 {
   background-color: rgb(234 179 8 / 0.1);
+}
+
+.bg-yellow-500\/5 {
+  background-color: rgb(234 179 8 / 0.05);
 }
 
 .bg-yellow-900 {
@@ -3574,6 +3610,10 @@ body {
   padding-bottom: 2rem;
 }
 
+.pb-12 {
+  padding-bottom: 3rem;
+}
+
 .pb-16 {
   padding-bottom: 4rem;
 }
@@ -3608,6 +3648,10 @@ body {
 
 .pr-8 {
   padding-right: 2rem;
+}
+
+.pt-1 {
+  padding-top: 0.25rem;
 }
 
 .pt-12 {
@@ -4425,6 +4469,18 @@ body {
     grid-template-columns: 1fr 1fr;
     gap: 4rem;
     align-items: center;
+  }
+}
+
+/* Hero section responsive height */
+
+.hero-section {
+  min-height: auto;
+}
+
+@media (min-width: 1024px) {
+  .hero-section {
+    min-height: 100vh;
   }
 }
 

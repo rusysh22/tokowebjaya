@@ -310,6 +310,16 @@
   }
 }
 
+/* Hero section responsive height */
+.hero-section {
+  min-height: auto;
+}
+@media (min-width: 1024px) {
+  .hero-section {
+    min-height: 100vh;
+  }
+}
+
 /* Orbital diagram responsive sizing */
 .orbital-diagram {
   width: 480px;

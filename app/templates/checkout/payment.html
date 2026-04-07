@@ -1,0 +1,299 @@
+{% extends "base.html" %}
+{% block title %}{% if locale == 'id' %}Pembayaran — {% else %}Payment — {% endif %}{{ order.order_number }} — Toko Web Jaya{% endblock %}
+
+{% block content %}
+<section class="min-h-[calc(100vh-4rem)] bg-black pt-16"
+         x-data="paymentPage('{{ order.status.value }}', '{{ order.id }}', '{{ locale }}', {{ seconds_left }})">
+
+  <div class="container-main max-w-xl py-12">
+
+    <!-- Header -->
+    <div class="mb-8">
+      <a href="/{{ locale }}/catalog" class="inline-flex items-center gap-2 text-xs text-gray-500 hover:text-white transition-colors mb-6">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+        </svg>
+        {% if locale == 'id' %}Kembali ke Katalog{% else %}Back to Catalog{% endif %}
+      </a>
+      <div class="flex items-center justify-between">
+        <div>
+          <span class="text-label block mb-1">
+            {% if locale == 'id' %}Instruksi Pembayaran{% else %}Payment Instructions{% endif %}
+          </span>
+          <h1 class="text-xl font-bold text-white">{{ order.order_number }}</h1>
+        </div>
+        <!-- Status badge -->
+        <div x-show="status === 'pending'"
+             class="flex items-center gap-2 border border-yellow-500/30 bg-yellow-500/5 px-3 py-1.5">
+          <span class="w-1.5 h-1.5 rounded-full bg-yellow-400 animate-pulse"></span>
+          <span class="text-yellow-400 text-xs font-semibold">
+            {% if locale == 'id' %}Menunggu Pembayaran{% else %}Awaiting Payment{% endif %}
+          </span>
+        </div>
+        <div x-show="status === 'paid'" x-cloak
+             class="flex items-center gap-2 border border-neon/30 bg-neon/5 px-3 py-1.5">
+          <span class="w-1.5 h-1.5 rounded-full bg-neon"></span>
+          <span class="text-neon text-xs font-semibold">
+            {% if locale == 'id' %}Lunas{% else %}Paid{% endif %}
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- SUCCESS state -->
+    <template x-if="status === 'paid'">
+      <div class="text-center py-16 border border-gray-800">
+        <div class="w-16 h-16 bg-neon flex items-center justify-center mx-auto mb-6">
+          <svg class="w-8 h-8 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+          </svg>
+        </div>
+        <h2 class="text-xl font-bold text-white mb-2">
+          {% if locale == 'id' %}Pembayaran Berhasil!{% else %}Payment Successful!{% endif %}
+        </h2>
+        <p class="text-gray-400 text-sm mb-8">
+          {% if locale == 'id' %}Pesanan kamu sudah dikonfirmasi. Invoice dikirim ke email.{% else %}Your order is confirmed. Invoice sent to your email.{% endif %}
+        </p>
+        <a href="/{{ locale }}/dashboard" class="btn-primary px-8 py-3">
+          {% if locale == 'id' %}Lihat Dashboard{% else %}Go to Dashboard{% endif %}
+        </a>
+      </div>
+    </template>
+
+    <!-- PENDING state -->
+    <template x-if="status === 'pending'">
+      <div class="space-y-4">
+
+        <!-- Order summary -->
+        <div class="border border-gray-800 bg-gray-950 p-5">
+          <div class="flex items-start gap-4">
+            {% if order.product.cover_image %}
+            <img src="/static/uploads/products/images/{{ order.product.cover_image }}"
+                 alt="{{ order.product['name_' + locale] }}"
+                 class="w-14 h-14 object-cover flex-shrink-0" style="border-radius:6px;" />
+            {% else %}
+            <div class="w-14 h-14 bg-gray-800 flex items-center justify-center flex-shrink-0" style="border-radius:6px;">
+              <i class="bi bi-box-seam text-xl text-gray-600"></i>
+            </div>
+            {% endif %}
+            <div class="flex-1 min-w-0">
+              <p class="text-white font-semibold text-sm mb-0.5">{{ order.product['name_' + locale] }}</p>
+              <p class="text-gray-500 text-xs mb-3">
+                {% if order.payment_method_name %}{{ order.payment_method_name }}{% endif %}
+              </p>
+              <div class="flex items-center justify-between border-t border-gray-800 pt-3">
+                <span class="text-gray-400 text-xs">{% if locale == 'id' %}Total Tagihan{% else %}Total Charge{% endif %}</span>
+                <span class="text-neon font-black text-lg">Rp {{ "{:,.0f}".format(order.final_amount or order.amount) }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Countdown timer -->
+        {% if order.payment_expired_at %}
+        <div class="border border-gray-800 p-4 flex items-center justify-between">
+          <div class="flex items-center gap-2 text-sm text-gray-400">
+            <svg class="w-4 h-4 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            {% if locale == 'id' %}Berlaku hingga{% else %}Expires in{% endif %}
+          </div>
+          <span class="font-mono text-white font-bold" x-text="countdown"></span>
+        </div>
+        {% endif %}
+
+        <!-- ── VIRTUAL ACCOUNT ── -->
+        {% if method_type == 'va' and order.va_number %}
+        <div class="border border-gray-800 bg-gray-950 p-5">
+          <p class="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-4">
+            {% if locale == 'id' %}Nomor Virtual Account{% else %}Virtual Account Number{% endif %}
+          </p>
+          <div class="flex items-center gap-3 p-4 bg-black border border-gray-700 mb-4">
+            <span class="text-white font-mono text-xl font-bold tracking-widest flex-1">
+              {{ order.va_number }}
+            </span>
+            <button onclick="copyText('{{ order.va_number }}', this)"
+                    class="text-neon text-xs border border-neon/40 px-3 py-1.5 hover:bg-neon hover:text-black transition-colors flex-shrink-0">
+              <i class="bi bi-copy"></i> {% if locale == 'id' %}Salin{% else %}Copy{% endif %}
+            </button>
+          </div>
+          <div class="space-y-2 text-xs text-gray-500">
+            <p class="flex items-start gap-2"><i class="bi bi-1-circle text-gray-600 mt-0.5"></i>
+              {% if locale == 'id' %}Buka aplikasi mobile banking atau ATM bank kamu{% else %}Open your mobile banking app or ATM{% endif %}</p>
+            <p class="flex items-start gap-2"><i class="bi bi-2-circle text-gray-600 mt-0.5"></i>
+              {% if locale == 'id' %}Pilih menu Transfer / Pembayaran Virtual Account{% else %}Select Transfer / Virtual Account Payment{% endif %}</p>
+            <p class="flex items-start gap-2"><i class="bi bi-3-circle text-gray-600 mt-0.5"></i>
+              {% if locale == 'id' %}Masukkan nomor VA di atas dan konfirmasi jumlah{% else %}Enter the VA number above and confirm the amount{% endif %}</p>
+            <p class="flex items-start gap-2"><i class="bi bi-4-circle text-gray-600 mt-0.5"></i>
+              {% if locale == 'id' %}Halaman ini otomatis terupdate setelah pembayaran berhasil{% else %}This page will automatically update once payment is confirmed{% endif %}</p>
+          </div>
+        </div>
+        {% endif %}
+
+        <!-- ── QRIS ── -->
+        {% if method_type == 'qris' and order.qr_string %}
+        <div class="border border-gray-800 bg-gray-950 p-5 text-center">
+          <p class="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-4">
+            {% if locale == 'id' %}Scan QR Code{% else %}Scan QR Code{% endif %}
+          </p>
+          <div class="inline-block bg-white p-4 mb-4">
+            <img id="qr-img" src="" alt="QR Code"
+                 class="w-48 h-48 mx-auto" />
+          </div>
+          <p class="text-gray-400 text-sm mb-2">
+            {% if locale == 'id' %}Scan dengan aplikasi e-wallet atau mobile banking apapun{% else %}Scan with any e-wallet or mobile banking app{% endif %}
+          </p>
+          <p class="text-xs text-gray-600">
+            {% if locale == 'id' %}Berlaku untuk semua aplikasi berlogo QRIS{% else %}Works with all QRIS-enabled apps{% endif %}
+          </p>
+        </div>
+        {% endif %}
+
+        <!-- ── RETAIL ── -->
+        {% if method_type == 'retail' and order.payment_code %}
+        <div class="border border-gray-800 bg-gray-950 p-5">
+          <p class="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-4">
+            {% if locale == 'id' %}Kode Pembayaran{% else %}Payment Code{% endif %}
+          </p>
+          <div class="flex items-center gap-3 p-4 bg-black border border-gray-700 mb-4">
+            <span class="text-white font-mono text-2xl font-bold tracking-widest flex-1">
+              {{ order.payment_code }}
+            </span>
+            <button onclick="copyText('{{ order.payment_code }}', this)"
+                    class="text-neon text-xs border border-neon/40 px-3 py-1.5 hover:bg-neon hover:text-black transition-colors flex-shrink-0">
+              <i class="bi bi-copy"></i> {% if locale == 'id' %}Salin{% else %}Copy{% endif %}
+            </button>
+          </div>
+          <div class="space-y-2 text-xs text-gray-500">
+            <p class="flex items-start gap-2"><i class="bi bi-1-circle text-gray-600 mt-0.5"></i>
+              {% if locale == 'id' %}Pergi ke minimarket terdekat (Alfamart / Indomaret){% else %}Go to the nearest minimarket (Alfamart / Indomaret){% endif %}</p>
+            <p class="flex items-start gap-2"><i class="bi bi-2-circle text-gray-600 mt-0.5"></i>
+              {% if locale == 'id' %}Beritahu kasir: "Saya mau bayar Duitku"{% else %}Tell the cashier: "I want to pay via Duitku"{% endif %}</p>
+            <p class="flex items-start gap-2"><i class="bi bi-3-circle text-gray-600 mt-0.5"></i>
+              {% if locale == 'id' %}Berikan kode di atas ke kasir{% else %}Give the code above to the cashier{% endif %}</p>
+            <p class="flex items-start gap-2"><i class="bi bi-4-circle text-gray-600 mt-0.5"></i>
+              {% if locale == 'id' %}Bayar sejumlah total tagihan{% else %}Pay the total amount{% endif %}</p>
+          </div>
+        </div>
+        {% endif %}
+
+        <!-- Fallback: no instruction data yet (edge case) -->
+        {% if not order.va_number and not order.qr_string and not order.payment_code %}
+        <div class="border border-gray-800 p-5 text-center text-gray-500 text-sm">
+          {% if locale == 'id' %}Instruksi pembayaran sedang diproses...{% else %}Payment instructions are being processed...{% endif %}
+        </div>
+        {% endif %}
+
+        <!-- Auto polling indicator -->
+        <div class="flex items-center justify-center gap-3 text-xs text-gray-600 py-2">
+          <span class="w-1.5 h-1.5 rounded-full bg-gray-600 animate-pulse"></span>
+          {% if locale == 'id' %}Mengecek status pembayaran otomatis...{% else %}Auto-checking payment status...{% endif %}
+          <button @click="_poll()" class="text-gray-500 hover:text-white underline underline-offset-2">
+            {% if locale == 'id' %}Cek Sekarang{% else %}Check Now{% endif %}
+          </button>
+        </div>
+
+      </div>
+    </template>
+
+    <!-- FAILED / EXPIRED state -->
+    <template x-if="status === 'failed' || status === 'cancelled'">
+      <div class="text-center py-16 border border-gray-800">
+        <div class="w-16 h-16 border border-red-500/30 bg-red-500/5 flex items-center justify-center mx-auto mb-6">
+          <svg class="w-8 h-8 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </div>
+        <h2 class="text-xl font-bold text-white mb-2">
+          {% if locale == 'id' %}Pembayaran Gagal{% else %}Payment Failed{% endif %}
+        </h2>
+        <p class="text-gray-400 text-sm mb-8">
+          {% if locale == 'id' %}Invoice sudah kadaluarsa atau dibatalkan.{% else %}The invoice has expired or was cancelled.{% endif %}
+        </p>
+        <a href="/{{ locale }}/checkout/{{ order.product_id }}?type={{ order.type.value }}" class="btn-primary px-8 py-3">
+          {% if locale == 'id' %}Coba Lagi{% else %}Try Again{% endif %}
+        </a>
+      </div>
+    </template>
+
+  </div>
+</section>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// Copy to clipboard helper
+function copyText(text, btn) {
+  navigator.clipboard.writeText(text).then(() => {
+    const orig = btn.innerHTML;
+    btn.innerHTML = '<i class="bi bi-check-lg"></i> {% if locale == "id" %}Disalin{% else %}Copied{% endif %}';
+    btn.classList.add('bg-neon', 'text-black');
+    setTimeout(() => { btn.innerHTML = orig; btn.classList.remove('bg-neon', 'text-black'); }, 2000);
+  });
+}
+
+// Render QR if qrString is present
+{% if order.qr_string %}
+(function() {
+  const qrString = {{ order.qr_string | tojson }};
+  if (qrString) {
+    // Use QR server API to render
+    const img = document.getElementById('qr-img');
+    if (img) img.src = `https://api.qrserver.com/v1/create-qr-code/?size=192x192&data=${encodeURIComponent(qrString)}`;
+  }
+})();
+{% endif %}
+
+function paymentPage(initialStatus, orderId, locale, secondsLeft) {
+  return {
+    status:      initialStatus,
+    secondsLeft: secondsLeft,
+    countdown:   '--:--:--',
+    _pollTimer:  null,
+    _countTimer: null,
+
+    init() {
+      this._updateCountdown();
+      if (secondsLeft > 0) {
+        this._countTimer = setInterval(() => {
+          this.secondsLeft--;
+          this._updateCountdown();
+          if (this.secondsLeft <= 0) {
+            clearInterval(this._countTimer);
+            if (this.status === 'pending') this.status = 'failed';
+          }
+        }, 1000);
+      }
+      if (this.status === 'pending') {
+        this._pollTimer = setInterval(() => this._poll(), 5000);
+      }
+    },
+
+    _updateCountdown() {
+      const s   = Math.max(0, this.secondsLeft);
+      const h   = Math.floor(s / 3600);
+      const m   = Math.floor((s % 3600) / 60);
+      const sec = s % 60;
+      this.countdown = [h, m, sec].map(v => String(v).padStart(2, '0')).join(':');
+    },
+
+    async _poll() {
+      try {
+        const r = await fetch(`/checkout/status/${orderId}`);
+        const d = await r.json();
+        this.status = d.status;
+        if (d.status !== 'pending') {
+          clearInterval(this._pollTimer);
+          clearInterval(this._countTimer);
+          if (d.status === 'paid') {
+            setTimeout(() => {
+              window.location.href = `/${locale}/checkout/return/${orderId}`;
+            }, 2000);
+          }
+        }
+      } catch(e) {}
+    },
+  };
+}
+</script>
+{% endblock %}

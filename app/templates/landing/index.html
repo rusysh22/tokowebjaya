@@ -11,7 +11,7 @@
 {% block content %}
 
 <!-- ===== HERO ===== -->
-<section class="relative min-h-screen flex items-center bg-black" style="overflow:clip;">{# overflow:clip allows stacking context without clipping 3D children on x-axis #}
+<section class="relative hero-section flex items-center bg-black" style="overflow:clip;">{# overflow:clip allows stacking context without clipping 3D children on x-axis #}
 
   <!-- Particle canvas -->
   <canvas id="hero-canvas" class="absolute inset-0 w-full h-full pointer-events-none" style="z-index:1"></canvas>
@@ -21,8 +21,81 @@
   <div class="absolute top-0 right-0 w-[200px] h-[200px] sm:w-[350px] sm:h-[350px] lg:w-[500px] lg:h-[500px] bg-neon opacity-[0.04] blur-[140px] pointer-events-none" style="z-index:0"></div>
   <div class="absolute bottom-0 left-0 w-[150px] h-[150px] sm:w-[250px] sm:h-[250px] lg:w-[350px] lg:h-[350px] bg-neon opacity-[0.03] blur-[120px] pointer-events-none" style="z-index:0"></div>
 
-  <div class="container-main py-20 sm:py-28 lg:py-32" style="position:relative;z-index:2">
+  <div class="container-main pt-8 pb-12 sm:py-28 lg:py-32" style="position:relative;z-index:2">
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+
+      <!-- Mobile: product card stack (hidden on lg+) -->
+      {% if featured_products %}
+      {% set p0 = featured_products[0] %}
+      {% set p1 = featured_products[1] if featured_products|length > 1 else none %}
+      {% set p2 = featured_products[2] if featured_products|length > 2 else none %}
+      <div class="lg:hidden hero-slide-up" style="animation-delay:0.1s">
+        {#
+          Stack visual (bottom-anchored):
+          Card depan  (p0): bottom=0, full width,  z=3  — konten lengkap
+          Card tengah (p1): bottom=8px, inset 10px kiri/kanan, z=2  — strip tipis terlihat di atas card depan
+          Card belakang(p2): bottom=16px, inset 20px, z=1 — strip paling tipis paling atas
+
+          Wrapper height = tinggi card depan (72px) + 16px ruang untuk 2 strip di atas
+        #}
+        <div class="relative" style="height:88px;">
+
+          {% if p2 %}
+          <div class="absolute" style="
+            bottom:16px; left:20px; right:20px; height:72px;
+            background:#111; border:1px solid rgba(255,255,255,0.06);
+            border-radius:10px; opacity:0.5; z-index:1;"></div>
+          {% endif %}
+
+          {% if p1 %}
+          <div class="absolute" style="
+            bottom:8px; left:10px; right:10px; height:72px;
+            background:#141414; border:1px solid rgba(255,255,255,0.1);
+            border-radius:10px; opacity:0.75; z-index:2;"></div>
+          {% endif %}
+
+          {# Front card — full content #}
+          <a href="/{{ locale }}/product/{{ p0.slug }}"
+             class="absolute left-0 right-0 bottom-0 border overflow-hidden"
+             style="height:72px;z-index:3;border-radius:10px;background:#0F0F0F;
+                    border-color:rgba(202,255,0,0.4);
+                    box-shadow:0 4px 20px rgba(0,0,0,0.6),0 0 0 1px rgba(202,255,0,0.05);">
+            <div class="absolute top-0 left-0 right-0 h-[2px]" style="background:linear-gradient(90deg,rgba(202,255,0,0.85),rgba(202,255,0,0.15));"></div>
+            <div class="flex items-center gap-3 px-3 h-full pt-1">
+              <div class="flex-shrink-0 w-10 h-10 overflow-hidden" style="border-radius:7px;background:#1E1E1E;">
+                {% if p0.cover_image %}
+                <img src="/static/uploads/products/images/{{ p0.cover_image }}"
+                     alt="{{ p0['name_' + locale] }}"
+                     class="w-full h-full object-cover" loading="lazy" />
+                {% else %}
+                <div class="w-full h-full flex items-center justify-center">
+                  <i class="bi bi-box-seam text-sm text-neon" style="opacity:0.5;"></i>
+                </div>
+                {% endif %}
+              </div>
+              <div class="flex-1 min-w-0">
+                <span class="block text-[9px] font-mono uppercase tracking-widest" style="color:#555;">{{ p0.type.value }}</span>
+                <p class="text-white text-sm font-bold leading-tight line-clamp-1 my-0.5">{{ p0['name_' + locale] }}</p>
+                <div class="flex items-center justify-between gap-2">
+                  <span class="text-neon text-sm font-black">
+                    {% if p0.price_otf %}Rp {{ "{:,.0f}".format(p0.price_otf) }}
+                    {% elif p0.price_monthly %}Rp {{ "{:,.0f}".format(p0.price_monthly) }}
+                    {% else %}—{% endif %}
+                  </span>
+                  <span class="flex-shrink-0 text-[10px] font-bold text-black bg-neon px-2 py-0.5" style="border-radius:3px;">
+                    {% if locale == 'id' %}Detail →{% else %}View →{% endif %}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </a>
+
+        </div>
+        <p class="text-center text-[11px] mt-2" style="color:#3A3A3A;">
+          {% if locale == 'id' %}{{ featured_products | length }}+ produk tersedia{% else %}{{ featured_products | length }}+ products available{% endif %}
+        </p>
+      </div>
+      {% endif %}
 
       <!-- Left: copy -->
       <div class="min-w-0">

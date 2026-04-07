@@ -1,0 +1,387 @@
+{% extends "base.html" %}
+{% block title %}{% if locale == 'id' %}Pilih Metode Pembayaran{% else %}Select Payment Method{% endif %} — {{ product['name_' + locale] }} — Toko Web Jaya{% endblock %}
+
+{% block content %}
+<section class="min-h-[calc(100vh-4rem)] bg-black pt-24 pb-16"
+         x-data="selectPayment()"
+         x-init="init()">
+  <div class="container-main max-w-3xl">
+
+    <!-- Breadcrumb -->
+    <div class="text-xs text-gray-600 mb-8 flex items-center gap-2">
+      <a href="/{{ locale }}/catalog" class="hover:text-white">{{ t(locale, 'catalog_title') }}</a>
+      <span>/</span>
+      <a href="/{{ locale }}/product/{{ product.slug }}" class="hover:text-white">{{ product['name_' + locale] }}</a>
+      <span>/</span>
+      <a href="/{{ locale }}/checkout/{{ product.id }}?type={{ order_type }}&cycle={{ billing_cycle }}" class="hover:text-white">
+        {% if locale == 'id' %}Ringkasan{% else %}Review{% endif %}
+      </a>
+      <span>/</span>
+      <span class="text-gray-400">{% if locale == 'id' %}Pembayaran{% else %}Payment{% endif %}</span>
+    </div>
+
+    <h1 class="heading-md text-white mb-8">
+      {% if locale == 'id' %}Pilih Metode Pembayaran{% else %}Select Payment Method{% endif %}
+    </h1>
+
+    <div class="grid grid-cols-1 lg:grid-cols-5 gap-6">
+
+      <!-- ── Left: method list ── -->
+      <div class="lg:col-span-3 space-y-4">
+
+        <!-- Loading state -->
+        <template x-if="loading">
+          <div class="space-y-3">
+            {% for _ in range(4) %}
+            <div class="border border-gray-800 p-4 flex items-center gap-4 animate-pulse">
+              <div class="w-10 h-10 bg-gray-800 flex-shrink-0"></div>
+              <div class="flex-1">
+                <div class="h-3 bg-gray-800 w-32 mb-2"></div>
+                <div class="h-2 bg-gray-800 w-20"></div>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+        </template>
+
+        <!-- Error state -->
+        <template x-if="!loading && loadError">
+          <div class="border border-red-900 bg-red-950/20 p-4 text-red-400 text-sm flex items-center gap-3">
+            <i class="bi bi-exclamation-triangle"></i>
+            <span x-text="loadError"></span>
+          </div>
+        </template>
+
+        <!-- Method groups -->
+        <template x-if="!loading && !loadError">
+          <div class="space-y-6">
+
+            <!-- VA -->
+            <template x-if="grouped.va && grouped.va.length > 0">
+              <div>
+                <p class="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-3">
+                  {% if locale == 'id' %}Virtual Account{% else %}Virtual Account{% endif %}
+                </p>
+                <div class="space-y-2">
+                  <template x-for="m in grouped.va" :key="m.paymentMethod">
+                    <button type="button"
+                            @click="selectMethod(m)"
+                            :class="selected?.paymentMethod === m.paymentMethod
+                              ? 'border-neon bg-neon/5'
+                              : 'border-gray-800 hover:border-gray-600'"
+                            class="w-full flex items-center gap-4 border p-4 transition-colors text-left">
+                      <img :src="m.paymentImage" :alt="m.paymentName"
+                           class="w-10 h-10 object-contain flex-shrink-0 bg-white p-1"
+                           onerror="this.style.display='none'" />
+                      <div class="flex-1 min-w-0">
+                        <p class="text-white text-sm font-medium" x-text="m.paymentName"></p>
+                        <p class="text-gray-500 text-xs mt-0.5"
+                           x-text="m.totalFee && m.totalFee !== '0' ? '{% if locale == "id" %}Biaya layanan{% else %}Service fee{% endif %}: ' + formatFee(m.totalFee) : '{% if locale == "id" %}Tanpa biaya layanan{% else %}No service fee{% endif %}'"></p>
+                      </div>
+                      <div :class="selected?.paymentMethod === m.paymentMethod ? 'border-neon bg-neon' : 'border-gray-700'"
+                           class="w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center">
+                        <div x-show="selected?.paymentMethod === m.paymentMethod"
+                             class="w-1.5 h-1.5 rounded-full bg-black"></div>
+                      </div>
+                    </button>
+                  </template>
+                </div>
+              </div>
+            </template>
+
+            <!-- QRIS / E-Wallet -->
+            <template x-if="grouped.qris && grouped.qris.length > 0">
+              <div>
+                <p class="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-3">
+                  QRIS / E-Wallet
+                </p>
+                <div class="space-y-2">
+                  <template x-for="m in grouped.qris" :key="m.paymentMethod">
+                    <button type="button"
+                            @click="selectMethod(m)"
+                            :class="selected?.paymentMethod === m.paymentMethod
+                              ? 'border-neon bg-neon/5'
+                              : 'border-gray-800 hover:border-gray-600'"
+                            class="w-full flex items-center gap-4 border p-4 transition-colors text-left">
+                      <img :src="m.paymentImage" :alt="m.paymentName"
+                           class="w-10 h-10 object-contain flex-shrink-0 bg-white p-1"
+                           onerror="this.style.display='none'" />
+                      <div class="flex-1 min-w-0">
+                        <p class="text-white text-sm font-medium" x-text="m.paymentName"></p>
+                        <p class="text-gray-500 text-xs mt-0.5"
+                           x-text="m.totalFee && m.totalFee !== '0' ? '{% if locale == "id" %}Biaya layanan{% else %}Service fee{% endif %}: ' + formatFee(m.totalFee) : '{% if locale == "id" %}Tanpa biaya layanan{% else %}No service fee{% endif %}'"></p>
+                      </div>
+                      <div :class="selected?.paymentMethod === m.paymentMethod ? 'border-neon bg-neon' : 'border-gray-700'"
+                           class="w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center">
+                        <div x-show="selected?.paymentMethod === m.paymentMethod"
+                             class="w-1.5 h-1.5 rounded-full bg-black"></div>
+                      </div>
+                    </button>
+                  </template>
+                </div>
+              </div>
+            </template>
+
+            <!-- Retail -->
+            <template x-if="grouped.retail && grouped.retail.length > 0">
+              <div>
+                <p class="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-3">
+                  {% if locale == 'id' %}Minimarket{% else %}Retail{% endif %}
+                </p>
+                <div class="space-y-2">
+                  <template x-for="m in grouped.retail" :key="m.paymentMethod">
+                    <button type="button"
+                            @click="selectMethod(m)"
+                            :class="selected?.paymentMethod === m.paymentMethod
+                              ? 'border-neon bg-neon/5'
+                              : 'border-gray-800 hover:border-gray-600'"
+                            class="w-full flex items-center gap-4 border p-4 transition-colors text-left">
+                      <img :src="m.paymentImage" :alt="m.paymentName"
+                           class="w-10 h-10 object-contain flex-shrink-0 bg-white p-1"
+                           onerror="this.style.display='none'" />
+                      <div class="flex-1 min-w-0">
+                        <p class="text-white text-sm font-medium" x-text="m.paymentName"></p>
+                        <p class="text-gray-500 text-xs mt-0.5"
+                           x-text="m.totalFee && m.totalFee !== '0' ? '{% if locale == "id" %}Biaya layanan{% else %}Service fee{% endif %}: ' + formatFee(m.totalFee) : '{% if locale == "id" %}Tanpa biaya layanan{% else %}No service fee{% endif %}'"></p>
+                      </div>
+                      <div :class="selected?.paymentMethod === m.paymentMethod ? 'border-neon bg-neon' : 'border-gray-700'"
+                           class="w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center">
+                        <div x-show="selected?.paymentMethod === m.paymentMethod"
+                             class="w-1.5 h-1.5 rounded-full bg-black"></div>
+                      </div>
+                    </button>
+                  </template>
+                </div>
+              </div>
+            </template>
+
+            <!-- Other -->
+            <template x-if="grouped.other && grouped.other.length > 0">
+              <div>
+                <p class="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-3">
+                  {% if locale == 'id' %}Lainnya{% else %}Other{% endif %}
+                </p>
+                <div class="space-y-2">
+                  <template x-for="m in grouped.other" :key="m.paymentMethod">
+                    <button type="button"
+                            @click="selectMethod(m)"
+                            :class="selected?.paymentMethod === m.paymentMethod
+                              ? 'border-neon bg-neon/5'
+                              : 'border-gray-800 hover:border-gray-600'"
+                            class="w-full flex items-center gap-4 border p-4 transition-colors text-left">
+                      <img :src="m.paymentImage" :alt="m.paymentName"
+                           class="w-10 h-10 object-contain flex-shrink-0 bg-white p-1"
+                           onerror="this.style.display='none'" />
+                      <div class="flex-1 min-w-0">
+                        <p class="text-white text-sm font-medium" x-text="m.paymentName"></p>
+                        <p class="text-gray-500 text-xs mt-0.5"
+                           x-text="m.totalFee && m.totalFee !== '0' ? '{% if locale == "id" %}Biaya layanan{% else %}Service fee{% endif %}: ' + formatFee(m.totalFee) : '{% if locale == "id" %}Tanpa biaya layanan{% else %}No service fee{% endif %}'"></p>
+                      </div>
+                      <div :class="selected?.paymentMethod === m.paymentMethod ? 'border-neon bg-neon' : 'border-gray-700'"
+                           class="w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center">
+                        <div x-show="selected?.paymentMethod === m.paymentMethod"
+                             class="w-1.5 h-1.5 rounded-full bg-black"></div>
+                      </div>
+                    </button>
+                  </template>
+                </div>
+              </div>
+            </template>
+
+          </div>
+        </template>
+      </div>
+
+      <!-- ── Right: order summary + CTA ── -->
+      <div class="lg:col-span-2">
+        <div class="border border-gray-800 bg-gray-950 p-5 lg:sticky lg:top-24 space-y-4">
+
+          <!-- Product -->
+          <div class="flex items-center gap-3 pb-4 border-b border-gray-800">
+            {% if product.cover_image %}
+            <img src="/static/uploads/products/images/{{ product.cover_image }}"
+                 alt="{{ product['name_' + locale] }}"
+                 class="w-12 h-12 object-cover flex-shrink-0 bg-gray-800" />
+            {% else %}
+            <div class="w-12 h-12 bg-gray-800 flex items-center justify-center flex-shrink-0 opacity-30">
+              <i class="bi bi-box-seam text-xl"></i>
+            </div>
+            {% endif %}
+            <div class="flex-1 min-w-0">
+              <p class="text-white text-sm font-semibold truncate">{{ product['name_' + locale] }}</p>
+              <p class="text-gray-500 text-xs">
+                {% if order_type == 'subscription' %}
+                  {% if locale == 'id' %}Langganan · {{ billing_cycle | capitalize }}{% else %}Subscription · {{ billing_cycle | capitalize }}{% endif %}
+                {% else %}
+                  {% if locale == 'id' %}Pembelian Sekali{% else %}One-time{% endif %}
+                {% endif %}
+              </p>
+            </div>
+          </div>
+
+          <!-- Price breakdown -->
+          <div class="space-y-2 text-sm pb-4 border-b border-gray-800">
+            <div class="flex justify-between">
+              <span class="text-gray-400">{% if locale == 'id' %}Harga{% else %}Price{% endif %}</span>
+              <span class="text-white">Rp {{ "{:,.0f}".format(breakdown.base) }}</span>
+            </div>
+            {% if breakdown.discount > 0 %}
+            <div class="flex justify-between text-neon text-xs">
+              <span>Promo {{ promo_code }}</span>
+              <span>- Rp {{ "{:,.0f}".format(breakdown.discount) }}</span>
+            </div>
+            {% endif %}
+            <div class="flex justify-between text-xs">
+              <span class="text-gray-500">PPN {{ (breakdown.vat_rate * 100) | int }}%</span>
+              <span class="text-gray-400">+ Rp {{ "{:,.0f}".format(breakdown.vat_amount) }}</span>
+            </div>
+            <!-- Service fee row — updates with selection -->
+            <div x-show="selected" x-cloak class="flex justify-between text-xs">
+              <span class="text-gray-500">{% if locale == 'id' %}Biaya layanan{% else %}Service fee{% endif %}</span>
+              <span class="text-gray-400" x-text="serviceFee > 0 ? '+ Rp ' + formatNum(serviceFee) : 'Gratis'"></span>
+            </div>
+          </div>
+
+          <!-- Total -->
+          <div class="flex justify-between items-center">
+            <span class="font-semibold text-white">Total</span>
+            <span class="text-neon font-black text-xl" x-text="'Rp ' + formatNum(totalAmount)">
+              Rp {{ "{:,.0f}".format(breakdown.final) }}
+            </span>
+          </div>
+
+          <!-- Error -->
+          <div x-show="payError" x-cloak class="border border-red-900 bg-red-950/20 p-3 text-red-400 text-xs" x-text="payError"></div>
+
+          <!-- CTA -->
+          <button @click="proceed()"
+                  :disabled="!selected || payLoading"
+                  class="btn-primary w-full py-4 justify-center disabled:opacity-40 disabled:cursor-not-allowed">
+            <span x-show="!payLoading">
+              <span x-show="!selected">{% if locale == 'id' %}Pilih metode dulu{% else %}Choose a method{% endif %}</span>
+              <span x-show="selected">{% if locale == 'id' %}Bayar Sekarang{% else %}Pay Now{% endif %}
+                <svg class="w-4 h-4 inline ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/>
+                </svg>
+              </span>
+            </span>
+            <span x-show="payLoading" class="flex items-center gap-2">
+              <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 12 6.477 12 12h-4z"/>
+              </svg>
+              {% if locale == 'id' %}Memproses...{% else %}Processing...{% endif %}
+            </span>
+          </button>
+
+          <p class="text-xs text-gray-600 text-center">
+            {% if locale == 'id' %}Pembayaran diamankan oleh Duitku{% else %}Payment secured by Duitku{% endif %}
+          </p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+function selectPayment() {
+  const BASE_FINAL  = {{ breakdown.final | int }};   // subtotal + VAT (before service fee)
+  const LOCALE      = '{{ locale }}';
+  const PRODUCT_ID  = '{{ product.id }}';
+  const ORDER_TYPE  = '{{ order_type }}';
+  const BILLING     = '{{ billing_cycle }}';
+  const PROMO_CODE  = '{{ promo_code }}';
+
+  return {
+    loading:    true,
+    loadError:  '',
+    methods:    [],
+    grouped:    { va: [], qris: [], retail: [], other: [] },
+    selected:   null,
+    serviceFee: 0,
+    totalAmount: BASE_FINAL,
+    payLoading: false,
+    payError:   '',
+
+    async init() {
+      try {
+        const res = await fetch(`/checkout/payment-methods?amount=${BASE_FINAL}`);
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || 'Failed');
+        this.methods = data.methods || [];
+        this._groupMethods();
+      } catch (e) {
+        this.loadError = '{% if locale == "id" %}Gagal memuat metode pembayaran. Coba refresh halaman.{% else %}Failed to load payment methods. Please refresh.{% endif %}';
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    _groupMethods() {
+      this.grouped = { va: [], qris: [], retail: [], other: [] };
+      for (const m of this.methods) {
+        const t = m.method_type || 'other';
+        (this.grouped[t] || this.grouped.other).push(m);
+      }
+    },
+
+    selectMethod(m) {
+      this.selected   = m;
+      this.serviceFee = this._parseFee(m.totalFee, BASE_FINAL);
+      this.totalAmount = BASE_FINAL + this.serviceFee;
+    },
+
+    _parseFee(feeStr, amount) {
+      if (!feeStr || feeStr === '0') return 0;
+      const s = String(feeStr).trim();
+      if (s.endsWith('%')) return Math.round(amount * parseFloat(s) / 100);
+      return parseInt(s, 10) || 0;
+    },
+
+    formatFee(feeStr) {
+      const fee = this._parseFee(feeStr, BASE_FINAL);
+      if (!fee) return '{% if locale == "id" %}Gratis{% else %}Free{% endif %}';
+      if (String(feeStr).endsWith('%')) return feeStr;
+      return 'Rp ' + fee.toLocaleString('id-ID');
+    },
+
+    formatNum(n) {
+      return Math.round(n).toLocaleString('id-ID');
+    },
+
+    async proceed() {
+      if (!this.selected) return;
+      this.payLoading = true;
+      this.payError   = '';
+      try {
+        const res = await fetch(`/${LOCALE}/checkout/${PRODUCT_ID}/create-payment`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            order_type:          ORDER_TYPE,
+            billing_cycle:       BILLING,
+            promo_code:          PROMO_CODE,
+            payment_method:      this.selected.paymentMethod,
+            payment_method_name: this.selected.paymentName,
+            service_fee:         this.serviceFee,
+          }),
+        });
+        const data = await res.json();
+        if (!res.ok || !data.order_id) {
+          this.payError = data.detail || '{% if locale == "id" %}Gagal membuat pembayaran.{% else %}Failed to create payment.{% endif %}';
+          this.payLoading = false;
+          return;
+        }
+        window.location.href = data.redirect_to;
+      } catch (e) {
+        this.payError = '{% if locale == "id" %}Terjadi kesalahan. Coba lagi.{% else %}An error occurred. Please try again.{% endif %}';
+        this.payLoading = false;
+      }
+    },
+  };
+}
+</script>
+{% endblock %}
