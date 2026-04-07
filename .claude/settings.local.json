@@ -9,7 +9,13 @@
       "Bash(python3 -c \"from PIL import Image; print\\('Pillow OK'\\)\")",
       "Bash(py --version)",
       "Bash(py -c \"from PIL import Image; print\\('Pillow OK'\\)\")",
-      "Bash(docker cp:*)"
+      "Bash(docker cp:*)",
+      "Bash(ls d:/dani_coding/tokowebjaya/static/assets/images/*.webp)",
+      "Bash(where python:*)",
+      "Bash(where python3:*)",
+      "Bash(where py:*)",
+      "Bash(D:/dani_coding/tokowebjaya/venv/Scripts/python.exe -c \"from PIL import Image; print\\('OK'\\)\")",
+      "Bash(D:/dani_coding/tokowebjaya/venv/Scripts/python.exe d:/dani_coding/tokowebjaya/scripts/convert_webp.py)"
     ]
   }
 }

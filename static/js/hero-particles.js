@@ -73,10 +73,27 @@
   // Built pin arrays + spring state per ribbon
   let ribbonData = null;
 
+  // Pin density: ~1 pin per N px of width, clamped
+  function calcPinCount(densityPx, min, max) {
+    return Math.max(min, Math.min(max, Math.round(W / densityPx)));
+  }
+
   function resize() {
     const sec = canvas.parentElement;
     W = canvas.width  = sec.offsetWidth;
     H = canvas.height = sec.offsetHeight;
+
+    // Pin count scales with width (~1 pin per 7-8px)
+    RIBBONS[0].pinCount = calcPinCount(7, 80,  220);
+    RIBBONS[1].pinCount = calcPinCount(6, 100, 260);
+
+    // Pin height scales with screen height so ribbons aren't too tall/short
+    const hScale = Math.min(1, H / 900);
+    RIBBONS[0].pinHeightFront = Math.round(120 * hScale);
+    RIBBONS[0].pinHeightBack  = Math.round(10  * hScale);
+    RIBBONS[1].pinHeightFront = Math.round(100 * hScale);
+    RIBBONS[1].pinHeightBack  = Math.round(8   * hScale);
+
     ribbonData = null;
   }
 
@@ -297,14 +314,6 @@
   if (window.innerWidth < 768) {
     canvas.style.display = "none";
     return;
-  }
-
-  // Tablet: reduce density
-  if (window.innerWidth < 1024) {
-    RIBBONS[0].pinCount = 90;
-    RIBBONS[1].pinCount = 70;
-    RIBBONS[0].pinHeightFront = 80;
-    RIBBONS[1].pinHeightFront = 60;
   }
 
   resize();
