@@ -295,31 +295,51 @@ function copyText(text, btn) {
   function renderQR() {
     const el = document.getElementById('qr-canvas');
     if (!el) return;
-    try {
-      // qrcode-generator API
-      const qr = qrcode(0, 'M');
-      qr.addData(qrString);
-      qr.make();
-      // Render as table-based SVG, then convert to img
-      const svg = qr.createSvgTag({ scalable: true });
-      el.innerHTML = svg;
-      const svgEl = el.querySelector('svg');
-      if (svgEl) {
-        svgEl.style.width = '192px';
-        svgEl.style.height = '192px';
-        svgEl.style.display = 'block';
+
+    if (typeof qrcode !== 'undefined') {
+      try {
+        // Type 40 supports up to 1273 chars (L), use L correction for long QRIS strings
+        const typeNumber = qrString.length > 400 ? 40 : qrString.length > 150 ? 20 : 0;
+        const qr = qrcode(typeNumber, 'L');
+        qr.addData(qrString, 'Byte');
+        qr.make();
+        // Use SVG — no canvas/GIF encoding issues
+        const svgHtml = qr.createSvgTag({ scalable: true });
+        el.innerHTML = svgHtml;
+        const svg = el.querySelector('svg');
+        if (svg) {
+          svg.style.width  = '192px';
+          svg.style.height = '192px';
+          svg.style.display = 'block';
+        }
+        return;
+      } catch(e) {
+        console.warn('QR library render failed:', e);
       }
-    } catch(e) {
-      // Fallback: img via qrserver
-      el.innerHTML = '<img src="https://api.qrserver.com/v1/create-qr-code/?size=192x192&data=' + encodeURIComponent(qrString) + '" width="192" height="192" />';
     }
+
+    // Canvas fallback
+    try {
+      const canvas = document.createElement('canvas');
+      canvas.width = 192;
+      canvas.height = 192;
+      el.innerHTML = '';
+      el.appendChild(canvas);
+      // Draw basic placeholder if no library
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(0, 0, 192, 192);
+      ctx.fillStyle = '#000';
+      ctx.font = '11px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('QR tidak tersedia', 96, 96);
+    } catch(e2) {}
   }
 
-  if (typeof qrcode !== 'undefined') {
-    renderQR();
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', renderQR);
   } else {
-    const s = document.querySelector('script[src*="qrcode"]');
-    if (s) s.addEventListener('load', renderQR);
+    renderQR();
   }
 })();
 {% endif %}
