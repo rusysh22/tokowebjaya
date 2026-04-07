@@ -145,10 +145,16 @@ class DuitkuService:
         }
         url = self._inquiry_url()
         logger.info(f"[duitku:create_payment_v2] method={payment_method} order={order_number} amount={amount} url={url}")
+        logger.info(f"[duitku:create_payment_v2] payload={payload}")
         async with httpx.AsyncClient(timeout=30) as client:
             resp = await client.post(url, json=payload)
             logger.info(f"[duitku:create_payment_v2] status={resp.status_code} body={resp.text}")
-            resp.raise_for_status()
+            if resp.status_code >= 400:
+                raise httpx.HTTPStatusError(
+                    f"Duitku error {resp.status_code}: {resp.text}",
+                    request=resp.request,
+                    response=resp,
+                )
             return resp.json()
 
     # Keep legacy create_payment for backward compat (used by /process route)

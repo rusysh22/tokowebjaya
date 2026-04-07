@@ -136,8 +136,17 @@
           <p class="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-4">
             {% if locale == 'id' %}Scan QR Code{% else %}Scan QR Code{% endif %}
           </p>
-          <div class="inline-block bg-white p-4 mb-4 mx-auto">
+          <div class="inline-block bg-white p-4 mb-3 mx-auto" id="qr-wrapper">
             <div id="qr-canvas" class="w-48 h-48"></div>
+          </div>
+          <div class="flex items-center justify-center gap-3 mb-4">
+            <button onclick="downloadQR()" id="btn-download-qr"
+                    class="inline-flex items-center gap-1.5 text-xs border border-gray-700 text-gray-400 px-3 py-1.5 hover:border-neon hover:text-neon transition-colors">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+              </svg>
+              {% if locale == 'id' %}Unduh QR{% else %}Download QR{% endif %}
+            </button>
           </div>
           <p class="text-gray-400 text-sm mb-2">
             {% if locale == 'id' %}Scan dengan aplikasi e-wallet atau mobile banking apapun{% else %}Scan with any e-wallet or mobile banking app{% endif %}
@@ -288,6 +297,44 @@ function copyText(text, btn) {
 }
 
 {% if method_type == 'qris' and order.qr_string %}
+function downloadQR() {
+  const svg = document.querySelector('#qr-canvas svg');
+  const btn = document.getElementById('btn-download-qr');
+  if (!svg) return;
+
+  // Render SVG → Canvas → PNG download
+  const svgData = new XMLSerializer().serializeToString(svg);
+  const canvas = document.createElement('canvas');
+  const size = 512;
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext('2d');
+
+  // White background
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, size, size);
+
+  const img = new Image();
+  const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+  const url = URL.createObjectURL(svgBlob);
+  img.onload = function() {
+    ctx.drawImage(img, 0, 0, size, size);
+    URL.revokeObjectURL(url);
+    const a = document.createElement('a');
+    a.download = 'QRIS-{{ order.order_number }}.png';
+    a.href = canvas.toDataURL('image/png');
+    a.click();
+    // Feedback
+    if (btn) {
+      const orig = btn.innerHTML;
+      btn.innerHTML = '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg> {% if locale == "id" %}Tersimpan{% else %}Saved{% endif %}';
+      btn.classList.add('border-neon', 'text-neon');
+      setTimeout(() => { btn.innerHTML = orig; btn.classList.remove('border-neon', 'text-neon'); }, 2000);
+    }
+  };
+  img.src = url;
+}
+
 (function() {
   const qrString = {{ order.qr_string | tojson }};
   if (!qrString) return;

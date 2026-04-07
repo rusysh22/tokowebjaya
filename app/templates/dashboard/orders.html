@@ -34,6 +34,14 @@
                      class="text-xs text-neon hover:underline whitespace-nowrap">
                     {% if locale == 'id' %}Lihat Receipt{% else %}View Receipt{% endif %}
                   </a>
+                  {% elif o.status.value == 'pending' %}
+                  <a href="/{{ locale }}/checkout/payment/{{ o.id }}"
+                     class="inline-flex items-center gap-1 text-xs border border-yellow-600/50 text-yellow-400 px-2.5 py-1 hover:bg-yellow-500/10 transition-colors whitespace-nowrap">
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/>
+                    </svg>
+                    {% if locale == 'id' %}Lanjutkan{% else %}Continue{% endif %}
+                  </a>
                   {% endif %}
                 </td>
               </tr>

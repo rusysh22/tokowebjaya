@@ -486,8 +486,10 @@ async def checkout_create_payment(
     except Exception as e:
         order.status = OrderStatus.failed
         db.commit()
-        logger.error(f"[create-payment] {e}")
-        return JSONResponse({"detail": "Payment gateway error. Please try again."}, status_code=502)
+        logger.error(f"[create-payment] error={e}")
+        # Extract Duitku error message if available
+        duitku_msg = str(e)
+        return JSONResponse({"detail": f"Payment gateway error: {duitku_msg}"}, status_code=502)
 
 
 @router.post("/{locale}/checkout/{product_id}/process")
