@@ -281,6 +281,109 @@
     </div>
   </div>
 
+  <!-- Section: License & Delivery Config -->
+  <div class="border border-gray-800 p-6">
+    <h2 class="text-sm font-semibold text-white mb-1 pb-3 border-b border-gray-800 flex items-center gap-2">
+      <i class="bi bi-shield-lock text-neon"></i> License & Delivery
+    </h2>
+    <p class="text-gray-500 text-xs mb-5">Konfigurasi apa yang diterima user setelah order berhasil.</p>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+
+      <!-- License Type -->
+      <div>
+        <label class="block text-xs font-medium text-gray-400 mb-2">
+          Tipe Lisensi
+          <span class="text-gray-600 font-normal ml-1">(apa yang dikirim ke user)</span>
+        </label>
+        <select name="license_type" class="input">
+          {% for opt, label in [('none','Tidak ada lisensi'),('token','Token (Software/SaaS)'),('password','Password (File/Enkripsi)'),('credential','Credential (Username + Password)'),('download','Download (File/Ebook)')] %}
+          <option value="{{ opt }}" {% if product and product.license_type == opt %}selected{% elif not product and opt == 'none' %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- Max Activations -->
+      <div>
+        <label class="block text-xs font-medium text-gray-400 mb-2">
+          Max Aktivasi
+          <span class="text-gray-600 font-normal ml-1">(berapa device bisa pakai 1 token)</span>
+        </label>
+        <input type="number" name="max_activations" min="1" max="999"
+               value="{{ product.max_activations if product else 1 }}"
+               class="input w-32" />
+      </div>
+
+      <!-- Access URL -->
+      <div class="md:col-span-2">
+        <label class="block text-xs font-medium text-gray-400 mb-2">
+          URL Akses Produk
+          <span class="text-gray-600 font-normal ml-1">(URL aplikasi / layanan yang dibeli)</span>
+        </label>
+        <input type="url" name="access_url"
+               value="{{ product.access_url or '' if product else '' }}"
+               placeholder="https://app.rokonsult.com"
+               class="input" />
+      </div>
+
+      <!-- License Duration Override -->
+      <div>
+        <label class="block text-xs font-medium text-gray-400 mb-2">
+          Durasi Lisensi (hari)
+          <span class="text-gray-600 font-normal ml-1">(kosongkan = ikuti siklus langganan)</span>
+        </label>
+        <input type="number" name="license_duration_days" min="1"
+               value="{{ product.license_duration_days or '' if product else '' }}"
+               placeholder="30"
+               class="input w-32" />
+      </div>
+
+      <!-- Guidebook URL -->
+      <div>
+        <label class="block text-xs font-medium text-gray-400 mb-2">
+          Guidebook URL
+          <span class="text-gray-600 font-normal ml-1">(link PDF / halaman dokumentasi)</span>
+        </label>
+        <input type="url" name="guidebook_url"
+               value="{{ product.guidebook_url or '' if product else '' }}"
+               placeholder="https://docs.example.com"
+               class="input" />
+      </div>
+
+      <!-- Guidebook Text ID -->
+      <div>
+        <label class="block text-xs font-medium text-gray-400 mb-2">
+          Panduan Onboarding (Indonesia)
+        </label>
+        <textarea name="guidebook_text_id" rows="4" class="input resize-none"
+                  placeholder="Langkah-langkah memulai produk ini...">{{ product.guidebook_text_id or '' if product else '' }}</textarea>
+      </div>
+
+      <!-- Guidebook Text EN -->
+      <div>
+        <label class="block text-xs font-medium text-gray-400 mb-2">
+          Onboarding Guide (English)
+        </label>
+        <textarea name="guidebook_text_en" rows="4" class="input resize-none"
+                  placeholder="Steps to get started with this product...">{{ product.guidebook_text_en or '' if product else '' }}</textarea>
+      </div>
+
+      <!-- Webhook URL -->
+      <div class="md:col-span-2">
+        <label class="block text-xs font-medium text-gray-400 mb-2">
+          Webhook URL
+          <span class="text-gray-600 font-normal ml-1">(URL aplikasi kamu untuk notif license.created / license.expired)</span>
+        </label>
+        <input type="url" name="webhook_url"
+               value="{{ product.webhook_url or '' if product else '' }}"
+               placeholder="https://yourapp.com/webhooks/license"
+               class="input" />
+        <p class="text-gray-600 text-xs mt-1">POST JSON: <code class="text-gray-500">{"event":"license.created","license_key":"TWJ-...","expires_at":"..."}</code></p>
+      </div>
+
+    </div>
+  </div>
+
   <!-- Section: Metadata -->
   <div class="border border-gray-800 p-6">
     <h2 class="text-sm font-semibold text-white mb-5 pb-3 border-b border-gray-800">

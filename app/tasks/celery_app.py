@@ -14,6 +14,7 @@ celery = Celery(
     include=[
         "app.tasks.billing",
         "app.tasks.invoice",
+        "app.tasks.license_reminders",
     ],
 )
 
@@ -44,5 +45,15 @@ celery.conf.beat_schedule = {
     "mark-overdue-invoices": {
         "task": "app.tasks.billing.mark_overdue_invoices",
         "schedule": crontab(hour=0, minute=30),
+    },
+    # License expiry reminders — daily 08:00 WIB (01:00 UTC)
+    "send-license-reminders": {
+        "task": "app.tasks.license_reminders.send_license_reminders",
+        "schedule": crontab(hour=1, minute=0),
+    },
+    # Deactivate expired licenses — daily 02:00 UTC
+    "expire-licenses": {
+        "task": "app.tasks.license_reminders.expire_licenses",
+        "schedule": crontab(hour=2, minute=0),
     },
 }

@@ -767,6 +767,38 @@ def _mark_order_paid(order: Order, db: Session, background_tasks: BackgroundTask
     except Exception:
         pass
 
+    # Generate product license
+    try:
+        from app.services.license import generate_license, send_webhook
+        from app.services.email import send_license_delivery
+        # Find related subscription if any
+        sub = None
+        if order.type == OrderType.subscription:
+            sub = db.query(Subscription).filter(
+                Subscription.user_id   == order.user_id,
+                Subscription.product_id == order.product_id,
+            ).order_by(Subscription.started_at.desc()).first()
+        lic = generate_license(db, order, subscription=sub)
+        if lic:
+            # Email delivery: send token/password/URL to user
+            background_tasks.add_task(send_license_delivery, order, lic)
+            # Webhook to external app
+            if order.product and order.product.webhook_url:
+                background_tasks.add_task(
+                    send_webhook,
+                    order.product.webhook_url,
+                    "license.created",
+                    {
+                        "license_key":  lic.license_key,
+                        "license_type": lic.license_type,
+                        "expires_at":   lic.expires_at.isoformat() if lic.expires_at else None,
+                        "order_id":     str(order.id),
+                        "user_email":   order.user.email if order.user else None,
+                    }
+                )
+    except Exception as e:
+        logger.error(f"[license] generation failed order={order.id} error={e}")
+
     # Handle subscription
     if order.type == OrderType.subscription:
         # Check if this is a renewal (subscription already exists)

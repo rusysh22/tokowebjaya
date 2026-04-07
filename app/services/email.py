@@ -491,3 +491,154 @@ def send_appointment_rejected(appt) -> bool:
     <a href="{settings.BASE_URL}/id/catalog" class="btn">Lihat Produk Lain &rarr;</a>
     """
     return _send(user.email, subject, _base_html(subject, body))
+
+
+# ─── License Delivery Email ───────────────────────────────────────────────────
+
+def send_license_delivery(order, license, locale: str = "id") -> bool:
+    """
+    Send product license/access credentials to user after successful order.
+    Covers: token, password, credential, download types.
+    """
+    user = order.user
+    if not user:
+        return False
+
+    product      = order.product
+    product_name = product.name_id if locale == "id" else product.name_en
+    ltype        = license.license_type
+    dashboard_url = f"{settings.BASE_URL}/{locale}/dashboard/licenses"
+
+    # Build credential rows based on license type
+    credential_rows = ""
+    delivery_note   = ""
+
+    if ltype == "token":
+        credential_rows = f"""
+        <tr><td>License Key</td><td style="font-family:monospace;font-size:15px;letter-spacing:2px;color:#0a0a0a;font-weight:900">{license.license_key}</td></tr>
+        """
+        if license.access_url:
+            credential_rows += f'<tr><td>URL Akses</td><td><a href="{license.access_url}" style="color:#0a0a0a">{license.access_url}</a></td></tr>'
+        if license.expires_at:
+            credential_rows += f'<tr><td>Berlaku hingga</td><td>{license.expires_at.strftime("%d %B %Y")}</td></tr>'
+        else:
+            credential_rows += '<tr><td>Masa berlaku</td><td>Seumur hidup (Lifetime)</td></tr>'
+        delivery_note = "Masukkan License Key di atas pada aplikasi untuk mengaktifkan akses Anda." if locale == "id" else "Enter the License Key above in the application to activate your access."
+
+    elif ltype == "password":
+        credential_rows = f"""
+        <tr><td>Password</td><td style="font-family:monospace;font-size:15px;letter-spacing:2px;color:#0a0a0a;font-weight:900">{license.license_password}</td></tr>
+        """
+        if license.access_url:
+            credential_rows += f'<tr><td>Download</td><td><a href="{license.access_url}" style="color:#0a0a0a">{license.access_url}</a></td></tr>'
+        delivery_note = "Gunakan password di atas untuk membuka file terenkripsi yang telah Anda beli." if locale == "id" else "Use the password above to open the encrypted file you purchased."
+
+    elif ltype == "credential":
+        credential_rows = f"""
+        <tr><td>Username</td><td style="font-family:monospace;font-size:14px;color:#0a0a0a;font-weight:700">{license.license_username}</td></tr>
+        <tr><td>Password</td><td style="font-family:monospace;font-size:14px;color:#0a0a0a;font-weight:700">{license.license_password}</td></tr>
+        """
+        if license.access_url:
+            credential_rows += f'<tr><td>URL Login</td><td><a href="{license.access_url}" style="color:#0a0a0a">{license.access_url}</a></td></tr>'
+        if license.expires_at:
+            credential_rows += f'<tr><td>Berlaku hingga</td><td>{license.expires_at.strftime("%d %B %Y")}</td></tr>'
+        delivery_note = "Gunakan kredensial di atas untuk login ke layanan yang Anda beli. Segera ganti password setelah login pertama." if locale == "id" else "Use the credentials above to log in to your purchased service. Please change your password after first login."
+
+    elif ltype == "download":
+        from app.services.license import generate_signed_download_url
+        download_url = generate_signed_download_url(license)
+        credential_rows = f"""
+        <tr><td>Link Download</td><td><a href="{download_url}" style="color:#0a0a0a;font-weight:700">Klik untuk Download</a></td></tr>
+        <tr><td>Maks. Download</td><td>{license.max_downloads}x</td></tr>
+        <tr><td>Link berlaku</td><td>Tidak expired (maks {license.max_downloads}x)</td></tr>
+        """
+        delivery_note = "Link download di atas hanya bisa digunakan sebanyak 5 kali. Simpan file setelah diunduh." if locale == "id" else "The download link above can only be used 5 times. Save the file after downloading."
+
+    # Guidebook section
+    guidebook_html = ""
+    guidebook_text = product.guidebook_text_id if locale == "id" else product.guidebook_text_en
+    if guidebook_text:
+        guidebook_html = f"""
+        <div style="background:#f9f9f9;border-left:3px solid #CAFF00;padding:16px 20px;margin:20px 0;">
+          <p style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#888;margin-bottom:8px;">Panduan Penggunaan</p>
+          <p style="font-size:13px;color:#444;line-height:1.7;margin:0">{guidebook_text}</p>
+        </div>
+        """
+    if product.guidebook_url:
+        guidebook_html += f'<p style="margin-top:12px"><a href="{product.guidebook_url}" class="btn" style="display:inline-block;background:#0a0a0a;color:#CAFF00;text-decoration:none;font-weight:700;font-size:13px;padding:10px 24px">📖 Buka Panduan Lengkap</a></p>'
+
+    if locale == "id":
+        subject = f"Akses Produk Anda — {product_name}"
+        body = f"""
+        <div class="badge">Akses Produk</div>
+        <h1>Produk siap digunakan! 🎉</h1>
+        <p>Hei <strong>{user.name or user.email}</strong>, terima kasih atas pembelian <strong>{product_name}</strong>. Berikut adalah detail akses Anda:</p>
+        <table class="info-table">
+          <tr><td>Produk</td><td>{product_name}</td></tr>
+          <tr><td>Order</td><td>{order.order_number}</td></tr>
+          {credential_rows}
+        </table>
+        <p style="background:#fffbeb;border:1px solid #fcd34d;padding:12px 16px;font-size:13px;color:#92400e;">
+          ⚠️ <strong>Penting:</strong> Simpan informasi ini di tempat yang aman. {delivery_note}
+        </p>
+        {guidebook_html}
+        <a href="{dashboard_url}" class="btn">Lihat di Dashboard &rarr;</a>
+        <p style="font-size:12px;color:#aaa;margin-top:16px">Butuh bantuan? Balas email ini atau hubungi support kami.</p>
+        """
+    else:
+        subject = f"Your Product Access — {product_name}"
+        body = f"""
+        <div class="badge">Product Access</div>
+        <h1>Your product is ready! 🎉</h1>
+        <p>Hi <strong>{user.name or user.email}</strong>, thank you for purchasing <strong>{product_name}</strong>. Here are your access details:</p>
+        <table class="info-table">
+          <tr><td>Product</td><td>{product_name}</td></tr>
+          <tr><td>Order</td><td>{order.order_number}</td></tr>
+          {credential_rows}
+        </table>
+        <p style="background:#fffbeb;border:1px solid #fcd34d;padding:12px 16px;font-size:13px;color:#92400e;">
+          ⚠️ <strong>Important:</strong> Save this information in a safe place. {delivery_note}
+        </p>
+        {guidebook_html}
+        <a href="{dashboard_url}" class="btn">View in Dashboard &rarr;</a>
+        <p style="font-size:12px;color:#aaa;margin-top:16px">Need help? Reply to this email or contact our support.</p>
+        """
+
+    return _send(user.email, subject, _base_html(subject, body))
+
+
+def send_license_reminder(license, days_left: int, locale: str = "id") -> bool:
+    """Send subscription expiry reminder — 7 days or 3 days before expiry."""
+    user    = license.user
+    product = license.product
+    if not user or not product:
+        return False
+
+    product_name  = product.name_id if locale == "id" else product.name_en
+    renewal_url   = f"{settings.BASE_URL}/{locale}/checkout/{product.id}?type=subscription"
+    dashboard_url = f"{settings.BASE_URL}/{locale}/dashboard/licenses"
+    expire_date   = license.expires_at.strftime("%d %B %Y") if license.expires_at else "-"
+
+    if locale == "id":
+        subject = f"Langganan {product_name} akan berakhir dalam {days_left} hari"
+        urgency = "segera" if days_left <= 3 else "segera"
+        body = f"""
+        <div class="badge" style="background:#fef3c7;color:#92400e">Pengingat Langganan</div>
+        <h1>Langganan Anda akan berakhir!</h1>
+        <p>Hei <strong>{user.name or user.email}</strong>, langganan <strong>{product_name}</strong> Anda akan berakhir dalam <strong>{days_left} hari</strong> ({expire_date}).</p>
+        <p>Perbarui langganan Anda {urgency} agar akses tidak terputus.</p>
+        <a href="{renewal_url}" class="btn">Perbarui Langganan &rarr;</a>
+        <p style="font-size:12px;color:#aaa;margin-top:16px"><a href="{dashboard_url}">Lihat detail lisensi Anda</a></p>
+        """
+    else:
+        subject = f"{product_name} subscription expires in {days_left} days"
+        body = f"""
+        <div class="badge" style="background:#fef3c7;color:#92400e">Subscription Reminder</div>
+        <h1>Your subscription is expiring!</h1>
+        <p>Hi <strong>{user.name or user.email}</strong>, your <strong>{product_name}</strong> subscription expires in <strong>{days_left} days</strong> ({expire_date}).</p>
+        <p>Renew your subscription now to avoid any interruption to your access.</p>
+        <a href="{renewal_url}" class="btn">Renew Subscription &rarr;</a>
+        <p style="font-size:12px;color:#aaa;margin-top:16px"><a href="{dashboard_url}">View your license details</a></p>
+        """
+
+    return _send(user.email, subject, _base_html(subject, body))

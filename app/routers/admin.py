@@ -172,6 +172,14 @@ async def admin_product_create(
     download_file: Optional[UploadFile] = File(None),
     gallery_images: List[UploadFile] = File(default=[]),
     demo_url: str = Form(""),
+    license_type: str = Form("none"),
+    access_url: str = Form(""),
+    guidebook_url: str = Form(""),
+    guidebook_text_id: str = Form(""),
+    guidebook_text_en: str = Form(""),
+    max_activations: int = Form(1),
+    license_duration_days: Optional[str] = Form(None),
+    webhook_url: str = Form(""),
     db: Session = Depends(get_db),
 ):
     _require_admin(request, db)
@@ -223,6 +231,14 @@ async def admin_product_create(
         download_file=file_filename,
         gallery=gallery_filenames,
         demo_url=demo_url or None,
+        license_type=license_type or "none",
+        access_url=access_url or None,
+        guidebook_url=guidebook_url or None,
+        guidebook_text_id=guidebook_text_id or None,
+        guidebook_text_en=guidebook_text_en or None,
+        max_activations=max_activations or 1,
+        license_duration_days=int(license_duration_days) if license_duration_days else None,
+        webhook_url=webhook_url or None,
     )
     db.add(product)
     db.commit()
@@ -284,6 +300,14 @@ async def admin_product_update(
     gallery_images: List[UploadFile] = File(default=[]),
     gallery_delete: str = Form(""),
     demo_url: str = Form(""),
+    license_type: str = Form("none"),
+    access_url: str = Form(""),
+    guidebook_url: str = Form(""),
+    guidebook_text_id: str = Form(""),
+    guidebook_text_en: str = Form(""),
+    max_activations: int = Form(1),
+    license_duration_days: Optional[str] = Form(None),
+    webhook_url: str = Form(""),
     db: Session = Depends(get_db),
 ):
     _require_admin(request, db)
@@ -339,7 +363,15 @@ async def admin_product_update(
     product.features = [f.strip() for f in features.split("\n") if f.strip()]
     product.sort_order = sort_order
     product.is_featured = is_featured
-    product.demo_url = demo_url or None
+    product.demo_url              = demo_url or None
+    product.license_type          = license_type or "none"
+    product.access_url            = access_url or None
+    product.guidebook_url         = guidebook_url or None
+    product.guidebook_text_id     = guidebook_text_id or None
+    product.guidebook_text_en     = guidebook_text_en or None
+    product.max_activations       = max_activations or 1
+    product.license_duration_days = int(license_duration_days) if license_duration_days else None
+    product.webhook_url           = webhook_url or None
 
     db.commit()
     return RedirectResponse(url=f"/{locale}/admin/products", status_code=303)

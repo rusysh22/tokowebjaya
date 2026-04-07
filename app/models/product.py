@@ -70,6 +70,17 @@ class Product(Base):
     sort_order = Column(Integer, default=0)
     is_featured = Column(Boolean, default=False)
 
+    # ── License / Delivery config ────────────────────────────────────────────
+    # license_type: token | password | credential | download | none
+    license_type           = Column(String(20), default="none")
+    access_url             = Column(String(500), nullable=True)   # URL aplikasi yang dibeli
+    guidebook_url          = Column(String(500), nullable=True)   # Link PDF / halaman guide
+    guidebook_text_id      = Column(Text, nullable=True)          # Teks onboarding (ID)
+    guidebook_text_en      = Column(Text, nullable=True)          # Teks onboarding (EN)
+    max_activations        = Column(Integer, default=1)           # Max device per license
+    license_duration_days  = Column(Integer, nullable=True)       # Override durasi (None = ikut subscription)
+    webhook_url            = Column(String(500), nullable=True)   # URL notif ke aplikasi eksternal
+
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 

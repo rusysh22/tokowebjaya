@@ -277,7 +277,81 @@ def api_revoke_key(
     return {"message": "API key revoked"}
 
 
+# ─── License / Token Validation ──────────────────────────────────────────────
+
+@router.get("/validate-token")
+def api_validate_token(
+    token: str,
+    device_id: str = "",
+    request: Request = None,
+    db: Session = Depends(get_db),
+):
+    """
+    PUBLIC endpoint — validate a product license token from an external app.
+    No API key required (tokens are self-authenticating).
+
+    Query params:
+      token     — license key (e.g. TWJ-XXXX-XXXX-XXXX-XXXX)
+      device_id — optional device identifier for activation tracking
+    """
+    from app.services.license import validate_token
+    ip = request.client.host if request and request.client else ""
+    result = validate_token(db, token.strip(), device_id=device_id, ip=ip)
+    status = 200 if result.get("valid") else 403
+    return JSONResponse(result, status_code=status)
+
+
+@router.post("/validate-token")
+def api_validate_token_post(
+    request_body: dict,
+    request: Request = None,
+    db: Session = Depends(get_db),
+):
+    """POST variant — same as GET but token in body. For apps that prefer POST."""
+    from app.services.license import validate_token
+    token     = str(request_body.get("token", "")).strip()
+    device_id = str(request_body.get("device_id", ""))
+    ip = request.client.host if request and request.client else ""
+    result = validate_token(db, token, device_id=device_id, ip=ip)
+    status = 200 if result.get("valid") else 403
+    return JSONResponse(result, status_code=status)
+
+
+@router.get("/licenses")
+def api_list_licenses(
+    request: Request,
+    db: Session = Depends(get_db),
+    authorization: Optional[str] = Header(None),
+):
+    """List licenses belonging to the authenticated user (API key auth)."""
+    from app.models.license import ProductLicense
+    api_user = _get_api_user(authorization, db)
+    licenses = db.query(ProductLicense).filter(
+        ProductLicense.user_id == api_user.id,
+        ProductLicense.is_active == True,
+    ).order_by(ProductLicense.created_at.desc()).all()
+    return JSONResponse({"licenses": [_serialize_license(l) for l in licenses]})
+
+
 # ─── Serializers ─────────────────────────────────────────────────────────────
+
+def _serialize_license(l) -> dict:
+    return {
+        "id":             str(l.id),
+        "product_id":     str(l.product_id),
+        "license_type":   l.license_type,
+        "license_key":    l.license_key,
+        "access_url":     l.access_url,
+        "expires_at":     l.expires_at.isoformat() if l.expires_at else None,
+        "is_lifetime":    l.expires_at is None,
+        "days_left":      l.days_until_expiry,
+        "is_valid":       l.is_valid,
+        "is_in_grace":    l.is_in_grace,
+        "activated_count": l.activated_count,
+        "max_activations": l.max_activations,
+        "created_at":     l.created_at.isoformat(),
+    }
+
 
 def _serialize_product(p: Product) -> dict:
     return {

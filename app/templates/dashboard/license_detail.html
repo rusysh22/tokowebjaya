@@ -1,0 +1,221 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Detail Lisensi' if locale == 'id' else 'License Detail' }} — Toko Web Jaya{% endblock %}
+{% block content %}
+<section class="bg-black min-h-[calc(100vh-4rem)] pt-24 pb-16">
+  <div class="container-main max-w-2xl">
+
+    <a href="/{{ locale }}/dashboard/licenses"
+       class="inline-flex items-center gap-2 text-xs text-gray-500 hover:text-white transition-colors mb-6">
+      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+      </svg>
+      {% if locale == 'id' %}Kembali ke Lisensi{% else %}Back to Licenses{% endif %}
+    </a>
+
+    <div class="flex items-center justify-between mb-8">
+      <div>
+        <span class="text-label block mb-1">{{ 'Detail Lisensi' if locale == 'id' else 'License Detail' }}</span>
+        <h1 class="text-xl font-bold text-white">{{ license.product['name_' + locale] if license.product else '—' }}</h1>
+      </div>
+      {% if license.is_valid %}
+      <span class="badge badge-neon text-xs">{% if locale == 'id' %}Aktif{% else %}Active{% endif %}</span>
+      {% elif license.is_in_grace %}
+      <span class="inline-flex items-center gap-1 text-xs border border-orange-700 text-orange-400 px-2 py-1">Grace Period</span>
+      {% else %}
+      <span class="badge badge-gray text-xs">{% if locale == 'id' %}Kadaluarsa{% else %}Expired{% endif %}</span>
+      {% endif %}
+    </div>
+
+    <div class="space-y-4">
+
+      <!-- Credentials card -->
+      <div class="border border-gray-800 bg-gray-950 p-5" x-data="{ revealed: false }">
+        <p class="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-4">
+          {% if license.license_type == 'token' %}License Key
+          {% elif license.license_type == 'password' %}Password Enkripsi
+          {% elif license.license_type == 'credential' %}Kredensial Akses
+          {% elif license.license_type == 'download' %}Link Download
+          {% endif %}
+        </p>
+
+        {% if license.license_type == 'token' %}
+        <div class="flex items-center gap-3 p-4 bg-black border border-gray-700 mb-3">
+          <span class="text-neon font-mono text-base font-bold tracking-widest flex-1 break-all">
+            {{ license.license_key }}
+          </span>
+          <button onclick="copyText('{{ license.license_key }}', this)"
+                  class="text-neon text-xs border border-neon/40 px-3 py-1.5 hover:bg-neon hover:text-black transition-colors flex-shrink-0">
+            <i class="bi bi-copy"></i>
+          </button>
+        </div>
+        <p class="text-gray-500 text-xs">
+          {% if locale == 'id' %}Masukkan license key ini di aplikasi untuk mengaktifkan akses.{% else %}Enter this license key in the application to activate your access.{% endif %}
+        </p>
+
+        {% elif license.license_type == 'password' %}
+        <div class="flex items-center gap-3 p-4 bg-black border border-gray-700 mb-3">
+          <span class="font-mono text-base font-bold tracking-widest flex-1 break-all"
+                :class="revealed ? 'text-white' : 'text-gray-700 select-none'" x-text="revealed ? '{{ license.license_password }}' : '••••••••••••••••'"></span>
+          <button @click="revealed = !revealed"
+                  class="text-gray-400 text-xs border border-gray-700 px-3 py-1.5 hover:text-white hover:border-gray-500 transition-colors flex-shrink-0">
+            <i class="bi" :class="revealed ? 'bi-eye-slash' : 'bi-eye'"></i>
+          </button>
+          <button onclick="copyText('{{ license.license_password }}', this)"
+                  class="text-neon text-xs border border-neon/40 px-3 py-1.5 hover:bg-neon hover:text-black transition-colors flex-shrink-0">
+            <i class="bi bi-copy"></i>
+          </button>
+        </div>
+        <p class="text-gray-500 text-xs">
+          {% if locale == 'id' %}Gunakan password ini untuk membuka file terenkripsi.{% else %}Use this password to open the encrypted file.{% endif %}
+        </p>
+
+        {% elif license.license_type == 'credential' %}
+        {% if license.license_username %}
+        <div class="flex items-center gap-3 p-3 bg-black border border-gray-700 mb-2">
+          <span class="text-gray-400 text-xs w-20 flex-shrink-0">Username</span>
+          <span class="text-white font-mono text-sm font-semibold flex-1">{{ license.license_username }}</span>
+          <button onclick="copyText('{{ license.license_username }}', this)"
+                  class="text-gray-400 text-xs border border-gray-700 px-2 py-1 hover:text-neon hover:border-neon/40 transition-colors flex-shrink-0">
+            <i class="bi bi-copy"></i>
+          </button>
+        </div>
+        {% endif %}
+        <div class="flex items-center gap-3 p-3 bg-black border border-gray-700 mb-3">
+          <span class="text-gray-400 text-xs w-20 flex-shrink-0">Password</span>
+          <span class="flex-1 font-mono text-sm font-semibold"
+                :class="revealed ? 'text-white' : 'text-gray-700 select-none'" x-text="revealed ? '{{ license.license_password }}' : '••••••••••••'"></span>
+          <button @click="revealed = !revealed"
+                  class="text-gray-400 text-xs border border-gray-700 px-2 py-1 hover:text-white transition-colors flex-shrink-0">
+            <i class="bi" :class="revealed ? 'bi-eye-slash' : 'bi-eye'"></i>
+          </button>
+          <button onclick="copyText('{{ license.license_password }}', this)"
+                  class="text-gray-400 text-xs border border-gray-700 px-2 py-1 hover:text-neon hover:border-neon/40 transition-colors flex-shrink-0">
+            <i class="bi bi-copy"></i>
+          </button>
+        </div>
+        <p class="text-amber-400 text-xs bg-amber-950/30 border border-amber-800/30 px-3 py-2">
+          <i class="bi bi-exclamation-triangle mr-1"></i>
+          {% if locale == 'id' %}Segera ganti password setelah login pertama.{% else %}Please change your password after first login.{% endif %}
+        </p>
+
+        {% elif license.license_type == 'download' %}
+        {% if download_url %}
+        <a href="{{ download_url }}"
+           class="btn-primary w-full py-3 justify-center flex items-center gap-2 mb-3">
+          <i class="bi bi-download"></i>
+          {% if locale == 'id' %}Download File{% else %}Download File{% endif %}
+        </a>
+        <p class="text-gray-500 text-xs text-center">
+          {% if locale == 'id' %}Tersisa {{ license.max_downloads - license.download_count }}x unduhan dari {{ license.max_downloads }}x{% else %}{{ license.max_downloads - license.download_count }} downloads remaining of {{ license.max_downloads }}{% endif %}
+        </p>
+        {% else %}
+        <p class="text-red-400 text-xs">{% if locale == 'id' %}Link download sudah habis atau tidak tersedia.{% else %}Download limit reached or unavailable.{% endif %}</p>
+        {% endif %}
+        {% endif %}
+
+      </div>
+
+      <!-- Access URL -->
+      {% if license.access_url %}
+      <div class="border border-gray-800 bg-gray-950 p-5">
+        <p class="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-3">
+          {% if locale == 'id' %}URL Akses{% else %}Access URL{% endif %}
+        </p>
+        <div class="flex items-center gap-3 p-3 bg-black border border-gray-700">
+          <a href="{{ license.access_url }}" target="_blank" rel="noopener"
+             class="text-neon text-sm font-medium flex-1 truncate hover:underline">{{ license.access_url }}</a>
+          <a href="{{ license.access_url }}" target="_blank" rel="noopener"
+             class="text-gray-400 text-xs border border-gray-700 px-3 py-1.5 hover:text-white hover:border-gray-500 transition-colors flex-shrink-0">
+            <i class="bi bi-box-arrow-up-right"></i>
+          </a>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Guidebook -->
+      {% if license.product and (license.product.guidebook_text_id or license.product.guidebook_text_en or license.product.guidebook_url) %}
+      <div class="border border-gray-800 bg-gray-950 p-5">
+        <p class="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-3">
+          {% if locale == 'id' %}Panduan Penggunaan{% else %}Getting Started{% endif %}
+        </p>
+        {% set guide_text = license.product.guidebook_text_id if locale == 'id' else license.product.guidebook_text_en %}
+        {% if guide_text %}
+        <p class="text-gray-300 text-sm leading-relaxed whitespace-pre-line mb-4">{{ guide_text }}</p>
+        {% endif %}
+        {% if license.product.guidebook_url %}
+        <a href="{{ license.product.guidebook_url }}" target="_blank" rel="noopener"
+           class="inline-flex items-center gap-2 text-xs border border-gray-700 text-gray-300 px-4 py-2 hover:border-neon hover:text-neon transition-colors">
+          <i class="bi bi-book"></i>
+          {% if locale == 'id' %}Buka Panduan Lengkap{% else %}Open Full Guide{% endif %}
+        </a>
+        {% endif %}
+      </div>
+      {% endif %}
+
+      <!-- License info -->
+      <div class="border border-gray-800 bg-gray-950 p-5">
+        <p class="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-4">
+          {% if locale == 'id' %}Info Lisensi{% else %}License Info{% endif %}
+        </p>
+        <div class="space-y-3 text-sm">
+          <div class="flex justify-between">
+            <span class="text-gray-500">{% if locale == 'id' %}Tipe{% else %}Type{% endif %}</span>
+            <span class="text-gray-300 capitalize">{{ license.license_type }}</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-gray-500">{% if locale == 'id' %}Masa Berlaku{% else %}Validity{% endif %}</span>
+            {% if license.expires_at %}
+            <span class="{% if license.is_expired %}text-red-400{% elif license.days_until_expiry <= 7 %}text-yellow-400{% else %}text-gray-300{% endif %}">
+              {{ license.expires_at.strftime('%d %B %Y') }}
+              {% if license.days_until_expiry is not none and not license.is_expired %}
+              <span class="text-gray-500">({{ license.days_until_expiry }} hari)</span>
+              {% endif %}
+            </span>
+            {% else %}
+            <span class="text-neon font-semibold">Lifetime ∞</span>
+            {% endif %}
+          </div>
+          {% if license.license_type == 'token' %}
+          <div class="flex justify-between">
+            <span class="text-gray-500">{% if locale == 'id' %}Aktivasi{% else %}Activations{% endif %}</span>
+            <span class="text-gray-300">{{ license.activated_count }} / {{ license.max_activations }}</span>
+          </div>
+          {% endif %}
+          <div class="flex justify-between">
+            <span class="text-gray-500">{% if locale == 'id' %}Dibuat{% else %}Created{% endif %}</span>
+            <span class="text-gray-300">{{ license.created_at.strftime('%d %B %Y') }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Renew CTA if expiring soon -->
+      {% if license.days_until_expiry is not none and license.days_until_expiry <= 7 and license.product %}
+      <div class="border border-yellow-800/40 bg-yellow-950/10 p-4 flex items-center justify-between gap-4">
+        <p class="text-yellow-400 text-sm">
+          <i class="bi bi-exclamation-triangle mr-2"></i>
+          {% if locale == 'id' %}Lisensi berakhir dalam {{ license.days_until_expiry }} hari{% else %}License expires in {{ license.days_until_expiry }} days{% endif %}
+        </p>
+        <a href="/{{ locale }}/checkout/{{ license.product.id }}?type=subscription"
+           class="btn-primary text-xs px-4 py-2 whitespace-nowrap flex-shrink-0">
+          {% if locale == 'id' %}Perbarui Sekarang{% else %}Renew Now{% endif %}
+        </a>
+      </div>
+      {% endif %}
+
+    </div>
+  </div>
+</section>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+function copyText(text, btn) {
+  navigator.clipboard.writeText(text).then(() => {
+    const orig = btn.innerHTML;
+    btn.innerHTML = '<i class="bi bi-check-lg"></i>';
+    btn.classList.add('bg-neon', 'text-black', 'border-neon');
+    setTimeout(() => { btn.innerHTML = orig; btn.classList.remove('bg-neon', 'text-black', 'border-neon'); }, 2000);
+  });
+}
+</script>
+{% endblock %}

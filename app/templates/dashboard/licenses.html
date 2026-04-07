@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Lisensi Saya' if locale == 'id' else 'My Licenses' }} — Toko Web Jaya{% endblock %}
+{% block content %}
+<section class="bg-black min-h-[calc(100vh-4rem)] pt-24 pb-16">
+  <div class="container-main">
+    <h1 class="heading-md text-white mb-8">{{ 'Lisensi & Akses Produk' if locale == 'id' else 'Licenses & Product Access' }}</h1>
+    {% include "dashboard/_tabs.html" %}
+
+    {% if licenses %}
+    <div class="space-y-4">
+      {% for lic in licenses %}
+      {% set expired = lic.is_expired and not lic.is_in_grace %}
+      {% set in_grace = lic.is_in_grace %}
+      {% set expiring_soon = lic.days_until_expiry is not none and lic.days_until_expiry <= 7 and not expired %}
+      <div class="border {% if expired %}border-red-900/50 bg-red-950/10{% elif in_grace %}border-orange-800/50 bg-orange-950/10{% elif expiring_soon %}border-yellow-800/50 bg-yellow-950/10{% else %}border-gray-800 bg-gray-950{% endif %} p-5">
+        <div class="flex items-start justify-between gap-4 flex-wrap">
+
+          <!-- Left: product info -->
+          <div class="flex items-start gap-4 flex-1 min-w-0">
+            {% if lic.product and lic.product.cover_image %}
+            <img src="/static/uploads/products/images/{{ lic.product.cover_image }}"
+                 class="w-12 h-12 object-cover flex-shrink-0" alt="" />
+            {% else %}
+            <div class="w-12 h-12 bg-gray-800 flex items-center justify-center flex-shrink-0">
+              <i class="bi bi-box-seam text-xl text-gray-600"></i>
+            </div>
+            {% endif %}
+            <div class="min-w-0">
+              <p class="text-white font-semibold text-sm mb-0.5">
+                {{ lic.product['name_' + locale] if lic.product else '—' }}
+              </p>
+              <p class="text-gray-500 text-xs mb-2">{{ lic.order.order_number if lic.order else '—' }}</p>
+
+              <!-- Status badges -->
+              <div class="flex flex-wrap gap-2">
+                {% if expired %}
+                <span class="badge badge-gray text-xs">{% if locale == 'id' %}Kadaluarsa{% else %}Expired{% endif %}</span>
+                {% elif in_grace %}
+                <span class="inline-flex items-center gap-1 text-[11px] border border-orange-700 text-orange-400 px-2 py-0.5">
+                  <i class="bi bi-clock"></i> Grace Period
+                </span>
+                {% elif expiring_soon %}
+                <span class="inline-flex items-center gap-1 text-[11px] border border-yellow-700 text-yellow-400 px-2 py-0.5">
+                  <i class="bi bi-exclamation-triangle"></i>
+                  {% if locale == 'id' %}Berakhir {{ lic.days_until_expiry }} hari lagi{% else %}Expires in {{ lic.days_until_expiry }} days{% endif %}
+                </span>
+                {% elif lic.is_valid %}
+                <span class="badge badge-neon text-xs">{% if locale == 'id' %}Aktif{% else %}Active{% endif %}</span>
+                {% endif %}
+
+                <!-- License type badge -->
+                {% set type_labels = {'token': 'Token', 'password': 'Password', 'credential': 'Credential', 'download': 'Download'} %}
+                <span class="inline-flex items-center gap-1 text-[11px] border border-gray-700 text-gray-400 px-2 py-0.5">
+                  <i class="bi bi-{% if lic.license_type == 'token' %}key{% elif lic.license_type == 'password' %}lock{% elif lic.license_type == 'credential' %}person-badge{% else %}download{% endif %}"></i>
+                  {{ type_labels.get(lic.license_type, lic.license_type) }}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right: actions -->
+          <div class="flex flex-col items-end gap-2 flex-shrink-0">
+            <a href="/{{ locale }}/dashboard/licenses/{{ lic.id }}"
+               class="inline-flex items-center gap-1.5 text-xs border border-gray-700 text-gray-300 px-3 py-1.5 hover:border-neon hover:text-neon transition-colors">
+              <i class="bi bi-eye"></i>
+              {% if locale == 'id' %}Lihat Detail{% else %}View Details{% endif %}
+            </a>
+            {% if expiring_soon and lic.product %}
+            <a href="/{{ locale }}/checkout/{{ lic.product.id }}?type=subscription"
+               class="inline-flex items-center gap-1.5 text-xs bg-neon text-black font-semibold px-3 py-1.5 hover:opacity-90 transition-opacity">
+              <i class="bi bi-arrow-repeat"></i>
+              {% if locale == 'id' %}Perbarui{% else %}Renew{% endif %}
+            </a>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Expiry info -->
+        <div class="mt-4 pt-4 border-t border-gray-800/50 flex flex-wrap gap-6 text-xs text-gray-500">
+          {% if lic.expires_at %}
+          <span>
+            <i class="bi bi-calendar3 mr-1"></i>
+            {% if locale == 'id' %}Berlaku hingga{% else %}Valid until{% endif %}:
+            <span class="{% if expired %}text-red-400{% elif expiring_soon %}text-yellow-400{% else %}text-gray-300{% endif %} font-medium ml-1">
+              {{ lic.expires_at.strftime('%d %b %Y') }}
+            </span>
+          </span>
+          {% else %}
+          <span><i class="bi bi-infinity mr-1"></i> <span class="text-neon font-medium">Lifetime</span></span>
+          {% endif %}
+          {% if lic.license_type == 'token' %}
+          <span><i class="bi bi-cpu mr-1"></i>
+            {% if locale == 'id' %}Aktivasi{% else %}Activations{% endif %}:
+            <span class="text-gray-300 font-medium ml-1">{{ lic.activated_count }} / {{ lic.max_activations }}</span>
+          </span>
+          {% elif lic.license_type == 'download' %}
+          <span><i class="bi bi-download mr-1"></i>
+            Download: <span class="text-gray-300 font-medium ml-1">{{ lic.download_count }} / {{ lic.max_downloads }}x</span>
+          </span>
+          {% endif %}
+          <span><i class="bi bi-clock-history mr-1"></i>
+            {% if locale == 'id' %}Dibuat{% else %}Created{% endif %}:
+            <span class="text-gray-400 ml-1">{{ lic.created_at.strftime('%d %b %Y') }}</span>
+          </span>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+
+    {% else %}
+    <div class="border border-gray-800 p-16 text-center">
+      <i class="bi bi-shield-lock text-4xl text-gray-700 mb-4 block"></i>
+      <p class="text-gray-500 text-sm mb-4">
+        {% if locale == 'id' %}Belum ada lisensi. Beli produk untuk mendapatkan akses.{% else %}No licenses yet. Purchase a product to get access.{% endif %}
+      </p>
+      <a href="/{{ locale }}/catalog" class="btn-primary px-6 py-2.5 text-sm">
+        {% if locale == 'id' %}Lihat Katalog{% else %}Browse Catalog{% endif %}
+      </a>
+    </div>
+    {% endif %}
+
+  </div>
+</section>
+{% endblock %}
