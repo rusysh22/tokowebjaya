@@ -143,20 +143,39 @@ async def get_payment_methods(request: Request, amount: int = 0, db: Session = D
         methods = await duitku.get_payment_methods(amount or 10000)
     except Exception as e:
         logger.error(f"[payment-methods] {e}")
-        # In development, return mock data so UI can be tested without Duitku access
         if settings.APP_ENV == "development":
-            methods = [
-                {"paymentMethod": "BT", "paymentName": "BCA Virtual Account", "paymentImage": "", "totalFee": "4500", "minAmount": 10000, "maxAmount": 50000000, "method_type": "va"},
-                {"paymentMethod": "M2", "paymentName": "Mandiri Virtual Account", "paymentImage": "", "totalFee": "4500", "minAmount": 10000, "maxAmount": 50000000, "method_type": "va"},
-                {"paymentMethod": "A1", "paymentName": "ATM Bersama", "paymentImage": "", "totalFee": "4000", "minAmount": 10000, "maxAmount": 50000000, "method_type": "va"},
-                {"paymentMethod": "QRIS", "paymentName": "QRIS", "paymentImage": "", "totalFee": "0.7%", "minAmount": 1000, "maxAmount": 5000000, "method_type": "qris"},
-                {"paymentMethod": "OV", "paymentName": "OVO", "paymentImage": "", "totalFee": "2%", "minAmount": 1000, "maxAmount": 10000000, "method_type": "qris"},
-                {"paymentMethod": "DA", "paymentName": "DANA", "paymentImage": "", "totalFee": "2%", "minAmount": 1000, "maxAmount": 10000000, "method_type": "qris"},
-                {"paymentMethod": "ALFMART", "paymentName": "Alfamart", "paymentImage": "", "totalFee": "5000", "minAmount": 10000, "maxAmount": 5000000, "method_type": "retail"},
-                {"paymentMethod": "INDOMARET", "paymentName": "Indomaret", "paymentImage": "", "totalFee": "5000", "minAmount": 10000, "maxAmount": 5000000, "method_type": "retail"},
+            from app.services.payment import _method_type as _mt
+            _mock = [
+                {"paymentMethod": "BC", "paymentName": "BCA VA", "paymentImage": "https://images.duitku.com/hotlink-ok/BCA.SVG", "totalFee": "0"},
+                {"paymentMethod": "BR", "paymentName": "BRI VA", "paymentImage": "https://images.duitku.com/hotlink-ok/BR.PNG", "totalFee": "0"},
+                {"paymentMethod": "I1", "paymentName": "BNI VA", "paymentImage": "https://images.duitku.com/hotlink-ok/I1.PNG", "totalFee": "0"},
+                {"paymentMethod": "M2", "paymentName": "MANDIRI VA H2H", "paymentImage": "https://images.duitku.com/hotlink-ok/MV.PNG", "totalFee": "0"},
+                {"paymentMethod": "B1", "paymentName": "CIMB NIAGA VA", "paymentImage": "https://images.duitku.com/hotlink-ok/B1.PNG", "totalFee": "0"},
+                {"paymentMethod": "BV", "paymentName": "BSI VA", "paymentImage": "https://images.duitku.com/hotlink-ok/BSI.PNG", "totalFee": "0"},
+                {"paymentMethod": "SP", "paymentName": "SHOPEEPAY QRIS", "paymentImage": "https://images.duitku.com/hotlink-ok/SHOPEEPAY.PNG", "totalFee": "0"},
+                {"paymentMethod": "LQ", "paymentName": "LINKAJA QRIS", "paymentImage": "https://images.duitku.com/hotlink-ok/LINKAJA.PNG", "totalFee": "0"},
+                {"paymentMethod": "OV", "paymentName": "OVO", "paymentImage": "https://images.duitku.com/hotlink-ok/OV.PNG", "totalFee": "0"},
+                {"paymentMethod": "DA", "paymentName": "DANA", "paymentImage": "https://images.duitku.com/hotlink-ok/DA.PNG", "totalFee": "0"},
+                {"paymentMethod": "SA", "paymentName": "SHOPEEPAY APP", "paymentImage": "https://images.duitku.com/hotlink-ok/SHOPEEPAY.PNG", "totalFee": "0"},
+                {"paymentMethod": "IR", "paymentName": "INDOMARET", "paymentImage": "https://images.duitku.com/hotlink-ok/IR.PNG", "totalFee": "0"},
+                {"paymentMethod": "FT", "paymentName": "ALFAMART", "paymentImage": "https://images.duitku.com/hotlink-ok/RETAIL.PNG", "totalFee": "0"},
+                {"paymentMethod": "VC", "paymentName": "CREDIT CARD", "paymentImage": "https://images.duitku.com/hotlink-ok/VC.PNG", "totalFee": "0"},
             ]
+            for m in _mock:
+                m["method_type"] = _mt(m["paymentMethod"])
+            methods = _mock
         else:
             return JSONResponse({"detail": "Failed to load payment methods"}, status_code=502)
+
+    # Sort by popularity priority
+    _PRIORITY = {
+        "BC": 1, "BR": 2, "I1": 3, "M2": 4, "B1": 5, "BV": 6, "BT": 7,
+        "SP": 10, "LQ": 11, "NQ": 12, "GQ": 13,
+        "OV": 20, "DA": 21, "SA": 22, "LA": 23, "SL": 24, "OL": 25, "JP": 26,
+        "IR": 30, "FT": 31,
+        "VC": 40,
+    }
+    methods.sort(key=lambda m: _PRIORITY.get(m.get("paymentMethod", ""), 99))
 
     try:
         _r.setex(cache_key, 600, _json.dumps(methods))
@@ -438,10 +457,11 @@ async def checkout_create_payment(
             return_url=return_url,
         )
 
+        logger.info(f"[create-payment] duitku response keys={list(result.keys())} full={result}")
         reference  = result.get("reference") or result.get("merchantOrderId")
-        va_number  = result.get("vaNumber") or result.get("virtualAccountNumber") or ""
-        qr_string  = result.get("qrString") or result.get("qrCode") or ""
-        pay_code   = result.get("paymentCode") or result.get("payCode") or ""
+        va_number  = result.get("vaNumber") or result.get("virtualAccountNumber") or result.get("accountNumber") or ""
+        qr_string  = result.get("qrString") or result.get("qrCode") or result.get("qrisString") or ""
+        pay_code   = result.get("paymentCode") or result.get("payCode") or result.get("rcode") or ""
         payment_url = result.get("paymentUrl") or result.get("payment_url") or ""
 
         order.gateway_reference    = reference
@@ -591,6 +611,7 @@ async def checkout_payment(
         seconds_left = max(0, int(delta.total_seconds()))
 
     from app.main import templates
+    from app.services.payment_guide import get_guide
     return templates.TemplateResponse(
         request, "checkout/payment.html",
         {
@@ -599,6 +620,7 @@ async def checkout_payment(
             "order": order,
             "seconds_left": seconds_left,
             "method_type": _method_type(order.payment_method_code or ""),
+            "payment_guide": get_guide(order.payment_method_code or ""),
         },
     )
 

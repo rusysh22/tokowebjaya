@@ -136,9 +136,8 @@
           <p class="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-4">
             {% if locale == 'id' %}Scan QR Code{% else %}Scan QR Code{% endif %}
           </p>
-          <div class="inline-block bg-white p-4 mb-4">
-            <img id="qr-img" src="" alt="QR Code"
-                 class="w-48 h-48 mx-auto" />
+          <div class="inline-block bg-white p-4 mb-4 mx-auto">
+            <div id="qr-canvas" class="w-48 h-48"></div>
           </div>
           <p class="text-gray-400 text-sm mb-2">
             {% if locale == 'id' %}Scan dengan aplikasi e-wallet atau mobile banking apapun{% else %}Scan with any e-wallet or mobile banking app{% endif %}
@@ -177,14 +176,14 @@
         </div>
         {% endif %}
 
-        <!-- Fallback: open Duitku payment page -->
+        <!-- Fallback: credit card / other method that requires redirect -->
         {% if not order.va_number and not order.qr_string and not order.payment_code %}
         <div class="border border-gray-800 bg-gray-950 p-5">
           <p class="text-white text-sm font-semibold mb-1">
-            {% if order.payment_method_name %}{{ order.payment_method_name }}{% else %}{% if locale == 'id' %}Lanjutkan Pembayaran{% else %}Continue Payment{% endif %}{% endif %}
+            {{ order.payment_method_name or ('Lanjutkan Pembayaran' if locale == 'id' else 'Continue Payment') }}
           </p>
           <p class="text-gray-500 text-xs mb-4">
-            {% if locale == 'id' %}Selesaikan pembayaran di halaman Duitku. Halaman ini otomatis terupdate setelah pembayaran berhasil.{% else %}Complete your payment on Duitku's page. This page auto-updates once payment is confirmed.{% endif %}
+            {% if locale == 'id' %}Klik tombol di bawah untuk menyelesaikan pembayaran. Halaman ini otomatis terupdate setelah berhasil.{% else %}Click below to complete your payment. This page auto-updates once confirmed.{% endif %}
           </p>
           {% if order.gateway_payment_url %}
           <a href="{{ order.gateway_payment_url }}" target="_blank" rel="noopener"
@@ -192,9 +191,48 @@
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
             </svg>
-            {% if locale == 'id' %}Buka Halaman Pembayaran{% else %}Open Payment Page{% endif %}
+            {% if locale == 'id' %}Bayar Sekarang{% else %}Pay Now{% endif %}
           </a>
           {% endif %}
+        </div>
+        {% endif %}
+
+        <!-- Payment Guide Accordion -->
+        {% if payment_guide %}
+        <div class="border border-gray-800 bg-gray-950"
+             x-data="{ openTab: 0 }">
+          <div class="px-5 pt-4 pb-3 border-b border-gray-800">
+            <p class="text-xs font-semibold text-gray-400 uppercase tracking-widest">
+              {% if locale == 'id' %}Cara Pembayaran{% else %}How to Pay{% endif %}
+            </p>
+          </div>
+          {% for channel in payment_guide %}
+          <div class="border-b border-gray-800 last:border-b-0">
+            <button @click="openTab = openTab === {{ loop.index0 }} ? -1 : {{ loop.index0 }}"
+                    class="w-full flex items-center justify-between px-5 py-3 text-left hover:bg-black/30 transition-colors">
+              <span class="text-white text-xs font-semibold">{{ channel.name }}</span>
+              <svg class="w-3.5 h-3.5 text-gray-500 transition-transform duration-200 flex-shrink-0"
+                   :class="openTab === {{ loop.index0 }} ? 'rotate-180' : ''"
+                   fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+              </svg>
+            </button>
+            <div x-show="openTab === {{ loop.index0 }}"
+                 x-transition:enter="transition ease-out duration-150"
+                 x-transition:enter-start="opacity-0 -translate-y-1"
+                 x-transition:enter-end="opacity-100 translate-y-0"
+                 class="px-5 pb-4">
+              <ol class="space-y-2">
+                {% for step in channel.steps %}
+                <li class="flex items-start gap-3 text-xs text-gray-400">
+                  <span class="w-4 h-4 rounded-full border border-gray-700 text-[10px] flex items-center justify-center flex-shrink-0 mt-0.5 text-gray-500">{{ loop.index }}</span>
+                  <span>{{ step | replace('**', '<strong class="text-white font-semibold">') | replace('**', '</strong>') | safe }}</span>
+                </li>
+                {% endfor %}
+              </ol>
+            </div>
+          </div>
+          {% endfor %}
         </div>
         {% endif %}
 
@@ -235,6 +273,9 @@
 {% endblock %}
 
 {% block extra_scripts %}
+{% if method_type == 'qris' and order.qr_string %}
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+{% endif %}
 <script>
 // Copy to clipboard helper
 function copyText(text, btn) {
@@ -246,14 +287,31 @@ function copyText(text, btn) {
   });
 }
 
-// Render QR if qrString is present
-{% if order.qr_string %}
+// Render QR using qrcode.js (client-side, no external image API)
+{% if method_type == 'qris' and order.qr_string %}
 (function() {
   const qrString = {{ order.qr_string | tojson }};
-  if (qrString) {
-    // Use QR server API to render
-    const img = document.getElementById('qr-img');
-    if (img) img.src = `https://api.qrserver.com/v1/create-qr-code/?size=192x192&data=${encodeURIComponent(qrString)}`;
+  if (!qrString) return;
+  function renderQR() {
+    const el = document.getElementById('qr-canvas');
+    if (!el || typeof QRCode === 'undefined') return;
+    el.innerHTML = '';
+    QRCode.toCanvas(el, qrString, {
+      width: 192,
+      margin: 0,
+      color: { dark: '#000000', light: '#ffffff' },
+    }, function(err) {
+      if (err) {
+        // Fallback to img tag via qrserver if QRCode lib fails
+        el.innerHTML = '<img src="https://api.qrserver.com/v1/create-qr-code/?size=192x192&data=' + encodeURIComponent(qrString) + '" width="192" height="192" />';
+      }
+    });
+  }
+  // Wait for qrcode.js to load
+  if (typeof QRCode !== 'undefined') {
+    renderQR();
+  } else {
+    document.querySelector('script[src*="qrcode"]').addEventListener('load', renderQR);
   }
 })();
 {% endif %}

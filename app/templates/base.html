@@ -60,6 +60,22 @@
 
 <body class="bg-black text-white font-sans antialiased" x-data="{ mobileMenuOpen: false }">
 
+<!-- ===== PAGE LOADER (bata ditumpuk) ===== -->
+<div id="page-loader">
+  <div class="brick-loader">
+    <div class="brick"></div>
+    <div class="brick-gap"></div>
+    <div class="brick"></div>
+    <div class="brick-gap"></div>
+    <div class="brick"></div>
+    <div class="brick-gap"></div>
+    <div class="brick"></div>
+    <div class="brick-gap"></div>
+    <div class="brick"></div>
+  </div>
+  <p class="text-xs text-gray-600 tracking-widest uppercase" id="page-loader-text">Memuat...</p>
+</div>
+
   <!-- ===== NAVBAR ===== -->
   <header class="fixed top-0 left-0 right-0 z-50 bg-black/80 backdrop-blur-sm" id="navbar">
     <nav class="container-main flex items-center justify-between h-16">
@@ -237,6 +253,42 @@
 
   <!-- ===== SCRIPTS ===== -->
   <script src="/static/js/main.js"></script>
+  <script>
+  // Page loader — tampil saat klik link navigasi
+  (function() {
+    const loader = document.getElementById('page-loader');
+    const loaderText = document.getElementById('page-loader-text');
+    const isId = document.documentElement.lang === 'id';
+
+    function showLoader(text) {
+      if (loaderText) loaderText.textContent = text || (isId ? 'Memuat...' : 'Loading...');
+      loader.classList.add('active');
+    }
+
+    // Hide loader when page is fully loaded
+    window.addEventListener('load', () => loader.classList.remove('active'));
+    // Hide on popstate (back/forward)
+    window.addEventListener('pageshow', () => loader.classList.remove('active'));
+
+    // Show loader on internal link clicks (not anchors, not new tab, not external)
+    document.addEventListener('click', function(e) {
+      const a = e.target.closest('a[href]');
+      if (!a) return;
+      const href = a.getAttribute('href');
+      if (!href || href.startsWith('#') || href.startsWith('mailto:') || href.startsWith('tel:')) return;
+      if (a.target === '_blank' || e.ctrlKey || e.metaKey || e.shiftKey) return;
+      try {
+        const url = new URL(href, window.location.origin);
+        if (url.origin !== window.location.origin) return;
+      } catch(e) { return; }
+      showLoader();
+    });
+
+    // Expose globally for Alpine.js button loaders
+    window.showBrickLoader = showLoader;
+    window.hideBrickLoader = () => loader.classList.remove('active');
+  })();
+  </script>
   {% block extra_scripts %}{% endblock %}
 
   {% if current_user %}

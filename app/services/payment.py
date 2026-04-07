@@ -22,20 +22,24 @@ logger = logging.getLogger(__name__)
 def _method_type(code: str) -> str:
     """
     Classify a Duitku payment method code into display type.
-    Returns: 'va', 'qris', 'retail', or 'other'
+    Returns: 'va', 'ewallet', 'qris', 'retail', 'cc', or 'other'
     """
     code = (code or "").upper()
-    if code in ("VC", "BT", "M2", "A1", "B1", "I1", "VA"):
+    # Credit card
+    if code in ("VC",):
+        return "cc"
+    # Retail / minimarket
+    if code in ("FT", "IR", "ALFMART", "INDOMARET"):
+        return "retail"
+    # E-wallet (app-based, non-QRIS)
+    if code in ("OV", "OL", "DA", "SA", "LA", "SL", "JP"):
+        return "ewallet"
+    # QRIS
+    if code in ("SP", "LQ", "GQ", "NQ", "AG"):
+        return "qris"
+    # Virtual Account
+    if code in ("VA", "BT", "B1", "A1", "I1", "M2", "BC", "BR", "BV", "NC", "DN"):
         return "va"
-    if code in ("QRIS", "SP", "LA", "DA", "OV", "SB", "LT", "FT", "AG"):
-        return "qris"
-    if code in ("ALFMART", "INDOMARET", "AG", "FT", "LT"):
-        return "retail"
-    # Fallback heuristic
-    if code.startswith("Q"):
-        return "qris"
-    if code.startswith("A") or code.startswith("I"):
-        return "retail"
     return "va"
 
 
@@ -101,6 +105,12 @@ class DuitkuService:
             m["method_type"] = _method_type(m.get("paymentMethod", ""))
         return methods
 
+    def _inquiry_url(self) -> str:
+        """Return correct V2 inquiry URL based on environment."""
+        if "sandbox" in settings.DUITKU_BASE_URL:
+            return "https://sandbox.duitku.com/webapi/api/merchant/v2/inquiry"
+        return "https://passport.duitku.com/webapi/api/merchant/v2/inquiry"
+
     async def create_payment_v2(
         self,
         order_number: str,
@@ -112,30 +122,32 @@ class DuitkuService:
         return_url: str,
     ) -> dict:
         """
-        Create a Duitku V2 transaction for a specific payment method.
-        Returns the full API response dict.
+        Create a Duitku V2 direct transaction for a specific payment method.
+        Uses /v2/inquiry endpoint with MD5 signature: md5(merchantCode+orderId+amount+apiKey)
+        Returns vaNumber / qrString / paymentCode directly in response.
         """
-        headers, _ = self._build_headers()
+        # V2 inquiry signature formula: md5(merchantCode + merchantOrderId + amount + apiKey)
+        raw = f"{settings.DUITKU_MERCHANT_CODE}{order_number}{amount}{settings.DUITKU_API_KEY}"
+        signature = hashlib.md5(raw.encode()).hexdigest()
+
         payload = {
-            "merchantCode":   settings.DUITKU_MERCHANT_CODE,
-            "paymentAmount":  amount,
+            "merchantCode":    settings.DUITKU_MERCHANT_CODE,
+            "paymentAmount":   amount,
             "merchantOrderId": order_number,
-            "productDetails": product_name[:255],
-            "customerVaName": customer_name[:20],
-            "email":          customer_email,
-            "paymentMethod":  payment_method,
-            "callbackUrl":    settings.DUITKU_CALLBACK_URL,
-            "returnUrl":      return_url,
-            "expiryPeriod":   1440,
+            "productDetails":  product_name[:255],
+            "customerVaName":  customer_name[:20],
+            "email":           customer_email,
+            "paymentMethod":   payment_method,
+            "callbackUrl":     settings.DUITKU_CALLBACK_URL,
+            "returnUrl":       return_url,
+            "expiryPeriod":    1440,
+            "signature":       signature,
         }
-        logger.info(f"[duitku:create_payment_v2] method={payment_method} order={order_number} amount={amount}")
+        url = self._inquiry_url()
+        logger.info(f"[duitku:create_payment_v2] method={payment_method} order={order_number} amount={amount} url={url}")
         async with httpx.AsyncClient(timeout=30) as client:
-            resp = await client.post(
-                f"{settings.DUITKU_BASE_URL}/api/merchant/createInvoice",
-                json=payload,
-                headers=headers,
-            )
-            logger.warning(f"[duitku:create_payment_v2] status={resp.status_code} body={resp.text}")
+            resp = await client.post(url, json=payload)
+            logger.info(f"[duitku:create_payment_v2] status={resp.status_code} body={resp.text}")
             resp.raise_for_status()
             return resp.json()
 
