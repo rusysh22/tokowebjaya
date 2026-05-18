@@ -1,6 +1,6 @@
 import enum
 from datetime import datetime
-from sqlalchemy import Column, String, DateTime, Enum, Numeric, ForeignKey, Text
+from sqlalchemy import Column, String, DateTime, Enum, Numeric, ForeignKey, Text, Boolean
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 import uuid
@@ -31,8 +31,10 @@ class Order(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     order_number = Column(String(50), unique=True, nullable=False, index=True)
 
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
-    product_id = Column(UUID(as_uuid=True), ForeignKey("products.id"), nullable=False)
+    user_id          = Column(UUID(as_uuid=True), ForeignKey("users.id"),            nullable=False)
+    product_id       = Column(UUID(as_uuid=True), ForeignKey("products.id"),         nullable=False)
+    package_id       = Column(UUID(as_uuid=True), ForeignKey("product_packages.id"), nullable=True)
+    package_price_id = Column(UUID(as_uuid=True), ForeignKey("package_prices.id"),   nullable=True)
 
     type = Column(Enum(OrderType), nullable=False)
     amount = Column(Numeric(15, 2), nullable=False)          # base price (IDR, excl. VAT)
@@ -58,6 +60,8 @@ class Order(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
-    user = relationship("User", back_populates="orders")
-    product = relationship("Product", back_populates="orders")
-    invoice = relationship("Invoice", back_populates="order", uselist=False)
+    user          = relationship("User",           back_populates="orders")
+    product       = relationship("Product",        back_populates="orders")
+    package       = relationship("ProductPackage", foreign_keys=[package_id])
+    package_price = relationship("PackagePrice",   foreign_keys=[package_price_id])
+    invoice       = relationship("Invoice",        back_populates="order", uselist=False)

@@ -1,0 +1,686 @@
+{% extends "admin/base_admin.html" %}
+{% block page_title %}Packages — {{ product['name_' + locale] }}{% endblock %}
+
+{% block content %}
+<div x-data="packageAdmin()" x-init="init()">
+
+  <!-- Header -->
+  <div class="flex items-center justify-between mb-6">
+    <div>
+      <div class="text-xs text-gray-500 mb-1 flex items-center gap-1.5">
+        <a href="/{{ locale }}/admin/products" class="hover:text-white transition-colors">Products</a>
+        <span>/</span>
+        <a href="/{{ locale }}/admin/products/{{ product.id }}/edit" class="hover:text-white transition-colors truncate max-w-[200px]">{{ product['name_' + locale] }}</a>
+        <span>/</span>
+        <span class="text-gray-400">Packages</span>
+      </div>
+      <h2 class="text-lg font-bold text-white">Manage Packages</h2>
+    </div>
+    <button @click="openCreate()"
+            class="btn-primary text-sm py-2 px-4 flex items-center gap-2">
+      <i class="bi bi-plus-lg"></i> New Package
+    </button>
+  </div>
+
+  <!-- Limit Schema section -->
+  <div class="mb-8 border border-gray-800 bg-gray-950">
+    <div class="flex items-center justify-between px-5 py-3 border-b border-gray-800">
+      <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-widest">Quota Dimensions (applies to all packages)</h3>
+      <button @click="showSchemaForm = !showSchemaForm" class="text-xs text-neon hover:underline">
+        <span x-show="!showSchemaForm">+ Add Dimension</span>
+        <span x-show="showSchemaForm" x-cloak>— Cancel</span>
+      </button>
+    </div>
+
+    <!-- New schema form -->
+    <div x-show="showSchemaForm" x-cloak class="p-5 border-b border-gray-800 bg-black">
+      <form method="POST" action="/{{ locale }}/admin/products/{{ product.id }}/limit-schemas/create">
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
+          <div>
+            <label class="block text-xs text-gray-400 mb-1">Key <span class="text-gray-600">(snake_case)</span></label>
+            <input name="key" required class="input w-full text-sm py-2" placeholder="max_agents" />
+          </div>
+          <div>
+            <label class="block text-xs text-gray-400 mb-1">Label (ID)</label>
+            <input name="label_id" required class="input w-full text-sm py-2" placeholder="Jumlah Agent" />
+          </div>
+          <div>
+            <label class="block text-xs text-gray-400 mb-1">Label (EN)</label>
+            <input name="label_en" required class="input w-full text-sm py-2" placeholder="Number of Agents" />
+          </div>
+          <div>
+            <label class="block text-xs text-gray-400 mb-1">Unit</label>
+            <input name="unit" class="input w-full text-sm py-2" placeholder="agent / GB / calls" />
+          </div>
+        </div>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
+          <div>
+            <label class="block text-xs text-gray-400 mb-1">Value Type</label>
+            <select name="value_type" class="input w-full text-sm py-2">
+              <option value="int">Integer</option>
+              <option value="bool">Boolean</option>
+              <option value="enum">Enum (list)</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs text-gray-400 mb-1">Enum Options <span class="text-gray-600">(comma-separated)</span></label>
+            <input name="enum_options" class="input w-full text-sm py-2" placeholder="basic,advanced,priority" />
+          </div>
+          <div class="flex items-end gap-4 pb-0.5">
+            <label class="flex items-center gap-2 text-xs text-gray-400 cursor-pointer">
+              <input type="checkbox" name="is_unlimited_allowed" checked class="accent-neon" />
+              Unlimited allowed
+            </label>
+            <label class="flex items-center gap-2 text-xs text-gray-400 cursor-pointer">
+              <input type="checkbox" name="is_visible_on_pricing_page" checked class="accent-neon" />
+              Show on pricing page
+            </label>
+          </div>
+          <div class="flex items-end">
+            <button type="submit" class="btn-primary w-full py-2 text-sm justify-center">Save Dimension</button>
+          </div>
+        </div>
+      </form>
+    </div>
+
+    <!-- Existing schemas -->
+    {% if limit_schemas %}
+    <div class="divide-y divide-gray-800">
+      {% for schema in limit_schemas %}
+      <div class="flex items-center justify-between px-5 py-3 text-sm">
+        <div class="flex items-center gap-3">
+          <code class="text-neon text-xs bg-neon/5 px-2 py-0.5 border border-neon/20">{{ schema.key }}</code>
+          <span class="text-gray-300">{{ schema.label_id }} / {{ schema.label_en }}</span>
+          <span class="text-gray-600 text-xs">{{ schema.value_type.value }}{% if schema.unit %} · {{ schema.unit }}{% endif %}</span>
+          {% if schema.is_unlimited_allowed %}<span class="text-gray-600 text-xs">· unlimited ok</span>{% endif %}
+        </div>
+        <form method="POST" action="/{{ locale }}/admin/limit-schemas/{{ schema.id }}/delete"
+              onsubmit="return confirm('Delete dimension {{ schema.key }}? All package limit values for this dimension will be deleted.')">
+          <button type="submit" class="text-gray-600 hover:text-red-400 transition-colors text-xs">
+            <i class="bi bi-trash"></i>
+          </button>
+        </form>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="px-5 py-4 text-xs text-gray-600">No quota dimensions defined yet. Add one above to enable per-package limits.</div>
+    {% endif %}
+  </div>
+
+  <!-- Package cards -->
+  {% if packages %}
+  <div class="grid grid-cols-1 xl:grid-cols-2 gap-5 mb-8">
+    {% for pkg in packages %}
+    <div class="border {% if pkg.status.value == 'active' %}border-gray-700{% elif pkg.status.value == 'draft' %}border-gray-800{% else %}border-gray-900{% endif %} bg-gray-950">
+
+      <!-- Package header -->
+      <div class="flex items-center justify-between px-5 py-4 border-b border-gray-800">
+        <div class="flex items-center gap-3">
+          <span class="text-xs font-mono text-gray-500">{{ pkg.code }}</span>
+          <span class="text-white font-semibold">{{ pkg['name_' + locale] }}</span>
+          {% if pkg.is_default %}<span class="badge-neon text-[10px]">Default</span>{% endif %}
+          {% if pkg.is_popular %}<span class="badge text-[10px] bg-yellow-900/40 text-yellow-400 border-yellow-800">Popular</span>{% endif %}
+          <span class="text-[10px] px-1.5 py-0.5 border {% if pkg.status.value == 'active' %}border-green-800 text-green-400{% elif pkg.status.value == 'draft' %}border-gray-700 text-gray-500{% else %}border-red-900 text-red-500{% endif %}">{{ pkg.status.value }}</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <button @click="openEdit({{ loop.index0 }})"
+                  class="text-xs text-gray-400 hover:text-white transition-colors border border-gray-700 hover:border-gray-500 px-2.5 py-1">
+            <i class="bi bi-pencil"></i> Edit
+          </button>
+          <form method="POST" action="/{{ locale }}/admin/packages/{{ pkg.id }}/delete"
+                onsubmit="return confirm('Delete package {{ pkg['name_' + locale] }}?')">
+            <button type="submit" class="text-xs text-gray-600 hover:text-red-400 transition-colors border border-gray-800 hover:border-red-900 px-2.5 py-1">
+              <i class="bi bi-trash"></i>
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <!-- Prices -->
+      <div class="px-5 py-3 border-b border-gray-800">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs font-semibold text-gray-400 uppercase tracking-widest">Prices</span>
+          <button @click="openPrices('{{ pkg.id }}', {{ pkg.prices | tojson }})"
+                  class="text-[11px] text-neon hover:underline">Edit prices</button>
+        </div>
+        {% if pkg.prices %}
+        <div class="flex flex-wrap gap-2">
+          {% for price in pkg.prices %}
+          <span class="text-xs {% if price.is_active %}text-gray-300{% else %}text-gray-600 line-through{% endif %}">
+            <span class="font-mono font-semibold">{{ price.billing_type.value }}</span>:
+            {% if price.amount %}Rp {{ "{:,.0f}".format(price.amount) }}{% else %}— contact{% endif %}
+          </span>
+          {% endfor %}
+        </div>
+        {% else %}
+        <span class="text-xs text-gray-600">No prices set</span>
+        {% endif %}
+      </div>
+
+      <!-- Features -->
+      <div class="px-5 py-3 border-b border-gray-800">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs font-semibold text-gray-400 uppercase tracking-widest">Features</span>
+          <button @click="openFeatures('{{ pkg.id }}', {{ pkg.features | tojson(default=str) }})"
+                  class="text-[11px] text-neon hover:underline">Edit features</button>
+        </div>
+        {% if pkg.features %}
+        <div class="space-y-0.5">
+          {% for feat in pkg.features[:4] %}
+          <div class="flex items-center gap-2 text-xs {% if feat.included %}text-gray-400{% else %}text-gray-600 line-through{% endif %}">
+            <i class="bi {% if feat.included %}bi-check text-neon{% else %}bi-x text-gray-700{% endif %} flex-shrink-0"></i>
+            {{ feat['label_' + locale] }}
+          </div>
+          {% endfor %}
+          {% if pkg.features | length > 4 %}
+          <div class="text-xs text-gray-600">+{{ (pkg.features | length) - 4 }} more…</div>
+          {% endif %}
+        </div>
+        {% else %}
+        <span class="text-xs text-gray-600">No features set</span>
+        {% endif %}
+      </div>
+
+      <!-- Limits -->
+      {% if limit_schemas %}
+      <div class="px-5 py-3">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs font-semibold text-gray-400 uppercase tracking-widest">Limits</span>
+          <button @click="openLimits('{{ pkg.id }}', {{ pkg.limits | tojson(default=str) }}, {{ limit_schemas | tojson(default=str) }})"
+                  class="text-[11px] text-neon hover:underline">Edit limits</button>
+        </div>
+        {% set limit_map = {} %}
+        {% for lim in pkg.limits %}{% set _ = limit_map.update({lim.schema_id | string: lim}) %}{% endfor %}
+        <div class="grid grid-cols-2 gap-x-4 gap-y-1">
+          {% for schema in limit_schemas %}
+          {% set lim = limit_map.get(schema.id | string) %}
+          <div class="flex items-center justify-between text-xs">
+            <span class="text-gray-600">{{ schema.label_en }}</span>
+            {% if lim %}
+              {% if lim.is_unlimited %}
+                <span class="text-neon font-semibold">∞</span>
+              {% elif schema.value_type.value == 'bool' %}
+                <i class="bi {% if lim.value_bool %}bi-check-circle text-neon{% else %}bi-x-circle text-gray-600{% endif %}"></i>
+              {% else %}
+                <span class="text-white font-mono">{{ lim.value_int or lim.value_text or '—' }}{% if schema.unit %} <span class="text-gray-600">{{ schema.unit }}</span>{% endif %}</span>
+              {% endif %}
+            {% else %}
+              <span class="text-gray-700">—</span>
+            {% endif %}
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="border border-dashed border-gray-800 py-16 text-center text-gray-600 mb-8">
+    <i class="bi bi-layers text-3xl mb-3 block opacity-30"></i>
+    <p class="text-sm mb-2">No packages yet</p>
+    <p class="text-xs text-gray-700">Click "New Package" to create the first tier (e.g. Standard, Premium).</p>
+  </div>
+  {% endif %}
+
+</div>
+
+
+<!-- ── Create / Edit Package Modal ── -->
+<div x-data="packageAdmin()" x-init="init()">
+  <template x-teleport="body">
+    <div x-show="modal === 'pkg'" x-cloak
+         class="fixed inset-0 z-50 flex items-center justify-center p-4"
+         style="background: rgba(0,0,0,0.85)">
+      <div @click.outside="modal = null"
+           class="w-full max-w-2xl bg-gray-950 border border-gray-700 max-h-[90vh] overflow-y-auto">
+        <div class="flex items-center justify-between px-6 py-4 border-b border-gray-800">
+          <h3 class="text-sm font-semibold text-white" x-text="editingId ? 'Edit Package' : 'New Package'"></h3>
+          <button @click="modal = null" class="text-gray-500 hover:text-white"><i class="bi bi-x-lg"></i></button>
+        </div>
+
+        <form :action="editingId
+                ? '/{{ locale }}/admin/packages/' + editingId + '/edit'
+                : '/{{ locale }}/admin/products/{{ product.id }}/packages/create'"
+              method="POST" class="p-6 space-y-4">
+
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs text-gray-400 mb-1">Code <span class="text-gray-600">(e.g. standard, premium)</span></label>
+              <input name="code" required x-model="form.code" class="input w-full text-sm py-2" placeholder="standard" />
+            </div>
+            <div>
+              <label class="block text-xs text-gray-400 mb-1">Sort Order</label>
+              <input name="sort_order" type="number" x-model="form.sort_order" class="input w-full text-sm py-2" value="0" />
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs text-gray-400 mb-1">Name (ID)</label>
+              <input name="name_id" required x-model="form.name_id" class="input w-full text-sm py-2" placeholder="Standar" />
+            </div>
+            <div>
+              <label class="block text-xs text-gray-400 mb-1">Name (EN)</label>
+              <input name="name_en" required x-model="form.name_en" class="input w-full text-sm py-2" placeholder="Standard" />
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs text-gray-400 mb-1">Tagline (ID)</label>
+              <input name="tagline_id" x-model="form.tagline_id" class="input w-full text-sm py-2" placeholder="Untuk tim kecil" />
+            </div>
+            <div>
+              <label class="block text-xs text-gray-400 mb-1">Tagline (EN)</label>
+              <input name="tagline_en" x-model="form.tagline_en" class="input w-full text-sm py-2" placeholder="For small teams" />
+            </div>
+          </div>
+
+          <div class="grid grid-cols-3 gap-4">
+            <div>
+              <label class="block text-xs text-gray-400 mb-1">Status</label>
+              <select name="status" x-model="form.status" class="input w-full text-sm py-2">
+                {% for s in package_statuses %}
+                <option value="{{ s }}">{{ s | capitalize }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs text-gray-400 mb-1">License Type</label>
+              <select name="license_type" x-model="form.license_type" class="input w-full text-sm py-2">
+                <option value="none">none</option>
+                <option value="token">token</option>
+                <option value="password">password</option>
+                <option value="credential">credential</option>
+                <option value="download">download</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs text-gray-400 mb-1">Max Activations</label>
+              <input name="max_activations" type="number" min="1" x-model="form.max_activations" class="input w-full text-sm py-2" />
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs text-gray-400 mb-1">Access URL</label>
+              <input name="access_url" x-model="form.access_url" class="input w-full text-sm py-2" placeholder="https://app.example.com" />
+            </div>
+            <div>
+              <label class="block text-xs text-gray-400 mb-1">Webhook URL</label>
+              <input name="webhook_url" x-model="form.webhook_url" class="input w-full text-sm py-2" placeholder="https://app.example.com/webhook" />
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs text-gray-400 mb-1">License Duration (days) <span class="text-gray-600">blank = follow billing</span></label>
+              <input name="license_duration_days" type="number" x-model="form.license_duration_days" class="input w-full text-sm py-2" placeholder="365" />
+            </div>
+            <div class="flex items-end gap-5 pb-1">
+              <label class="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
+                <input type="checkbox" name="is_default" :checked="form.is_default" @change="form.is_default = $event.target.checked" class="accent-neon" />
+                Default package
+              </label>
+              <label class="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
+                <input type="checkbox" name="is_popular" :checked="form.is_popular" @change="form.is_popular = $event.target.checked" class="accent-neon" />
+                Popular badge
+              </label>
+            </div>
+          </div>
+
+          <div class="flex justify-end gap-3 pt-2 border-t border-gray-800">
+            <button type="button" @click="modal = null" class="btn-secondary text-sm py-2 px-4">Cancel</button>
+            <button type="submit" class="btn-primary text-sm py-2 px-4">Save Package</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </template>
+</div>
+
+
+<!-- ── Prices Modal ── -->
+<div x-data="packageAdmin()">
+  <template x-teleport="body">
+    <div x-show="modal === 'prices'" x-cloak
+         class="fixed inset-0 z-50 flex items-center justify-center p-4"
+         style="background: rgba(0,0,0,0.85)">
+      <div @click.outside="modal = null" class="w-full max-w-lg bg-gray-950 border border-gray-700">
+        <div class="flex items-center justify-between px-6 py-4 border-b border-gray-800">
+          <h3 class="text-sm font-semibold text-white">Edit Prices</h3>
+          <button @click="modal = null" class="text-gray-500 hover:text-white"><i class="bi bi-x-lg"></i></button>
+        </div>
+        <div class="p-6 space-y-3">
+          <template x-for="bt in ['one_time','monthly','yearly','contact']" :key="bt">
+            <div class="flex items-center gap-3 border border-gray-800 p-3">
+              <div class="w-24 flex-shrink-0">
+                <span class="text-xs font-mono text-gray-400" x-text="bt"></span>
+              </div>
+              <template x-if="bt !== 'contact'">
+                <div class="flex-1">
+                  <div class="flex items-center gap-2">
+                    <span class="text-xs text-gray-500">Rp</span>
+                    <input type="number" :id="'price-' + bt"
+                           :value="pricesForm[bt]?.amount ?? ''"
+                           @input="pricesForm[bt] = pricesForm[bt] || {}; pricesForm[bt].amount = $event.target.value"
+                           class="input flex-1 text-sm py-1.5 font-mono"
+                           placeholder="0" />
+                  </div>
+                </div>
+              </template>
+              <template x-if="bt === 'contact'">
+                <div class="flex-1 text-xs text-gray-600">No amount (contact seller)</div>
+              </template>
+              <label class="flex items-center gap-1.5 text-xs text-gray-400 flex-shrink-0 cursor-pointer">
+                <input type="checkbox"
+                       :checked="pricesForm[bt]?.is_active ?? false"
+                       @change="pricesForm[bt] = pricesForm[bt] || {}; pricesForm[bt].is_active = $event.target.checked"
+                       class="accent-neon" />
+                Active
+              </label>
+            </div>
+          </template>
+        </div>
+        <div class="flex justify-end gap-3 px-6 pb-6">
+          <button @click="modal = null" class="btn-secondary text-sm py-2 px-4">Cancel</button>
+          <button @click="savePrices()" class="btn-primary text-sm py-2 px-4" :disabled="saving">
+            <span x-show="!saving">Save Prices</span>
+            <span x-show="saving">Saving…</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </template>
+</div>
+
+
+<!-- ── Features Modal ── -->
+<div x-data="packageAdmin()">
+  <template x-teleport="body">
+    <div x-show="modal === 'features'" x-cloak
+         class="fixed inset-0 z-50 flex items-center justify-center p-4"
+         style="background: rgba(0,0,0,0.85)">
+      <div @click.outside="modal = null" class="w-full max-w-lg bg-gray-950 border border-gray-700 max-h-[80vh] flex flex-col">
+        <div class="flex items-center justify-between px-6 py-4 border-b border-gray-800 flex-shrink-0">
+          <h3 class="text-sm font-semibold text-white">Edit Features</h3>
+          <button @click="modal = null" class="text-gray-500 hover:text-white"><i class="bi bi-x-lg"></i></button>
+        </div>
+        <div class="p-4 overflow-y-auto flex-1 space-y-2">
+          <template x-for="(feat, idx) in featuresForm" :key="idx">
+            <div class="flex items-center gap-2 border border-gray-800 p-2.5">
+              <label class="flex items-center gap-1.5 flex-shrink-0 cursor-pointer">
+                <input type="checkbox" x-model="feat.included" class="accent-neon" />
+                <span class="text-[10px] text-gray-500">✓</span>
+              </label>
+              <input x-model="feat.label_id" class="input flex-1 text-xs py-1.5" placeholder="Label (ID)" />
+              <input x-model="feat.label_en" class="input flex-1 text-xs py-1.5" placeholder="Label (EN)" />
+              <button @click="featuresForm.splice(idx, 1)" class="text-gray-600 hover:text-red-400 flex-shrink-0">
+                <i class="bi bi-trash text-xs"></i>
+              </button>
+            </div>
+          </template>
+          <button @click="featuresForm.push({label_id:'',label_en:'',included:true})"
+                  class="w-full border border-dashed border-gray-700 hover:border-neon/50 text-gray-500 hover:text-neon py-2 text-xs transition-colors">
+            <i class="bi bi-plus"></i> Add Feature Row
+          </button>
+        </div>
+        <div class="flex justify-end gap-3 px-6 pb-5 pt-3 border-t border-gray-800 flex-shrink-0">
+          <button @click="modal = null" class="btn-secondary text-sm py-2 px-4">Cancel</button>
+          <button @click="saveFeatures()" class="btn-primary text-sm py-2 px-4" :disabled="saving">
+            <span x-show="!saving">Save Features</span>
+            <span x-show="saving">Saving…</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </template>
+</div>
+
+
+<!-- ── Limits Modal ── -->
+<div x-data="packageAdmin()">
+  <template x-teleport="body">
+    <div x-show="modal === 'limits'" x-cloak
+         class="fixed inset-0 z-50 flex items-center justify-center p-4"
+         style="background: rgba(0,0,0,0.85)">
+      <div @click.outside="modal = null" class="w-full max-w-lg bg-gray-950 border border-gray-700">
+        <div class="flex items-center justify-between px-6 py-4 border-b border-gray-800">
+          <h3 class="text-sm font-semibold text-white">Edit Quota Limits</h3>
+          <button @click="modal = null" class="text-gray-500 hover:text-white"><i class="bi bi-x-lg"></i></button>
+        </div>
+        <div class="p-4 space-y-2">
+          <template x-if="limitsForm.length === 0">
+            <p class="text-xs text-gray-600 py-4 text-center">No quota dimensions defined for this product.</p>
+          </template>
+          <template x-for="row in limitsForm" :key="row.schema_id">
+            <div class="flex items-center gap-3 border border-gray-800 p-3">
+              <div class="flex-1 min-w-0">
+                <div class="text-xs text-gray-300 font-medium" x-text="row.label_en"></div>
+                <div class="text-[10px] text-gray-600" x-text="row.value_type + (row.unit ? ' · ' + row.unit : '')"></div>
+              </div>
+              <label class="flex items-center gap-1.5 text-xs text-gray-400 cursor-pointer flex-shrink-0">
+                <input type="checkbox" x-model="row.is_unlimited" class="accent-neon"
+                       :disabled="!row.is_unlimited_allowed" />
+                ∞ unlimited
+              </label>
+              <template x-if="!row.is_unlimited">
+                <template x-if="row.value_type === 'int'">
+                  <input type="number" x-model="row.value" class="input w-24 text-sm py-1.5 font-mono" placeholder="0" />
+                </template>
+              </template>
+              <template x-if="!row.is_unlimited">
+                <template x-if="row.value_type === 'bool'">
+                  <select x-model="row.value" class="input text-sm py-1.5">
+                    <option value="true">✓ yes</option>
+                    <option value="false">✗ no</option>
+                  </select>
+                </template>
+              </template>
+              <template x-if="!row.is_unlimited">
+                <template x-if="row.value_type === 'enum'">
+                  <select x-model="row.value" class="input text-sm py-1.5">
+                    <template x-for="opt in (row.enum_options || [])" :key="opt">
+                      <option :value="opt" x-text="opt"></option>
+                    </template>
+                  </select>
+                </template>
+              </template>
+            </div>
+          </template>
+        </div>
+        <div class="flex justify-end gap-3 px-6 pb-5 pt-3 border-t border-gray-800">
+          <button @click="modal = null" class="btn-secondary text-sm py-2 px-4">Cancel</button>
+          <button @click="saveLimits()" class="btn-primary text-sm py-2 px-4" :disabled="saving">
+            <span x-show="!saving">Save Limits</span>
+            <span x-show="saving">Saving…</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </template>
+</div>
+
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// Shared state for all the x-data instances — Alpine components on same page
+// share state via a global store.
+document.addEventListener('alpine:init', () => {
+  Alpine.store('pkgAdmin', {
+    modal: null,
+    editingId: null,
+    targetPkgId: null,
+    form: {},
+    pricesForm: {},
+    featuresForm: [],
+    limitsForm: [],
+    schemas: [],
+    saving: false,
+  });
+});
+
+// All package data from server (for edit pre-fill)
+const SERVER_PACKAGES = {{ packages | tojson(default=str) }};
+
+function packageAdmin() {
+  return {
+    get modal()         { return Alpine.store('pkgAdmin').modal },
+    set modal(v)        { Alpine.store('pkgAdmin').modal = v },
+    get editingId()     { return Alpine.store('pkgAdmin').editingId },
+    set editingId(v)    { Alpine.store('pkgAdmin').editingId = v },
+    get targetPkgId()   { return Alpine.store('pkgAdmin').targetPkgId },
+    set targetPkgId(v)  { Alpine.store('pkgAdmin').targetPkgId = v },
+    get form()          { return Alpine.store('pkgAdmin').form },
+    set form(v)         { Alpine.store('pkgAdmin').form = v },
+    get pricesForm()    { return Alpine.store('pkgAdmin').pricesForm },
+    set pricesForm(v)   { Alpine.store('pkgAdmin').pricesForm = v },
+    get featuresForm()  { return Alpine.store('pkgAdmin').featuresForm },
+    set featuresForm(v) { Alpine.store('pkgAdmin').featuresForm = v },
+    get limitsForm()    { return Alpine.store('pkgAdmin').limitsForm },
+    set limitsForm(v)   { Alpine.store('pkgAdmin').limitsForm = v },
+    get saving()        { return Alpine.store('pkgAdmin').saving },
+    set saving(v)       { Alpine.store('pkgAdmin').saving = v },
+    showSchemaForm: false,
+
+    init() {},
+
+    openCreate() {
+      this.editingId = null;
+      this.form = {
+        code: '', name_id: '', name_en: '', tagline_id: '', tagline_en: '',
+        sort_order: 0, status: 'draft', license_type: 'none',
+        max_activations: 1, license_duration_days: '', access_url: '',
+        webhook_url: '', is_default: false, is_popular: false,
+      };
+      this.modal = 'pkg';
+    },
+
+    openEdit(idx) {
+      const pkg = SERVER_PACKAGES[idx];
+      if (!pkg) return;
+      this.editingId = pkg.id;
+      this.form = {
+        code:                 pkg.code,
+        name_id:              pkg.name_id,
+        name_en:              pkg.name_en,
+        tagline_id:           pkg.tagline_id || '',
+        tagline_en:           pkg.tagline_en || '',
+        sort_order:           pkg.sort_order,
+        status:               pkg.status,
+        license_type:         pkg.license_type || 'none',
+        max_activations:      pkg.max_activations || 1,
+        license_duration_days: pkg.license_duration_days || '',
+        access_url:           pkg.access_url || '',
+        webhook_url:          pkg.webhook_url || '',
+        is_default:           pkg.is_default,
+        is_popular:           pkg.is_popular,
+      };
+      this.modal = 'pkg';
+    },
+
+    openPrices(pkgId, pricesArr) {
+      this.targetPkgId = pkgId;
+      const map = {};
+      for (const p of (pricesArr || [])) {
+        map[p.billing_type] = { amount: p.amount ?? '', is_active: p.is_active };
+      }
+      // Ensure all billing types exist in form
+      for (const bt of ['one_time','monthly','yearly','contact']) {
+        if (!map[bt]) map[bt] = { amount: '', is_active: false };
+      }
+      this.pricesForm = map;
+      this.modal = 'prices';
+    },
+
+    openFeatures(pkgId, featuresArr) {
+      this.targetPkgId = pkgId;
+      this.featuresForm = (featuresArr || []).map(f => ({
+        label_id: f.label_id, label_en: f.label_en, included: f.included,
+      }));
+      this.modal = 'features';
+    },
+
+    openLimits(pkgId, limitsArr, schemasArr) {
+      this.targetPkgId = pkgId;
+      const valueMap = {};
+      for (const lim of (limitsArr || [])) {
+        valueMap[lim.schema_id] = lim;
+      }
+      this.limitsForm = (schemasArr || []).map(s => {
+        const existing = valueMap[s.id] || {};
+        let value = existing.value_int ?? existing.value_text ?? (existing.value_bool != null ? String(existing.value_bool) : '');
+        return {
+          schema_id:          s.id,
+          label_en:           s.label_en,
+          value_type:         s.value_type,
+          unit:               s.unit,
+          is_unlimited_allowed: s.is_unlimited_allowed,
+          enum_options:       s.enum_options || [],
+          is_unlimited:       existing.is_unlimited || false,
+          value:              value,
+        };
+      });
+      this.modal = 'limits';
+    },
+
+    async savePrices() {
+      this.saving = true;
+      const prices = Object.entries(this.pricesForm).map(([billing_type, v]) => ({
+        billing_type,
+        amount: v.amount !== '' ? parseFloat(v.amount) : null,
+        is_active: v.is_active,
+      }));
+      try {
+        await fetch(`/{{ locale }}/admin/packages/${this.targetPkgId}/prices/save`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ prices }),
+        });
+        window.location.reload();
+      } finally {
+        this.saving = false;
+      }
+    },
+
+    async saveFeatures() {
+      this.saving = true;
+      try {
+        await fetch(`/{{ locale }}/admin/packages/${this.targetPkgId}/features/save`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ features: this.featuresForm }),
+        });
+        window.location.reload();
+      } finally {
+        this.saving = false;
+      }
+    },
+
+    async saveLimits() {
+      this.saving = true;
+      const limits = this.limitsForm.map(row => ({
+        schema_id:    row.schema_id,
+        is_unlimited: row.is_unlimited,
+        value:        row.is_unlimited ? null : row.value,
+      }));
+      try {
+        await fetch(`/{{ locale }}/admin/packages/${this.targetPkgId}/limits/save`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ limits }),
+        });
+        window.location.reload();
+      } finally {
+        this.saving = false;
+      }
+    },
+  };
+}
+</script>
+{% endblock %}

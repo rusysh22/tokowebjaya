@@ -28,10 +28,11 @@ class ProductLicense(Base):
     __tablename__ = "product_licenses"
 
     id              = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    order_id        = Column(UUID(as_uuid=True), ForeignKey("orders.id", ondelete="CASCADE"), nullable=False)
-    user_id         = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
-    product_id      = Column(UUID(as_uuid=True), ForeignKey("products.id", ondelete="CASCADE"), nullable=False)
-    subscription_id = Column(UUID(as_uuid=True), ForeignKey("subscriptions.id", ondelete="SET NULL"), nullable=True)
+    order_id        = Column(UUID(as_uuid=True), ForeignKey("orders.id",           ondelete="CASCADE"),   nullable=False)
+    user_id         = Column(UUID(as_uuid=True), ForeignKey("users.id",            ondelete="CASCADE"),   nullable=False)
+    product_id      = Column(UUID(as_uuid=True), ForeignKey("products.id",         ondelete="CASCADE"),   nullable=False)
+    package_id      = Column(UUID(as_uuid=True), ForeignKey("product_packages.id", ondelete="SET NULL"),  nullable=True)
+    subscription_id = Column(UUID(as_uuid=True), ForeignKey("subscriptions.id",    ondelete="SET NULL"),  nullable=True)
 
     # Delivery type
     license_type    = Column(String(20), nullable=False, default=LicenseType.token)
@@ -70,10 +71,11 @@ class ProductLicense(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     # Relationships
-    order        = relationship("Order",        foreign_keys=[order_id])
-    user         = relationship("User",         foreign_keys=[user_id])
-    product      = relationship("Product",      foreign_keys=[product_id])
-    subscription = relationship("Subscription", foreign_keys=[subscription_id])
+    order        = relationship("Order",          foreign_keys=[order_id])
+    user         = relationship("User",           foreign_keys=[user_id])
+    product      = relationship("Product",        foreign_keys=[product_id])
+    package      = relationship("ProductPackage", foreign_keys=[package_id])
+    subscription = relationship("Subscription",   foreign_keys=[subscription_id])
     activations  = relationship("LicenseActivation", back_populates="license", cascade="all, delete-orphan")
 
     @property

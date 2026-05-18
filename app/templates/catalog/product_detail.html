@@ -113,14 +113,25 @@
         </div>
         {% endif %}
 
-        <!-- Features list -->
-        {% if product.features %}
+        <!-- Features list: collect all included features across active packages -->
+        {% set all_features = [] %}
+        {% for pkg in product.active_packages %}
+          {% for feat in pkg.features if feat.included %}
+            {% if feat['label_' + locale] not in all_features %}
+              {% set _ = all_features.append(feat['label_' + locale]) %}
+            {% endif %}
+          {% endfor %}
+        {% endfor %}
+        {% if not all_features and product.features %}
+          {% for f in product.features %}{% set _ = all_features.append(f) %}{% endfor %}
+        {% endif %}
+        {% if all_features %}
         <div class="border border-gray-800 p-5">
           <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-4">
             {% if locale == 'id' %}Yang Termasuk{% else %}What's Included{% endif %}
           </h3>
           <ul class="space-y-3">
-            {% for feature in product.features %}
+            {% for feature in all_features %}
             <li class="flex items-start gap-3 text-sm text-gray-300">
               <span class="w-5 h-5 bg-neon/10 border border-neon/30 flex items-center justify-center flex-shrink-0 mt-0.5">
                 <svg class="w-3 h-3 text-neon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -163,154 +174,252 @@
         </div>
         {% endif %}
 
-        <!-- Pricing card -->
-        <div class="border border-gray-800 bg-gray-950 p-6 mb-6"
-             x-data="{ billingCycle: '{% if product.pricing_model.value == 'both' %}otf{% elif product.pricing_model.value == 'subscription' %}monthly{% else %}otf{% endif %}' }">
+        <!-- Pricing: render from packages if available, fallback to legacy flat price -->
+        {% set active_pkgs = product.active_packages %}
+        {% if active_pkgs %}
 
-          {% if product.pricing_model.value == 'contact_seller' %}
-          <!-- ── Contact Seller Panel ── -->
-          <p class="text-xs text-gray-500 uppercase tracking-widest font-semibold mb-4">
-            {% if locale == 'id' %}Hubungi Penjual{% else %}Contact Seller{% endif %}
-          </p>
-          <p class="text-gray-400 text-sm leading-relaxed mb-5">
-            {% if locale == 'id' %}
-              Produk ini memerlukan diskusi lebih lanjut. Pilih cara yang paling nyaman untuk Anda.
-            {% else %}
-              This product requires further discussion. Choose the most convenient way for you.
-            {% endif %}
-          </p>
-          <div class="space-y-3">
+          {# ── Multi-package pricing (new architecture) ── #}
+          {% if active_pkgs | length == 1 %}
+            {# Single package — inline card, no tab selector #}
+            {% set pkg = active_pkgs[0] %}
+            {% set contact_price = pkg.get_price('contact') %}
+            {% set otf_price     = pkg.get_price('one_time') %}
+            {% set monthly_price = pkg.get_price('monthly') %}
+            {% set yearly_price  = pkg.get_price('yearly') %}
 
-            {% if product.contact_whatsapp %}
-            <a href="https://wa.me/{{ product.contact_whatsapp }}?text={{ ('Halo, saya tertarik dengan produk ' + product['name_' + locale]) | urlencode }}"
-               target="_blank" rel="noopener"
-               class="flex items-center gap-3 w-full border border-green-800 bg-green-950/40 hover:bg-green-950/80 text-green-400 hover:text-green-300 px-4 py-3 text-sm font-semibold transition-colors duration-200">
-              <i class="bi bi-whatsapp text-lg"></i>
-              <span>{% if locale == 'id' %}Chat via WhatsApp{% else %}Chat via WhatsApp{% endif %}</span>
-              <i class="bi bi-arrow-up-right ml-auto text-xs"></i>
-            </a>
-            {% endif %}
+            <div class="border border-gray-800 bg-gray-950 p-6 mb-6"
+                 x-data="{ cycle: '{{ 'monthly' if monthly_price else 'one_time' }}' }">
 
-            {% if product.contact_email %}
-            <a href="mailto:{{ product.contact_email }}?subject={{ ('Tanya produk: ' + product['name_' + locale]) | urlencode }}"
-               class="flex items-center gap-3 w-full border border-gray-700 hover:border-neon bg-gray-900 hover:bg-gray-800 text-gray-300 hover:text-neon px-4 py-3 text-sm font-semibold transition-colors duration-200">
-              <i class="bi bi-envelope text-lg"></i>
-              <span>{{ product.contact_email }}</span>
-              <i class="bi bi-arrow-up-right ml-auto text-xs"></i>
-            </a>
-            {% endif %}
+              {% if pkg.tagline_id or pkg.tagline_en %}
+              <p class="text-xs text-gray-500 mb-4">{{ pkg['tagline_' + locale] }}</p>
+              {% endif %}
 
-            {% if product.contact_address %}
-            <div class="border border-gray-800 bg-gray-900/50 px-4 py-3 text-sm">
-              <div class="flex items-start gap-3">
-                <i class="bi bi-geo-alt text-blue-400 text-lg mt-0.5 flex-shrink-0"></i>
-                <div>
-                  <p class="text-xs text-gray-500 mb-1 uppercase tracking-wide font-semibold">
-                    {% if locale == 'id' %}Kunjungi / Buat Janji{% else %}Visit / Schedule Meeting{% endif %}
-                  </p>
-                  <p class="text-gray-300 leading-relaxed">{{ product.contact_address }}</p>
-                  <a href="https://maps.google.com/?q={{ product.contact_address | urlencode }}"
-                     target="_blank" rel="noopener"
-                     class="inline-flex items-center gap-1 text-blue-400 hover:text-blue-300 text-xs mt-2 transition-colors">
-                    <i class="bi bi-map"></i>
-                    {% if locale == 'id' %}Buka di Maps{% else %}Open in Maps{% endif %}
+              {% if contact_price %}
+                {# Contact seller #}
+                <p class="text-xs text-gray-500 uppercase tracking-widest font-semibold mb-4">
+                  {% if locale == 'id' %}Hubungi Penjual{% else %}Contact Seller{% endif %}
+                </p>
+                {% include "components/_contact_seller.html" ignore missing %}
+                {% if product.contact_whatsapp %}
+                <a href="https://wa.me/{{ product.contact_whatsapp }}?text={{ ('Halo, saya tertarik dengan ' + product['name_' + locale]) | urlencode }}"
+                   target="_blank" rel="noopener"
+                   class="flex items-center gap-3 w-full border border-green-800 bg-green-950/40 hover:bg-green-950/80 text-green-400 px-4 py-3 text-sm font-semibold transition-colors">
+                  <i class="bi bi-whatsapp text-lg"></i><span>WhatsApp</span>
+                </a>
+                {% endif %}
+                {% if product.contact_email %}
+                <a href="mailto:{{ product.contact_email }}"
+                   class="mt-2 flex items-center gap-3 w-full border border-gray-700 hover:border-neon bg-gray-900 text-gray-300 hover:text-neon px-4 py-3 text-sm font-semibold transition-colors">
+                  <i class="bi bi-envelope text-lg"></i><span>{{ product.contact_email }}</span>
+                </a>
+                {% endif %}
+
+              {% else %}
+                {# Normal purchase flow #}
+                {% if monthly_price and yearly_price %}
+                <div class="flex border border-gray-700 overflow-hidden text-xs font-semibold mb-5 w-fit">
+                  <button type="button" @click="cycle='monthly'"
+                          class="px-4 py-2 transition-colors"
+                          :class="cycle==='monthly' ? 'bg-neon text-black' : 'text-gray-400 hover:text-white'">
+                    {% if locale == 'id' %}Bulanan{% else %}Monthly{% endif %}
+                  </button>
+                  <button type="button" @click="cycle='yearly'"
+                          class="px-4 py-2 transition-colors"
+                          :class="cycle==='yearly' ? 'bg-neon text-black' : 'text-gray-400 hover:text-white'">
+                    {% if locale == 'id' %}Tahunan{% else %}Yearly{% endif %}
+                    <span class="ml-1 text-green-400">-{{ ((1 - yearly_price.amount / (monthly_price.amount * 12)) * 100) | int }}%</span>
+                  </button>
+                </div>
+                {% endif %}
+
+                {% if otf_price %}
+                <div {% if monthly_price %}x-show="cycle==='one_time'" x-cloak{% endif %}>
+                  <div class="text-neon text-4xl font-black mb-1">Rp {{ "{:,.0f}".format(otf_price.amount) }}</div>
+                  <div class="text-gray-500 text-sm mb-5">{{ t(locale, 'price_otf') }}</div>
+                  <a href="/{{ locale }}/checkout/{{ product.id }}?package_price_id={{ otf_price.id }}" class="btn-primary w-full justify-center py-3.5 text-sm">
+                    {{ t(locale, 'buy_now') }}
                   </a>
                 </div>
-              </div>
-            </div>
-            {% endif %}
+                {% endif %}
 
-          </div>
-          {% else %}
+                {% if monthly_price %}
+                <div x-show="cycle==='monthly'">
+                  <div class="text-neon text-4xl font-black mb-1">Rp {{ "{:,.0f}".format(monthly_price.amount) }}</div>
+                  <div class="text-gray-500 text-sm mb-5">/ {{ t(locale, 'per_month') }}</div>
+                  <a href="/{{ locale }}/checkout/{{ product.id }}?package_price_id={{ monthly_price.id }}" class="btn-primary w-full justify-center py-3.5 text-sm">
+                    {{ t(locale, 'subscribe') }}
+                  </a>
+                </div>
+                {% endif %}
 
-          {% if product.pricing_model.value == 'both' %}
-          <!-- Toggle OTF / Subscription -->
-          <div class="flex items-center gap-3 mb-5 pb-5 border-b border-gray-800">
-            <span class="text-xs font-semibold"
-                  :class="billingCycle === 'otf' ? 'text-white' : 'text-gray-500'">
-              {{ t(locale, 'price_otf') }}
-            </span>
-            <button type="button"
-                    @click="billingCycle = billingCycle === 'otf' ? 'monthly' : 'otf'"
-                    class="relative w-10 h-5 bg-gray-700 focus:outline-none flex-shrink-0">
-              <span class="absolute inset-y-0 left-0 w-5 h-5 bg-neon transform transition-transform"
-                    :class="billingCycle !== 'otf' ? 'translate-x-5' : 'translate-x-0'"></span>
-            </button>
-            <span class="text-xs font-semibold"
-                  :class="billingCycle !== 'otf' ? 'text-white' : 'text-gray-500'">
-              {{ t(locale, 'price_subscription') }}
-            </span>
-          </div>
-          {% endif %}
+                {% if yearly_price %}
+                <div x-show="cycle==='yearly'" x-cloak>
+                  <div class="text-neon text-4xl font-black mb-1">Rp {{ "{:,.0f}".format(yearly_price.amount) }}</div>
+                  <div class="text-gray-500 text-sm mb-5">/ {{ t(locale, 'per_year') }}</div>
+                  <a href="/{{ locale }}/checkout/{{ product.id }}?package_price_id={{ yearly_price.id }}" class="btn-primary w-full justify-center py-3.5 text-sm">
+                    {{ t(locale, 'subscribe') }}
+                  </a>
+                </div>
+                {% endif %}
+              {% endif %}
 
-          <!-- OTF Price -->
-          {% if product.price_otf and product.pricing_model.value in ['one_time', 'both'] %}
-          <div {% if product.pricing_model.value == 'both' %}x-show="billingCycle === 'otf'" x-cloak{% endif %}>
-            <div class="text-neon text-4xl font-black mb-1">Rp {{ "{:,.0f}".format(product.price_otf) }}</div>
-            <div class="text-gray-500 text-sm mb-5">{{ t(locale, 'price_otf') }} — {% if locale == 'id' %}bayar sekali, akses selamanya{% else %}pay once, access forever{% endif %}</div>
-            <a href="/{{ locale }}/checkout/{{ product.id }}?type=one_time" class="btn-primary w-full justify-center py-3.5 text-sm">
-              {{ t(locale, 'buy_now') }}
-            </a>
-          </div>
-          {% endif %}
+              {% if pkg.features %}
+              <ul class="mt-5 pt-5 border-t border-gray-800 space-y-2">
+                {% for feat in pkg.features %}
+                <li class="flex items-start gap-2 text-sm {% if feat.included %}text-gray-300{% else %}text-gray-600 line-through{% endif %}">
+                  <svg class="w-4 h-4 mt-0.5 flex-shrink-0 {% if feat.included %}text-neon{% else %}text-gray-700{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="{% if feat.included %}M5 13l4 4L19 7{% else %}M6 18L18 6M6 6l12 12{% endif %}"/>
+                  </svg>
+                  {{ feat['label_' + locale] }}
+                </li>
+                {% endfor %}
+              </ul>
+              {% endif %}
 
-          <!-- Subscription Price -->
-          {% if product.price_monthly and product.pricing_model.value in ['subscription', 'both'] %}
-          <div {% if product.pricing_model.value == 'both' %}x-show="billingCycle !== 'otf'" x-cloak{% endif %}>
-
-            <!-- Harga -->
-            <div class="text-neon text-4xl font-black mb-1">
-              <span x-show="billingCycle === 'monthly' || billingCycle === 'otf'">Rp {{ "{:,.0f}".format(product.price_monthly) }}</span>
-              {% if product.price_yearly %}
-              <span x-show="billingCycle === 'yearly'" x-cloak>Rp {{ "{:,.0f}".format(product.price_yearly) }}</span>
+              {% if not current_user %}
+              <p class="text-xs text-gray-600 mt-4 text-center">
+                <a href="/{{ locale }}/login" class="text-neon hover:underline">{% if locale == 'id' %}Masuk{% else %}Sign in{% endif %}</a>
+                {% if locale == 'id' %}untuk melanjutkan pembelian{% else %}to proceed with purchase{% endif %}
+              </p>
               {% endif %}
             </div>
 
-            {% if product.price_yearly %}
-            <div class="flex items-center gap-3 mb-5">
-              <div class="flex border border-gray-700 overflow-hidden text-xs font-semibold">
-                <button type="button"
-                        @click="billingCycle = 'monthly'"
-                        class="px-3 py-1.5 transition-colors"
-                        :class="billingCycle === 'monthly' ? 'bg-neon text-black' : 'text-gray-400 hover:text-white'">
+          {% else %}
+            {# Multiple packages — horizontal comparison cards #}
+            <div class="mb-6" x-data="{ cycle: 'monthly' }">
+
+              {# Check if any package has both monthly+yearly so we show the toggle #}
+              {% set has_sub = namespace(v=false) %}
+              {% for pkg in active_pkgs %}
+                {% if pkg.get_price('monthly') or pkg.get_price('yearly') %}{% set has_sub.v = true %}{% endif %}
+              {% endfor %}
+
+              {% if has_sub.v %}
+              <div class="flex border border-gray-700 overflow-hidden text-xs font-semibold mb-5 w-fit">
+                <button type="button" @click="cycle='monthly'"
+                        class="px-4 py-2 transition-colors"
+                        :class="cycle==='monthly' ? 'bg-neon text-black' : 'text-gray-400 hover:text-white'">
                   {% if locale == 'id' %}Bulanan{% else %}Monthly{% endif %}
                 </button>
-                <button type="button"
-                        @click="billingCycle = 'yearly'"
-                        class="px-3 py-1.5 transition-colors"
-                        :class="billingCycle === 'yearly' ? 'bg-neon text-black' : 'text-gray-400 hover:text-white'">
+                <button type="button" @click="cycle='yearly'"
+                        class="px-4 py-2 transition-colors"
+                        :class="cycle==='yearly' ? 'bg-neon text-black' : 'text-gray-400 hover:text-white'">
                   {% if locale == 'id' %}Tahunan{% else %}Yearly{% endif %}
-                  <span class="ml-1 text-green-400">-{{ ((1 - product.price_yearly / (product.price_monthly * 12)) * 100) | int }}%</span>
                 </button>
               </div>
-              <span class="text-gray-500 text-xs"
-                    x-text="billingCycle === 'yearly' ? '/{{ t(locale, 'per_year') }}' : '/{{ t(locale, 'per_month') }}'"></span>
+              {% endif %}
+
+              <div class="grid grid-cols-1 sm:grid-cols-{{ [active_pkgs | length, 3] | min }} gap-4">
+                {% for pkg in active_pkgs %}
+                {% set otf_price     = pkg.get_price('one_time') %}
+                {% set monthly_price = pkg.get_price('monthly') %}
+                {% set yearly_price  = pkg.get_price('yearly') %}
+                {% set contact_price = pkg.get_price('contact') %}
+
+                <div class="border {% if pkg.is_popular %}border-neon{% else %}border-gray-700{% endif %} bg-gray-950 p-5 flex flex-col relative">
+                  {% if pkg.is_popular %}
+                  <div class="absolute -top-3 left-1/2 -translate-x-1/2 bg-neon text-black text-[10px] font-black uppercase tracking-wider px-3 py-0.5">
+                    {% if locale == 'id' %}Terpopuler{% else %}Most Popular{% endif %}
+                  </div>
+                  {% endif %}
+
+                  <div class="mb-3">
+                    <div class="text-white font-bold text-sm">{{ pkg['name_' + locale] }}</div>
+                    {% if pkg.tagline_id or pkg.tagline_en %}
+                    <div class="text-gray-500 text-xs mt-0.5">{{ pkg['tagline_' + locale] }}</div>
+                    {% endif %}
+                  </div>
+
+                  {# Price display #}
+                  {% if contact_price %}
+                    <div class="text-neon font-black text-xl mb-1">{% if locale == 'id' %}Hubungi Kami{% else %}Contact Us{% endif %}</div>
+                    <div class="text-gray-600 text-xs mb-4">—</div>
+                  {% elif otf_price and not monthly_price %}
+                    <div class="text-neon font-black text-2xl mb-1">Rp {{ "{:,.0f}".format(otf_price.amount) }}</div>
+                    <div class="text-gray-500 text-xs mb-4">{{ t(locale, 'price_otf') }}</div>
+                  {% elif monthly_price %}
+                    <div x-show="cycle==='monthly'">
+                      <div class="text-neon font-black text-2xl mb-1">Rp {{ "{:,.0f}".format(monthly_price.amount) }}</div>
+                      <div class="text-gray-500 text-xs mb-4">/ {{ t(locale, 'per_month') }}</div>
+                    </div>
+                    {% if yearly_price %}
+                    <div x-show="cycle==='yearly'" x-cloak>
+                      <div class="text-neon font-black text-2xl mb-1">Rp {{ "{:,.0f}".format(yearly_price.amount) }}</div>
+                      <div class="text-gray-500 text-xs mb-4">/ {{ t(locale, 'per_year') }}</div>
+                    </div>
+                    {% else %}
+                    <div x-show="cycle==='yearly'" x-cloak>
+                      <div class="text-gray-400 font-semibold text-sm mb-4">{% if locale == 'id' %}Tidak tersedia{% else %}Not available{% endif %}</div>
+                    </div>
+                    {% endif %}
+                  {% endif %}
+
+                  {# Features #}
+                  {% if pkg.features %}
+                  <ul class="space-y-1.5 mb-5 flex-1">
+                    {% for feat in pkg.features %}
+                    <li class="flex items-start gap-2 text-xs {% if feat.included %}text-gray-400{% else %}text-gray-600{% endif %}">
+                      <i class="bi {% if feat.included %}bi-check text-neon{% else %}bi-x text-gray-700{% endif %} flex-shrink-0 mt-0.5"></i>
+                      {{ feat['label_' + locale] }}
+                    </li>
+                    {% endfor %}
+                  </ul>
+                  {% endif %}
+
+                  {# CTA #}
+                  {% if contact_price %}
+                    {% if product.contact_whatsapp %}
+                    <a href="https://wa.me/{{ product.contact_whatsapp }}" target="_blank" rel="noopener"
+                       class="{% if pkg.is_popular %}btn-primary{% else %}btn-secondary{% endif %} w-full justify-center py-2.5 text-sm mt-auto">
+                      <i class="bi bi-whatsapp mr-1"></i>WhatsApp
+                    </a>
+                    {% elif product.contact_email %}
+                    <a href="mailto:{{ product.contact_email }}"
+                       class="{% if pkg.is_popular %}btn-primary{% else %}btn-secondary{% endif %} w-full justify-center py-2.5 text-sm mt-auto">
+                      <i class="bi bi-envelope mr-1"></i>Email
+                    </a>
+                    {% endif %}
+                  {% elif otf_price and not monthly_price %}
+                    <a href="/{{ locale }}/checkout/{{ product.id }}?package_price_id={{ otf_price.id }}"
+                       class="{% if pkg.is_popular %}btn-primary{% else %}btn-secondary{% endif %} w-full justify-center py-2.5 text-sm mt-auto">
+                      {{ t(locale, 'buy_now') }}
+                    </a>
+                  {% elif monthly_price %}
+                    <div x-show="cycle==='monthly'" class="mt-auto">
+                      <a href="/{{ locale }}/checkout/{{ product.id }}?package_price_id={{ monthly_price.id }}"
+                         class="{% if pkg.is_popular %}btn-primary{% else %}btn-secondary{% endif %} w-full justify-center py-2.5 text-sm block text-center">
+                        {{ t(locale, 'subscribe') }}
+                      </a>
+                    </div>
+                    {% if yearly_price %}
+                    <div x-show="cycle==='yearly'" x-cloak class="mt-auto">
+                      <a href="/{{ locale }}/checkout/{{ product.id }}?package_price_id={{ yearly_price.id }}"
+                         class="{% if pkg.is_popular %}btn-primary{% else %}btn-secondary{% endif %} w-full justify-center py-2.5 text-sm block text-center">
+                        {{ t(locale, 'subscribe') }}
+                      </a>
+                    </div>
+                    {% endif %}
+                  {% endif %}
+                </div>
+                {% endfor %}
+              </div>
+
+              {% if not current_user %}
+              <p class="text-xs text-gray-600 mt-4 text-center">
+                <a href="/{{ locale }}/login" class="text-neon hover:underline">{% if locale == 'id' %}Masuk{% else %}Sign in{% endif %}</a>
+                {% if locale == 'id' %}untuk melanjutkan pembelian{% else %}to proceed with purchase{% endif %}
+              </p>
+              {% endif %}
             </div>
-            {% else %}
-              <div class="text-gray-500 text-sm mb-5">/ {{ t(locale, 'per_month') }}</div>
-            {% endif %}
+          {% endif %}
 
-            <a :href="billingCycle === 'yearly'
-                       ? '/{{ locale }}/checkout/{{ product.id }}?type=subscription&cycle=yearly'
-                       : '/{{ locale }}/checkout/{{ product.id }}?type=subscription&cycle=monthly'"
-               class="btn-primary w-full justify-center py-3.5 text-sm">
-              {{ t(locale, 'subscribe') }}
-            </a>
+        {% else %}
+          {# ── Legacy fallback: no packages yet, render from flat product.price_* ── #}
+          <div class="border border-yellow-900/40 bg-yellow-950/10 p-3 mb-4 text-xs text-yellow-600">
+            <i class="bi bi-exclamation-triangle mr-1"></i>
+            {% if locale == 'id' %}Admin: Produk ini belum memiliki paket. Tambahkan paket di admin panel.{% else %}Admin: This product has no packages yet. Add packages in the admin panel.{% endif %}
           </div>
-          {% endif %}
-
-          <!-- Login notice -->
-          {% if not current_user %}
-          <p class="text-xs text-gray-600 mt-4 text-center">
-            {% if locale == 'id' %}
-              <a href="/{{ locale }}/login" class="text-neon hover:underline">Masuk</a> untuk melanjutkan pembelian
-            {% else %}
-              <a href="/{{ locale }}/login" class="text-neon hover:underline">Sign in</a> to proceed with purchase
-            {% endif %}
-          </p>
-          {% endif %}
-          {% endif %}{# end contact_seller else #}
-        </div>
+        {% endif %}
 
         <!-- Appointment Booking -->
         <div class="border border-gray-800 bg-gray-950 p-6 mb-6"

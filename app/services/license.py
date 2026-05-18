@@ -62,19 +62,18 @@ def _generate_download_token() -> str:
     return secrets.token_urlsafe(36)
 
 
-def _license_expiry(order: Order, product, subscription: Subscription | None) -> datetime | None:
+def _license_expiry(order: Order, package_or_product, subscription: Subscription | None) -> datetime | None:
     """
     Calculate license expiry date:
-    1. If product has license_duration_days → use that
+    1. If package/product has license_duration_days → use that
     2. If subscription → follow next_billing_date
     3. If one_time → lifetime (None)
     """
-    if product.license_duration_days:
-        return datetime.utcnow() + timedelta(days=product.license_duration_days)
+    if getattr(package_or_product, "license_duration_days", None):
+        return datetime.utcnow() + timedelta(days=package_or_product.license_duration_days)
     if subscription and subscription.next_billing_date:
         return subscription.next_billing_date
     if order.type.value == "subscription":
-        # Fallback: 30 days monthly, 365 yearly
         from app.models.subscription import BillingCycle
         if subscription and subscription.billing_cycle == BillingCycle.yearly:
             return datetime.utcnow() + timedelta(days=365)
@@ -91,43 +90,56 @@ def generate_license(
 ) -> ProductLicense | None:
     """
     Generate and persist a ProductLicense after a successful order.
-    Returns None if product has license_type = 'none'.
+    Config priority: package (if set) → product fallback.
+    Snapshots package limits into license_metadata['limits'] at purchase time
+    so future edits to the package do not retroactively change user entitlements.
+    Returns None if license_type = 'none'.
     """
     product = order.product
     if not product:
         logger.warning(f"[license] order {order.id} has no product")
         return None
 
-    ltype = (product.license_type or "none").lower()
+    # Package takes priority for all config; fall back to product for legacy orders.
+    pkg = order.package
+    config = pkg if pkg else product
+
+    ltype = (getattr(config, "license_type", None) or "none").lower()
     if ltype == "none":
         return None
 
-    expires_at = _license_expiry(order, product, subscription)
+    expires_at  = _license_expiry(order, config, subscription)
     grace_until = (expires_at + timedelta(days=3)) if expires_at else None
 
     license_key      = None
     license_password = None
     license_username = None
-    access_url       = product.access_url
+    access_url       = getattr(config, "access_url", None)
 
     if ltype == LicenseType.token:
         license_key = _generate_license_token()
-
     elif ltype == LicenseType.password:
         license_password = _generate_password()
-
     elif ltype == LicenseType.credential:
         license_username = _generate_username(order.user.name or "user", product.slug)
         license_password = _generate_password()
-
     elif ltype == LicenseType.download:
-        license_key = _generate_download_token()  # used as signed URL token
+        license_key = _generate_download_token()
+
+    # Snapshot limits at purchase time (immutable entitlement record).
+    limit_snapshot: dict = {}
+    if pkg is not None:
+        try:
+            limit_snapshot = pkg.snapshot_limits()
+        except Exception as e:
+            logger.warning(f"[license] could not snapshot limits package={pkg.id} error={e}")
 
     lic = ProductLicense(
         id               = uuid.uuid4(),
         order_id         = order.id,
         user_id          = order.user_id,
         product_id       = order.product_id,
+        package_id       = order.package_id,
         subscription_id  = subscription.id if subscription else None,
         license_type     = ltype,
         license_key      = license_key,
@@ -136,15 +148,15 @@ def generate_license(
         access_url       = access_url,
         expires_at       = expires_at,
         grace_until      = grace_until,
-        max_activations  = product.max_activations or 1,
+        max_activations  = getattr(config, "max_activations", None) or 1,
         max_downloads    = 5,
         is_active        = True,
-        license_metadata = {},
+        license_metadata = {"limits": limit_snapshot} if limit_snapshot else {},
     )
     db.add(lic)
     db.commit()
     db.refresh(lic)
-    logger.info(f"[license] generated type={ltype} id={lic.id} order={order.id}")
+    logger.info(f"[license] generated type={ltype} id={lic.id} order={order.id} package={pkg.id if pkg else None}")
     return lic
 
 
@@ -247,6 +259,8 @@ def validate_token(db: Session, token: str, device_id: str = "", ip: str = "") -
         "valid":        True,
         "license_id":   str(lic.id),
         "product_id":   str(lic.product_id),
+        "package_id":   str(lic.package_id) if lic.package_id else None,
+        "package_code": lic.package.code if lic.package else None,
         "user_id":      str(lic.user_id),
         "license_type": lic.license_type,
         "expires_at":   lic.expires_at.isoformat() if lic.expires_at else None,
@@ -254,6 +268,7 @@ def validate_token(db: Session, token: str, device_id: str = "", ip: str = "") -
         "days_left":    lic.days_until_expiry,
         "in_grace":     lic.is_in_grace,
         "access_url":   lic.access_url,
+        "limits":       (lic.license_metadata or {}).get("limits", {}),
     }
 
 

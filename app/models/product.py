@@ -86,3 +86,26 @@ class Product(Base):
 
     orders = relationship("Order", back_populates="product")
     subscriptions = relationship("Subscription", back_populates="product")
+    packages = relationship(
+        "ProductPackage", back_populates="product",
+        cascade="all, delete-orphan",
+        order_by="ProductPackage.sort_order",
+    )
+    limit_schemas = relationship(
+        "ProductLimitSchema", back_populates="product",
+        cascade="all, delete-orphan",
+        order_by="ProductLimitSchema.sort_order",
+    )
+
+    @property
+    def active_packages(self):
+        return [p for p in self.packages if p.status == "active"]
+
+    @property
+    def default_package(self):
+        """Return the is_default package, or the first active one."""
+        for pkg in self.packages:
+            if pkg.is_default and pkg.status == "active":
+                return pkg
+        actives = self.active_packages
+        return actives[0] if actives else None

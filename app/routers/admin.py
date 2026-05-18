@@ -22,6 +22,10 @@ from app.models.contact import ContactMessage, ContactStatus
 from app.models.promo import DiscountType, PromoCode
 from app.models.invoice import Invoice, InvoiceStatus
 from app.models.order import Order, OrderStatus
+from app.models.package import (
+    BillingType, LimitValueType, PackageFeature, PackageLimit,
+    PackagePrice, PackageStatus, ProductLimitSchema, ProductPackage,
+)
 from app.models.product import PricingModel, Product, ProductStatus, ProductType
 from app.models.subscription import Subscription, SubscriptionStatus
 from app.models.user import UserRole
@@ -974,3 +978,389 @@ async def admin_availability_toggle(
         db.commit()
         return RedirectResponse(url=f"/{locale}/admin/products/{product_id}/availability", status_code=303)
     raise HTTPException(status_code=404)
+
+
+# ─── Package Management ──────────────────────────────────────────────────────
+
+@router.get("/{locale}/admin/products/{product_id}/packages")
+async def admin_packages_list(
+    request: Request, locale: str, product_id: str,
+    db: Session = Depends(get_db),
+):
+    _require_admin(request, db)
+    product = db.query(Product).filter(Product.id == product_id).first()
+    if not product:
+        raise HTTPException(status_code=404)
+    packages = (
+        db.query(ProductPackage)
+        .filter(ProductPackage.product_id == product_id)
+        .order_by(ProductPackage.sort_order)
+        .all()
+    )
+    limit_schemas = (
+        db.query(ProductLimitSchema)
+        .filter(ProductLimitSchema.product_id == product_id)
+        .order_by(ProductLimitSchema.sort_order)
+        .all()
+    )
+    from app.main import templates
+    return templates.TemplateResponse(
+        request, "admin/packages/list.html",
+        {
+            "locale": locale,
+            "product": product,
+            "packages": packages,
+            "limit_schemas": limit_schemas,
+            "billing_types": [b.value for b in BillingType],
+            "package_statuses": [s.value for s in PackageStatus],
+        },
+    )
+
+
+@router.post("/{locale}/admin/products/{product_id}/packages/create")
+async def admin_packages_create(
+    request: Request, locale: str, product_id: str,
+    code: str = Form(...),
+    name_id: str = Form(...),
+    name_en: str = Form(...),
+    tagline_id: str = Form(""),
+    tagline_en: str = Form(""),
+    description_id: str = Form(""),
+    description_en: str = Form(""),
+    is_default: bool = Form(False),
+    is_popular: bool = Form(False),
+    sort_order: int = Form(0),
+    license_type: str = Form("none"),
+    max_activations: int = Form(1),
+    license_duration_days: Optional[int] = Form(None),
+    access_url: str = Form(""),
+    guidebook_url: str = Form(""),
+    webhook_url: str = Form(""),
+    download_file: str = Form(""),
+    status: str = Form("draft"),
+    db: Session = Depends(get_db),
+):
+    _require_admin(request, db)
+    product = db.query(Product).filter(Product.id == product_id).first()
+    if not product:
+        raise HTTPException(status_code=404)
+
+    if is_default:
+        db.query(ProductPackage).filter(
+            ProductPackage.product_id == product_id,
+            ProductPackage.is_default == True,
+        ).update({"is_default": False})
+
+    pkg = ProductPackage(
+        id=uuid.uuid4(),
+        product_id=product_id,
+        code=code.strip().lower(),
+        name_id=name_id,
+        name_en=name_en,
+        tagline_id=tagline_id or None,
+        tagline_en=tagline_en or None,
+        description_id=description_id or None,
+        description_en=description_en or None,
+        is_default=is_default,
+        is_popular=is_popular,
+        sort_order=sort_order,
+        license_type=license_type,
+        max_activations=max_activations,
+        license_duration_days=license_duration_days,
+        access_url=access_url or None,
+        guidebook_url=guidebook_url or None,
+        webhook_url=webhook_url or None,
+        download_file=download_file or None,
+        status=PackageStatus(status),
+    )
+    db.add(pkg)
+    db.commit()
+    return RedirectResponse(url=f"/{locale}/admin/products/{product_id}/packages", status_code=303)
+
+
+@router.post("/{locale}/admin/packages/{package_id}/edit")
+async def admin_packages_edit(
+    request: Request, locale: str, package_id: str,
+    code: str = Form(...),
+    name_id: str = Form(...),
+    name_en: str = Form(...),
+    tagline_id: str = Form(""),
+    tagline_en: str = Form(""),
+    description_id: str = Form(""),
+    description_en: str = Form(""),
+    is_default: bool = Form(False),
+    is_popular: bool = Form(False),
+    sort_order: int = Form(0),
+    license_type: str = Form("none"),
+    max_activations: int = Form(1),
+    license_duration_days: Optional[int] = Form(None),
+    access_url: str = Form(""),
+    guidebook_url: str = Form(""),
+    webhook_url: str = Form(""),
+    download_file: str = Form(""),
+    status: str = Form("draft"),
+    db: Session = Depends(get_db),
+):
+    _require_admin(request, db)
+    pkg = db.query(ProductPackage).filter(ProductPackage.id == package_id).first()
+    if not pkg:
+        raise HTTPException(status_code=404)
+    product_id = str(pkg.product_id)
+
+    if is_default:
+        db.query(ProductPackage).filter(
+            ProductPackage.product_id == product_id,
+            ProductPackage.id != package_id,
+            ProductPackage.is_default == True,
+        ).update({"is_default": False})
+
+    pkg.code                  = code.strip().lower()
+    pkg.name_id               = name_id
+    pkg.name_en               = name_en
+    pkg.tagline_id            = tagline_id or None
+    pkg.tagline_en            = tagline_en or None
+    pkg.description_id        = description_id or None
+    pkg.description_en        = description_en or None
+    pkg.is_default            = is_default
+    pkg.is_popular            = is_popular
+    pkg.sort_order            = sort_order
+    pkg.license_type          = license_type
+    pkg.max_activations       = max_activations
+    pkg.license_duration_days = license_duration_days
+    pkg.access_url            = access_url or None
+    pkg.guidebook_url         = guidebook_url or None
+    pkg.webhook_url           = webhook_url or None
+    pkg.download_file         = download_file or None
+    pkg.status                = PackageStatus(status)
+    pkg.updated_at            = datetime.utcnow()
+    db.commit()
+    return RedirectResponse(url=f"/{locale}/admin/products/{product_id}/packages", status_code=303)
+
+
+@router.post("/{locale}/admin/packages/{package_id}/delete")
+async def admin_packages_delete(
+    request: Request, locale: str, package_id: str,
+    db: Session = Depends(get_db),
+):
+    _require_admin(request, db)
+    pkg = db.query(ProductPackage).filter(ProductPackage.id == package_id).first()
+    if not pkg:
+        raise HTTPException(status_code=404)
+    product_id = str(pkg.product_id)
+    db.delete(pkg)
+    db.commit()
+    return RedirectResponse(url=f"/{locale}/admin/products/{product_id}/packages", status_code=303)
+
+
+# ─── Package Prices ──────────────────────────────────────────────────────────
+
+@router.post("/{locale}/admin/packages/{package_id}/prices/save")
+async def admin_package_prices_save(
+    request: Request, locale: str, package_id: str,
+    db: Session = Depends(get_db),
+):
+    """Upsert all prices for a package in one POST (sent as JSON body)."""
+    _require_admin(request, db)
+    pkg = db.query(ProductPackage).filter(ProductPackage.id == package_id).first()
+    if not pkg:
+        raise HTTPException(status_code=404)
+
+    try:
+        body = await request.json()
+        prices = body.get("prices", [])
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid JSON")
+
+    for item in prices:
+        billing_type = item.get("billing_type")
+        amount_raw   = item.get("amount")
+        is_active    = bool(item.get("is_active", True))
+        try:
+            btype = BillingType(billing_type)
+        except ValueError:
+            continue
+
+        amount = None if btype == BillingType.contact else (
+            float(amount_raw) if amount_raw is not None else None
+        )
+
+        existing = db.query(PackagePrice).filter(
+            PackagePrice.package_id   == package_id,
+            PackagePrice.billing_type == btype,
+        ).first()
+        if existing:
+            existing.amount    = amount
+            existing.is_active = is_active
+            existing.updated_at = datetime.utcnow()
+        else:
+            db.add(PackagePrice(
+                id=uuid.uuid4(),
+                package_id=package_id,
+                billing_type=btype,
+                amount=amount,
+                is_active=is_active,
+            ))
+
+    db.commit()
+    return {"ok": True}
+
+
+# ─── Package Features ────────────────────────────────────────────────────────
+
+@router.post("/{locale}/admin/packages/{package_id}/features/save")
+async def admin_package_features_save(
+    request: Request, locale: str, package_id: str,
+    db: Session = Depends(get_db),
+):
+    """Replace all features for a package (sent as JSON array)."""
+    _require_admin(request, db)
+    pkg = db.query(ProductPackage).filter(ProductPackage.id == package_id).first()
+    if not pkg:
+        raise HTTPException(status_code=404)
+
+    try:
+        body = await request.json()
+        features = body.get("features", [])
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid JSON")
+
+    db.query(PackageFeature).filter(PackageFeature.package_id == package_id).delete()
+
+    for idx, item in enumerate(features):
+        db.add(PackageFeature(
+            id=uuid.uuid4(),
+            package_id=package_id,
+            label_id=item.get("label_id", ""),
+            label_en=item.get("label_en", ""),
+            included=bool(item.get("included", True)),
+            sort_order=idx,
+        ))
+    db.commit()
+    return {"ok": True}
+
+
+# ─── Limit Schemas ───────────────────────────────────────────────────────────
+
+@router.post("/{locale}/admin/products/{product_id}/limit-schemas/create")
+async def admin_limit_schema_create(
+    request: Request, locale: str, product_id: str,
+    key: str = Form(...),
+    label_id: str = Form(...),
+    label_en: str = Form(...),
+    unit: str = Form(""),
+    value_type: str = Form("int"),
+    enum_options: str = Form(""),
+    is_unlimited_allowed: bool = Form(True),
+    sort_order: int = Form(0),
+    is_visible_on_pricing_page: bool = Form(True),
+    db: Session = Depends(get_db),
+):
+    _require_admin(request, db)
+    product = db.query(Product).filter(Product.id == product_id).first()
+    if not product:
+        raise HTTPException(status_code=404)
+
+    opts = None
+    if value_type == "enum" and enum_options.strip():
+        try:
+            opts = json.loads(enum_options)
+        except Exception:
+            opts = [s.strip() for s in enum_options.split(",") if s.strip()]
+
+    db.add(ProductLimitSchema(
+        id=uuid.uuid4(),
+        product_id=product_id,
+        key=key.strip().lower(),
+        label_id=label_id,
+        label_en=label_en,
+        unit=unit or None,
+        value_type=LimitValueType(value_type),
+        enum_options=opts,
+        is_unlimited_allowed=is_unlimited_allowed,
+        sort_order=sort_order,
+        is_visible_on_pricing_page=is_visible_on_pricing_page,
+    ))
+    db.commit()
+    return RedirectResponse(url=f"/{locale}/admin/products/{product_id}/packages", status_code=303)
+
+
+@router.post("/{locale}/admin/limit-schemas/{schema_id}/delete")
+async def admin_limit_schema_delete(
+    request: Request, locale: str, schema_id: str,
+    db: Session = Depends(get_db),
+):
+    _require_admin(request, db)
+    schema = db.query(ProductLimitSchema).filter(ProductLimitSchema.id == schema_id).first()
+    if not schema:
+        raise HTTPException(status_code=404)
+    product_id = str(schema.product_id)
+    db.delete(schema)
+    db.commit()
+    return RedirectResponse(url=f"/{locale}/admin/products/{product_id}/packages", status_code=303)
+
+
+# ─── Package Limits (values) ─────────────────────────────────────────────────
+
+@router.post("/{locale}/admin/packages/{package_id}/limits/save")
+async def admin_package_limits_save(
+    request: Request, locale: str, package_id: str,
+    db: Session = Depends(get_db),
+):
+    """Upsert limit values for a package (JSON body: [{schema_id, value, is_unlimited}])."""
+    _require_admin(request, db)
+    pkg = db.query(ProductPackage).filter(ProductPackage.id == package_id).first()
+    if not pkg:
+        raise HTTPException(status_code=404)
+
+    try:
+        body   = await request.json()
+        limits = body.get("limits", [])
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid JSON")
+
+    for item in limits:
+        schema_id    = item.get("schema_id")
+        is_unlimited = bool(item.get("is_unlimited", False))
+        raw_value    = item.get("value")
+
+        schema = db.query(ProductLimitSchema).filter(ProductLimitSchema.id == schema_id).first()
+        if not schema:
+            continue
+
+        existing = db.query(PackageLimit).filter(
+            PackageLimit.package_id == package_id,
+            PackageLimit.schema_id  == schema_id,
+        ).first()
+
+        value_int  = None
+        value_bool = None
+        value_text = None
+        if not is_unlimited and raw_value is not None:
+            if schema.value_type.value == "int":
+                try:
+                    value_int = int(raw_value)
+                except (ValueError, TypeError):
+                    pass
+            elif schema.value_type.value == "bool":
+                value_bool = bool(raw_value)
+            else:
+                value_text = str(raw_value)
+
+        if existing:
+            existing.is_unlimited = is_unlimited
+            existing.value_int    = value_int
+            existing.value_bool   = value_bool
+            existing.value_text   = value_text
+            existing.updated_at   = datetime.utcnow()
+        else:
+            db.add(PackageLimit(
+                id=uuid.uuid4(),
+                package_id=package_id,
+                schema_id=schema_id,
+                is_unlimited=is_unlimited,
+                value_int=value_int,
+                value_bool=value_bool,
+                value_text=value_text,
+            ))
+    db.commit()
+    return {"ok": True}

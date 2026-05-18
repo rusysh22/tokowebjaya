@@ -31,6 +31,7 @@ from app.core.auth import get_current_user
 from app.core.config import settings
 from app.core.database import get_db
 from app.models.order import Order, OrderStatus, OrderType, PaymentGateway
+from app.models.package import BillingType, PackagePrice, ProductPackage
 from app.models.product import Product, ProductStatus
 from app.models.promo import PromoCode
 from app.models.subscription import BillingCycle, Subscription, SubscriptionStatus
@@ -188,6 +189,7 @@ async def get_payment_methods(request: Request, amount: int = 0, db: Session = D
 @router.get("/{locale}/checkout/{product_id}/select-payment")
 async def checkout_select_payment(
     request: Request, locale: str, product_id: str,
+    package_price_id: str = "",
     type: str = "one_time", cycle: str = "monthly",
     promo: str = "",
     db: Session = Depends(get_db),
@@ -209,20 +211,37 @@ async def checkout_select_payment(
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
 
-    # Resolve base amount
-    base_amount = None
-    if type == "one_time" and product.price_otf:
-        base_amount = float(product.price_otf)
-    elif type == "subscription":
-        if cycle == "yearly" and product.price_yearly:
-            base_amount = float(product.price_yearly)
-        elif product.price_monthly:
-            base_amount = float(product.price_monthly)
+    # Resolve price — new path or legacy
+    package_price: PackagePrice | None = None
+    order_type = type
+    billing_cycle = cycle
+    base_amount: float | None = None
+
+    if package_price_id:
+        try:
+            package_price = db.query(PackagePrice).filter(
+                PackagePrice.id == package_price_id,
+                PackagePrice.is_active == True,
+            ).first()
+        except Exception:
+            pass
+        if package_price and package_price.amount:
+            base_amount   = float(package_price.amount)
+            order_type    = "one_time" if package_price.billing_type == BillingType.one_time else "subscription"
+            billing_cycle = package_price.billing_type.value if package_price.billing_type.value in ("monthly", "yearly") else "monthly"
+
+    if not base_amount:
+        if type == "one_time" and product.price_otf:
+            base_amount = float(product.price_otf)
+        elif type == "subscription":
+            if cycle == "yearly" and product.price_yearly:
+                base_amount = float(product.price_yearly)
+            elif product.price_monthly:
+                base_amount = float(product.price_monthly)
 
     if not base_amount:
         raise HTTPException(status_code=400, detail="Invalid pricing configuration")
 
-    # Apply promo if provided
     promo_obj, _ = _resolve_promo(promo, base_amount, db)
     breakdown = _calc_final_amount(base_amount, promo_obj)
 
@@ -233,8 +252,9 @@ async def checkout_select_payment(
             "locale": locale,
             "current_user": current_user,
             "product": product,
-            "order_type": type,
-            "billing_cycle": cycle,
+            "package_price_id": package_price_id,
+            "order_type": order_type,
+            "billing_cycle": billing_cycle,
             "promo_code": promo,
             "breakdown": breakdown,
             "base_amount": base_amount,
@@ -289,12 +309,12 @@ async def validate_promo(request: Request, db: Session = Depends(get_db)):
 @router.get("/{locale}/checkout/{product_id}")
 async def checkout_review(
     request: Request, locale: str, product_id: str,
+    package_price_id: str = "",
     type: str = "one_time", cycle: str = "monthly",
     currency: str = "",
     db: Session = Depends(get_db),
 ):
     import uuid as _uuid
-    # Guard against non-UUID path segments (e.g. /checkout/failed hitting this route)
     try:
         _uuid.UUID(product_id)
     except ValueError:
@@ -317,15 +337,34 @@ async def checkout_review(
     if not currency or currency not in settings.SUPPORTED_CURRENCIES:
         currency = settings.DEFAULT_CURRENCY
 
-    # Determine price (always in IDR base)
-    amount_idr = None
-    if type == "one_time" and product.price_otf:
-        amount_idr = float(product.price_otf)
-    elif type == "subscription":
-        if cycle == "yearly" and product.price_yearly:
-            amount_idr = float(product.price_yearly)
-        elif product.price_monthly:
-            amount_idr = float(product.price_monthly)
+    # Resolve price — new path (package_price_id) or legacy (type + cycle)
+    package_price: PackagePrice | None = None
+    order_type = type
+    billing_cycle = cycle
+    amount_idr: float | None = None
+
+    if package_price_id:
+        try:
+            package_price = db.query(PackagePrice).filter(
+                PackagePrice.id == package_price_id,
+                PackagePrice.is_active == True,
+            ).first()
+        except Exception:
+            pass
+        if package_price and package_price.amount:
+            amount_idr    = float(package_price.amount)
+            order_type    = "one_time" if package_price.billing_type == BillingType.one_time else "subscription"
+            billing_cycle = package_price.billing_type.value if package_price.billing_type.value in ("monthly", "yearly") else "monthly"
+
+    if not amount_idr:
+        # Legacy fallback
+        if type == "one_time" and product.price_otf:
+            amount_idr = float(product.price_otf)
+        elif type == "subscription":
+            if cycle == "yearly" and product.price_yearly:
+                amount_idr = float(product.price_yearly)
+            elif product.price_monthly:
+                amount_idr = float(product.price_monthly)
 
     if not amount_idr:
         raise HTTPException(status_code=400, detail="Invalid pricing configuration")
@@ -333,7 +372,6 @@ async def checkout_review(
     from app.core.currency import get_display_prices
     pricing = get_display_prices(amount_idr, currency, include_vat=True)
 
-    # Fetch active promo codes (shown as dropdown suggestions)
     now = datetime.utcnow()
     available_promos = db.query(PromoCode).filter(
         PromoCode.is_active == True,
@@ -350,8 +388,10 @@ async def checkout_review(
             "locale": locale,
             "current_user": current_user,
             "product": product,
-            "order_type": type,
-            "billing_cycle": cycle,
+            "package_price": package_price,
+            "package_price_id": package_price_id,
+            "order_type": order_type,
+            "billing_cycle": billing_cycle,
             "currency": currency,
             "pricing": pricing,
             "amount": amount_idr,
@@ -381,8 +421,7 @@ async def checkout_create_payment(
     except Exception:
         body = {}
 
-    order_type          = body.get("order_type", "one_time")
-    billing_cycle       = body.get("billing_cycle", "monthly")
+    package_price_id    = str(body.get("package_price_id", "")).strip()
     promo_code          = str(body.get("promo_code", "")).strip().upper()
     payment_method      = str(body.get("payment_method", "")).strip().upper()
     payment_method_name = str(body.get("payment_method_name", "")).strip()
@@ -391,20 +430,65 @@ async def checkout_create_payment(
     if not payment_method:
         return JSONResponse({"detail": "Payment method is required"}, status_code=400)
 
-    product = db.query(Product).filter(
-        Product.id == product_id, Product.status == ProductStatus.active
-    ).first()
-    if not product:
-        return JSONResponse({"detail": "Product not found"}, status_code=404)
+    # --- Resolve price via package (new path) or product flat price (legacy fallback) ---
+    package_price: PackagePrice | None = None
+    package: ProductPackage | None = None
+    product: Product | None = None
+    order_type    = "one_time"
+    billing_cycle = "monthly"
 
-    # Base price (IDR, excl. VAT)
-    base_amount = None
-    if order_type == "one_time":
-        base_amount = float(product.price_otf) if product.price_otf else None
-    elif order_type == "subscription":
-        base_amount = float(product.price_yearly) if billing_cycle == "yearly" and product.price_yearly else (
-            float(product.price_monthly) if product.price_monthly else None
-        )
+    if package_price_id:
+        try:
+            package_price = db.query(PackagePrice).filter(
+                PackagePrice.id == package_price_id,
+                PackagePrice.is_active == True,
+            ).first()
+        except Exception:
+            package_price = None
+
+        if not package_price:
+            return JSONResponse({"detail": "Package price not found or inactive"}, status_code=404)
+
+        package = package_price.package
+        if not package or package.status != "active":
+            return JSONResponse({"detail": "Package is not active"}, status_code=400)
+
+        product = db.query(Product).filter(
+            Product.id == package.product_id,
+            Product.status == ProductStatus.active,
+        ).first()
+        if not product:
+            return JSONResponse({"detail": "Product not found"}, status_code=404)
+
+        if package_price.billing_type == BillingType.contact:
+            return JSONResponse({"detail": "Contact-seller packages cannot be checked out directly"}, status_code=400)
+
+        base_amount = float(package_price.amount)
+        order_type  = "one_time" if package_price.billing_type == BillingType.one_time else "subscription"
+        if package_price.billing_type == BillingType.yearly:
+            billing_cycle = "yearly"
+
+    else:
+        # Legacy path: product_id from URL + order_type/billing_cycle from body
+        order_type    = body.get("order_type", "one_time")
+        billing_cycle = body.get("billing_cycle", "monthly")
+
+        product = db.query(Product).filter(
+            Product.id == product_id, Product.status == ProductStatus.active
+        ).first()
+        if not product:
+            return JSONResponse({"detail": "Product not found"}, status_code=404)
+
+        base_amount = None
+        if order_type == "one_time":
+            base_amount = float(product.price_otf) if product.price_otf else None
+        elif order_type == "subscription":
+            base_amount = float(product.price_yearly) if billing_cycle == "yearly" and product.price_yearly else (
+                float(product.price_monthly) if product.price_monthly else None
+            )
+
+        if not base_amount:
+            return JSONResponse({"detail": "Invalid amount"}, status_code=400)
 
     if not base_amount:
         return JSONResponse({"detail": "Invalid amount"}, status_code=400)
@@ -429,6 +513,8 @@ async def checkout_create_payment(
         order_number=order_number,
         user_id=current_user.id,
         product_id=product.id,
+        package_id=package.id if package else None,
+        package_price_id=package_price.id if package_price else None,
         type=order_type,
         amount=base_amount,
         discount_amount=breakdown["discount"],
@@ -782,17 +868,23 @@ def _mark_order_paid(order: Order, db: Session, background_tasks: BackgroundTask
         if lic:
             # Email delivery: send token/password/URL to user
             background_tasks.add_task(send_license_delivery, order, lic)
-            # Webhook to external app
-            if order.product and order.product.webhook_url:
+            # Webhook — package.webhook_url takes priority over product
+            webhook_url = (
+                (order.package.webhook_url if order.package else None)
+                or (order.product.webhook_url if order.product else None)
+            )
+            if webhook_url:
                 background_tasks.add_task(
                     send_webhook,
-                    order.product.webhook_url,
+                    webhook_url,
                     "license.created",
                     {
                         "license_key":  lic.license_key,
                         "license_type": lic.license_type,
                         "expires_at":   lic.expires_at.isoformat() if lic.expires_at else None,
                         "order_id":     str(order.id),
+                        "package_code": order.package.code if order.package else None,
+                        "limits":       (lic.license_metadata or {}).get("limits", {}),
                         "user_email":   order.user.email if order.user else None,
                     }
                 )
@@ -830,19 +922,30 @@ def _create_subscription(order: Order, db: Session):
         return
 
     now = datetime.utcnow()
-    # Determine cycle from amount comparison
-    product = order.product
-    if product and product.price_yearly and float(order.amount) == float(product.price_yearly):
-        cycle = BillingCycle.yearly
+
+    # Determine cycle from package_price (new path) or amount comparison (legacy fallback).
+    pkg_price = order.package_price
+    if pkg_price and pkg_price.billing_type.value == "yearly":
+        cycle        = BillingCycle.yearly
         next_billing = now + timedelta(days=365)
-    else:
-        cycle = BillingCycle.monthly
+    elif pkg_price and pkg_price.billing_type.value == "monthly":
+        cycle        = BillingCycle.monthly
         next_billing = now + timedelta(days=30)
+    else:
+        # Legacy fallback: guess from amount vs product price
+        product = order.product
+        if product and product.price_yearly and float(order.amount) == float(product.price_yearly):
+            cycle        = BillingCycle.yearly
+            next_billing = now + timedelta(days=365)
+        else:
+            cycle        = BillingCycle.monthly
+            next_billing = now + timedelta(days=30)
 
     sub = Subscription(
         id=uuid.uuid4(),
         user_id=order.user_id,
         product_id=order.product_id,
+        package_id=order.package_id,
         status=SubscriptionStatus.active,
         billing_cycle=cycle,
         started_at=now,

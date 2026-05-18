@@ -25,6 +25,7 @@ from typing import Optional
 from app.core.database import get_db
 from app.core.auth import get_current_user
 from app.models.api_key import ApiKey, ApiKeyScope
+from app.models.package import PackagePrice, ProductPackage
 from app.models.product import Product, ProductStatus
 from app.models.order import Order, OrderStatus
 from app.models.subscription import Subscription, SubscriptionStatus
@@ -413,3 +414,124 @@ def _serialize_key(k: ApiKey) -> dict:
         "expires_at": k.expires_at.isoformat() if k.expires_at else None,
         "created_at": k.created_at.isoformat() if k.created_at else None,
     }
+
+
+def _serialize_package(pkg: ProductPackage) -> dict:
+    return {
+        "id":           str(pkg.id),
+        "product_id":   str(pkg.product_id),
+        "code":         pkg.code,
+        "name_id":      pkg.name_id,
+        "name_en":      pkg.name_en,
+        "tagline_id":   pkg.tagline_id,
+        "tagline_en":   pkg.tagline_en,
+        "is_default":   pkg.is_default,
+        "is_popular":   pkg.is_popular,
+        "sort_order":   pkg.sort_order,
+        "status":       pkg.status.value if pkg.status else None,
+        "license_type": pkg.license_type,
+        "prices": [
+            {
+                "id":           str(p.id),
+                "billing_type": p.billing_type.value,
+                "amount":       float(p.amount) if p.amount is not None else None,
+                "currency":     p.currency,
+            }
+            for p in pkg.prices if p.is_active
+        ],
+        "features": [
+            {
+                "label_id":  f.label_id,
+                "label_en":  f.label_en,
+                "included":  f.included,
+            }
+            for f in pkg.features
+        ],
+        "limits": {
+            lim.schema.key: (
+                None if lim.is_unlimited
+                else (lim.value_int or lim.value_bool or lim.value_text)
+            )
+            for lim in pkg.limits if lim.schema
+        },
+    }
+
+
+# ─── Package endpoints ───────────────────────────────────────────────────────
+
+@router.get("/products/{slug}/packages")
+def api_list_packages(
+    slug: str,
+    request: Request,
+    db: Session = Depends(get_db),
+    authorization: Optional[str] = Header(None),
+):
+    """List active packages for a product (public-ish — requires API key)."""
+    _get_api_user(authorization, db)
+    product = db.query(Product).filter(
+        Product.slug == slug,
+        Product.status == ProductStatus.active,
+    ).first()
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found")
+
+    packages = (
+        db.query(ProductPackage)
+        .filter(
+            ProductPackage.product_id == product.id,
+            ProductPackage.status == "active",
+        )
+        .order_by(ProductPackage.sort_order)
+        .all()
+    )
+    return JSONResponse({"packages": [_serialize_package(pkg) for pkg in packages]})
+
+
+@router.get("/packages/{package_id}")
+def api_get_package(
+    package_id: str,
+    request: Request,
+    db: Session = Depends(get_db),
+    authorization: Optional[str] = Header(None),
+):
+    """Get full package detail including prices, features, and limits."""
+    _get_api_user(authorization, db)
+    pkg = db.query(ProductPackage).filter(
+        ProductPackage.id == package_id,
+        ProductPackage.status == "active",
+    ).first()
+    if not pkg:
+        raise HTTPException(status_code=404, detail="Package not found")
+    return JSONResponse(_serialize_package(pkg))
+
+
+@router.post("/license/validate")
+def api_validate_license(
+    request: Request,
+    db: Session = Depends(get_db),
+    authorization: Optional[str] = Header(None),
+):
+    """
+    Validate a license token and return entitlement details including limits.
+    Body: { "token": "TWJ-XXXX-...", "device_id": "optional-device-fingerprint" }
+    Response includes 'limits' map — use this for runtime quota enforcement.
+    """
+    import asyncio, json as _json
+    _get_api_user(authorization, db)
+
+    try:
+        body = asyncio.get_event_loop().run_until_complete(request.json())
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid JSON body")
+
+    token     = str(body.get("token", "")).strip()
+    device_id = str(body.get("device_id", "")).strip()
+    ip        = request.client.host if request.client else ""
+
+    if not token:
+        raise HTTPException(status_code=400, detail="'token' is required")
+
+    from app.services.license import validate_token
+    result = validate_token(db, token, device_id=device_id, ip=ip)
+    status_code = 200 if result.get("valid") else 401
+    return JSONResponse(result, status_code=status_code)

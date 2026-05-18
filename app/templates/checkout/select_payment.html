@@ -267,12 +267,13 @@
 {% block extra_scripts %}
 <script>
 function selectPayment() {
-  const BASE_FINAL  = {{ breakdown.final | int }};
-  const LOCALE      = '{{ locale }}';
-  const PRODUCT_ID  = '{{ product.id }}';
-  const ORDER_TYPE  = '{{ order_type }}';
-  const BILLING     = '{{ billing_cycle }}';
-  const PROMO_CODE  = '{{ promo_code }}';
+  const BASE_FINAL        = {{ breakdown.final | int }};
+  const LOCALE            = '{{ locale }}';
+  const PRODUCT_ID        = '{{ product.id }}';
+  const ORDER_TYPE        = '{{ order_type }}';
+  const BILLING           = '{{ billing_cycle }}';
+  const PROMO_CODE        = '{{ promo_code }}';
+  const PACKAGE_PRICE_ID  = '{{ package_price_id }}';
 
   return {
     loading:     true,
@@ -386,6 +387,7 @@ function selectPayment() {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
+            package_price_id:    PACKAGE_PRICE_ID || undefined,
             order_type:          ORDER_TYPE,
             billing_cycle:       BILLING,
             promo_code:          PROMO_CODE,

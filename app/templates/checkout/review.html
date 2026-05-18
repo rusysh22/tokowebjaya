@@ -261,12 +261,13 @@
 <script>
 function checkoutPage() {
   // ── Initial values from server ──────────────────────────────────────────
-  const BASE_IDR   = {{ amount }};                          // base price IDR (excl. VAT)
-  const VAT_RATE   = {{ pricing.vat_rate }};                // 0.11
-  const LOCALE     = '{{ locale }}';
-  const PRODUCT_ID = '{{ product.id }}';
-  const ORDER_TYPE = '{{ order_type }}';
-  const BILLING    = '{{ billing_cycle }}';
+  const BASE_IDR          = {{ amount }};
+  const VAT_RATE          = {{ pricing.vat_rate }};
+  const LOCALE            = '{{ locale }}';
+  const PRODUCT_ID        = '{{ product.id }}';
+  const ORDER_TYPE        = '{{ order_type }}';
+  const BILLING           = '{{ billing_cycle }}';
+  const PACKAGE_PRICE_ID  = '{{ package_price_id }}';
 
   function calcAmounts(discountIdr) {
     const subtotal = BASE_IDR - discountIdr;
@@ -345,7 +346,10 @@ function checkoutPage() {
     },
 
     selectPaymentUrl() {
-      const base = `/${LOCALE}/checkout/${PRODUCT_ID}/select-payment?type=${ORDER_TYPE}&cycle=${BILLING}`;
+      const pkgParam = PACKAGE_PRICE_ID
+        ? `package_price_id=${PACKAGE_PRICE_ID}`
+        : `type=${ORDER_TYPE}&cycle=${BILLING}`;
+      const base = `/${LOCALE}/checkout/${PRODUCT_ID}/select-payment?${pkgParam}`;
       return this.promoApplied ? base + `&promo=${encodeURIComponent(this.appliedCode)}` : base;
     },
   };

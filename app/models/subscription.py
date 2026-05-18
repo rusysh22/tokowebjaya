@@ -24,8 +24,9 @@ class Subscription(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
 
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
-    product_id = Column(UUID(as_uuid=True), ForeignKey("products.id"), nullable=False)
+    user_id    = Column(UUID(as_uuid=True), ForeignKey("users.id"),            nullable=False)
+    product_id = Column(UUID(as_uuid=True), ForeignKey("products.id"),         nullable=False)
+    package_id = Column(UUID(as_uuid=True), ForeignKey("product_packages.id"), nullable=True)
 
     status = Column(Enum(SubscriptionStatus), default=SubscriptionStatus.active)
     billing_cycle = Column(Enum(BillingCycle), nullable=False)
@@ -38,5 +39,6 @@ class Subscription(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
-    user = relationship("User", back_populates="subscriptions")
-    product = relationship("Product", back_populates="subscriptions")
+    user    = relationship("User",           back_populates="subscriptions")
+    product = relationship("Product",        back_populates="subscriptions")
+    package = relationship("ProductPackage", foreign_keys=[package_id])
