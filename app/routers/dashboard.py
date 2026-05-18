@@ -28,6 +28,7 @@ from app.core.database import get_db
 from app.models.api_key import ApiKey, ApiKeyScope
 from app.models.invoice import Invoice
 from app.models.order import Order
+from app.models.package import BillingType, PackagePrice, ProductPackage
 from app.models.subscription import Subscription, SubscriptionStatus
 
 logger = logging.getLogger(__name__)
@@ -192,10 +193,28 @@ async def dashboard_subscriptions(request: Request, locale: str, db: Session = D
         return redirect
 
     from app.main import templates
-    subs = db.query(Subscription).filter(Subscription.user_id == user.id).all()
+    subs = db.query(Subscription).filter(Subscription.user_id == user.id).order_by(
+        Subscription.status, Subscription.next_billing_date
+    ).all()
+
+    # Load available packages per active subscription for upgrade/downgrade UI
+    sub_packages: dict = {}
+    for sub in subs:
+        if sub.status == SubscriptionStatus.active and sub.product_id:
+            pkgs = (
+                db.query(ProductPackage)
+                .filter(
+                    ProductPackage.product_id == sub.product_id,
+                    ProductPackage.status == "active",
+                )
+                .order_by(ProductPackage.sort_order)
+                .all()
+            )
+            sub_packages[str(sub.id)] = pkgs
+
     return templates.TemplateResponse(
         request, "dashboard/subscriptions.html",
-        {"locale": locale, "current_user": user, "subscriptions": subs},
+        {"locale": locale, "current_user": user, "subscriptions": subs, "sub_packages": sub_packages},
     )
 
 
@@ -297,3 +316,77 @@ async def cancel_subscription(request: Request, locale: str, sub_id: str, backgr
             pass
 
     return RedirectResponse(url=f"/{locale}/dashboard/subscriptions", status_code=303)
+
+
+@router.post("/{locale}/dashboard/subscriptions/{sub_id}/schedule-change")
+async def schedule_subscription_change(
+    request: Request, locale: str, sub_id: str,
+    db: Session = Depends(get_db),
+):
+    """AJAX — schedule package upgrade/downgrade effective at next renewal."""
+    from fastapi.responses import JSONResponse
+    redirect, user = _require_user(request, db)
+    if redirect:
+        return JSONResponse({"detail": "Login required"}, status_code=401)
+
+    try:
+        body = await request.json()
+    except Exception:
+        return JSONResponse({"detail": "Invalid request"}, status_code=400)
+
+    package_price_id = str(body.get("package_price_id", "")).strip()
+    if not package_price_id:
+        return JSONResponse({"detail": "package_price_id required"}, status_code=400)
+
+    sub = db.query(Subscription).filter(
+        Subscription.id == sub_id, Subscription.user_id == user.id,
+        Subscription.status == SubscriptionStatus.active,
+    ).first()
+    if not sub:
+        return JSONResponse({"detail": "Active subscription not found"}, status_code=404)
+
+    pkg_price = db.query(PackagePrice).filter(
+        PackagePrice.id == package_price_id,
+        PackagePrice.is_active == True,
+    ).first()
+    if not pkg_price:
+        return JSONResponse({"detail": "Package price not found"}, status_code=404)
+
+    new_pkg = pkg_price.package
+    if not new_pkg or new_pkg.product_id != sub.product_id:
+        return JSONResponse({"detail": "Package does not belong to this product"}, status_code=400)
+
+    if str(new_pkg.id) == str(sub.package_id):
+        return JSONResponse({"detail": "Already on this package"}, status_code=400)
+
+    sub.scheduled_package_id = new_pkg.id
+    db.commit()
+
+    effective_date = sub.next_billing_date.strftime("%d %b %Y")
+    return JSONResponse({
+        "status": "scheduled",
+        "package_name": new_pkg.name_id if locale == "id" else new_pkg.name_en,
+        "effective_date": effective_date,
+    })
+
+
+@router.post("/{locale}/dashboard/subscriptions/{sub_id}/cancel-change")
+async def cancel_subscription_change(
+    request: Request, locale: str, sub_id: str,
+    db: Session = Depends(get_db),
+):
+    """AJAX — cancel a pending scheduled package change."""
+    from fastapi.responses import JSONResponse
+    redirect, user = _require_user(request, db)
+    if redirect:
+        return JSONResponse({"detail": "Login required"}, status_code=401)
+
+    sub = db.query(Subscription).filter(
+        Subscription.id == sub_id, Subscription.user_id == user.id,
+    ).first()
+    if not sub:
+        return JSONResponse({"detail": "Subscription not found"}, status_code=404)
+
+    sub.scheduled_package_id = None
+    db.commit()
+    return JSONResponse({"status": "cancelled"})

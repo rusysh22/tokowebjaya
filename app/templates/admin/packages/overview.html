@@ -1,0 +1,55 @@
+{% extends "admin/base_admin.html" %}
+{% set admin_section = "packages" %}
+{% block title %}{% if locale == 'id' %}Paket & Harga{% else %}Packages & Pricing{% endif %} — Admin{% endblock %}
+{% block page_title %}{% if locale == 'id' %}Paket & Harga{% else %}Packages & Pricing{% endif %}{% endblock %}
+
+{% block content %}
+<p class="text-sm text-gray-500 mb-6">
+  {% if locale == 'id' %}
+    Pilih produk untuk mengelola paket, harga, fitur, dan batas kuota.
+  {% else %}
+    Select a product to manage its packages, pricing, features, and quota limits.
+  {% endif %}
+</p>
+
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+  {% for product in products %}
+  {% set pkg_count = product.packages | length %}
+  {% set active_pkg = product.packages | selectattr('status', 'equalto', 'active') | list | length %}
+  <a href="/{{ locale }}/admin/products/{{ product.id }}/packages"
+     class="border border-gray-800 bg-gray-950 p-5 hover:border-gray-600 transition-colors group block">
+    <div class="flex items-start gap-3">
+      {% if product.cover_image %}
+        <img src="/static/uploads/products/images/{{ product.cover_image }}"
+             class="w-12 h-12 object-cover flex-shrink-0 bg-gray-800" alt="" />
+      {% else %}
+        <div class="w-12 h-12 bg-gray-800 flex items-center justify-center flex-shrink-0 opacity-30">
+          <i class="bi bi-box-seam text-xl"></i>
+        </div>
+      {% endif %}
+      <div class="flex-1 min-w-0">
+        <div class="text-white text-sm font-semibold group-hover:text-neon transition-colors truncate">
+          {{ product['name_' + locale] }}
+        </div>
+        <div class="text-xs text-gray-500 mt-0.5">{{ product.type.value }}</div>
+        <div class="flex items-center gap-3 mt-3">
+          <span class="text-xs text-gray-400">
+            <span class="text-white font-semibold">{{ pkg_count }}</span>
+            {% if locale == 'id' %}paket{% else %}packages{% endif %}
+          </span>
+          <span class="text-xs {% if active_pkg > 0 %}text-neon{% else %}text-gray-600{% endif %}">
+            <i class="bi bi-circle-fill text-[6px] align-middle"></i>
+            {{ active_pkg }} {% if locale == 'id' %}aktif{% else %}active{% endif %}
+          </span>
+        </div>
+      </div>
+      <i class="bi bi-chevron-right text-gray-700 group-hover:text-neon transition-colors mt-1"></i>
+    </div>
+  </a>
+  {% else %}
+  <div class="col-span-3 text-center py-16 text-gray-600 text-sm">
+    {% if locale == 'id' %}Belum ada produk aktif.{% else %}No active products yet.{% endif %}
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

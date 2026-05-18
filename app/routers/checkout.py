@@ -97,6 +97,105 @@ def _parse_service_fee(total_fee_str: str, amount: int) -> int:
         return 0
 
 
+def _compute_service_fee_server(payment_method: str, charge_amount: int) -> int:
+    """
+    Look up service fee from Redis-cached Duitku payment methods.
+    Returns 0 on cache miss (safe fallback — Duitku will apply its own fee).
+    """
+    try:
+        import json as _json
+        import redis as _redis
+        cache_key = f"duitku:methods:{charge_amount}"
+        _r = _redis.from_url(settings.REDIS_URL, decode_responses=True)
+        cached = _r.get(cache_key)
+        if cached:
+            methods = _json.loads(cached)
+            for m in methods:
+                if m.get("paymentMethod", "").upper() == payment_method.upper():
+                    return _parse_service_fee(m.get("totalFee", "0"), charge_amount)
+    except Exception:
+        pass
+    return 0
+
+
+def _resolve_checkout_pricing(
+    product_id: str,
+    package_price_id: str,
+    order_type_param: str,
+    billing_cycle_param: str,
+    db: Session,
+) -> tuple:
+    """
+    Resolve product, package, package_price, base_amount, order_type, billing_cycle.
+    New path: package_price_id → PackagePrice → Product.
+    Legacy path: product_id + order_type + billing_cycle → Product price columns.
+    Returns (product, package, package_price, base_amount, order_type, billing_cycle).
+    """
+    package_price: PackagePrice | None = None
+    package: ProductPackage | None = None
+    product: Product | None = None
+    base_amount: float | None = None
+    order_type = order_type_param
+    billing_cycle = billing_cycle_param
+
+    if package_price_id:
+        try:
+            package_price = db.query(PackagePrice).filter(
+                PackagePrice.id == package_price_id,
+                PackagePrice.is_active == True,
+            ).first()
+        except Exception:
+            pass
+        if package_price:
+            package = package_price.package
+            if package:
+                product = db.query(Product).filter(
+                    Product.id == package.product_id,
+                    Product.status == ProductStatus.active,
+                ).first()
+            if package_price.amount:
+                base_amount   = float(package_price.amount)
+                order_type    = "one_time" if package_price.billing_type == BillingType.one_time else "subscription"
+                billing_cycle = package_price.billing_type.value if package_price.billing_type.value in ("monthly", "yearly") else "monthly"
+
+    if not product:
+        product = db.query(Product).filter(
+            Product.id == product_id,
+            Product.status == ProductStatus.active,
+        ).first()
+
+    if not base_amount and product:
+        if order_type == "one_time" and product.price_otf:
+            base_amount = float(product.price_otf)
+        elif order_type == "subscription":
+            if billing_cycle == "yearly" and product.price_yearly:
+                base_amount = float(product.price_yearly)
+            elif product.price_monthly:
+                base_amount = float(product.price_monthly)
+
+    return product, package, package_price, base_amount, order_type, billing_cycle
+
+
+_PAYMENT_EXPIRY_MINUTES: dict[str, int] = {
+    "va":      1440,   # Virtual Account — 24 hours
+    "retail":  1440,   # Alfamart / Indomaret — 24 hours
+    "qris":    30,     # QRIS — 30 minutes
+    "ewallet": 15,     # E-Wallet deep link — 15 minutes (user redirected immediately)
+    "cc":      120,    # Credit card — 2 hours
+    "other":   1440,
+}
+
+
+_PROMO_ERRORS = {
+    "not_found":     {"id": "Kode promo tidak ditemukan.", "en": "Promo code not found."},
+    "expired":       {"id": "Kode promo sudah kadaluarsa.", "en": "Promo code has expired."},
+    "not_started":   {"id": "Kode promo belum aktif.", "en": "Promo code is not yet active."},
+    "used_up":       {"id": "Kode promo sudah habis digunakan.", "en": "Promo code usage limit reached."},
+    "below_minimum": {"id": "Minimum pembelian tidak terpenuhi.", "en": "Minimum purchase amount not met."},
+    "inactive":      {"id": "Kode promo tidak aktif.", "en": "Promo code is inactive."},
+}
+
+
 @router.get("/{locale}/checkout/failed")
 async def checkout_failed(request: Request, locale: str, order: str = "", db: Session = Depends(get_db)):
     from app.main import templates
@@ -205,40 +304,11 @@ async def checkout_select_payment(
     if not current_user:
         return RedirectResponse(url=f"/{locale}/login?next=/{locale}/checkout/{product_id}/select-payment")
 
-    product = db.query(Product).filter(
-        Product.id == product_id, Product.status == ProductStatus.active
-    ).first()
+    product, _, package_price, base_amount, order_type, billing_cycle = _resolve_checkout_pricing(
+        product_id, package_price_id, type, cycle, db
+    )
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
-
-    # Resolve price — new path or legacy
-    package_price: PackagePrice | None = None
-    order_type = type
-    billing_cycle = cycle
-    base_amount: float | None = None
-
-    if package_price_id:
-        try:
-            package_price = db.query(PackagePrice).filter(
-                PackagePrice.id == package_price_id,
-                PackagePrice.is_active == True,
-            ).first()
-        except Exception:
-            pass
-        if package_price and package_price.amount:
-            base_amount   = float(package_price.amount)
-            order_type    = "one_time" if package_price.billing_type == BillingType.one_time else "subscription"
-            billing_cycle = package_price.billing_type.value if package_price.billing_type.value in ("monthly", "yearly") else "monthly"
-
-    if not base_amount:
-        if type == "one_time" and product.price_otf:
-            base_amount = float(product.price_otf)
-        elif type == "subscription":
-            if cycle == "yearly" and product.price_yearly:
-                base_amount = float(product.price_yearly)
-            elif product.price_monthly:
-                base_amount = float(product.price_monthly)
-
     if not base_amount:
         raise HTTPException(status_code=400, detail="Invalid pricing configuration")
 
@@ -276,20 +346,23 @@ async def validate_promo(request: Request, db: Session = Depends(get_db)):
 
     code     = str(body.get("code", "")).strip().upper()
     base_idr = float(body.get("base_amount", 0))
+    locale   = str(body.get("locale", "id"))
 
     if not code:
         return JSONResponse({"valid": False, "reason": "empty"})
 
     promo, reason = _resolve_promo(code, base_idr, db)
     if not promo:
-        reason_msg = {
-            "not_found":     "Kode promo tidak ditemukan.",
-            "expired":       "Kode promo sudah kadaluarsa.",
-            "not_started":   "Kode promo belum aktif.",
-            "used_up":       "Kode promo sudah habis digunakan.",
-            "below_minimum": f"Minimum pembelian untuk promo ini adalah Rp {float(promo.min_amount or 0):,.0f}." if promo else "Minimum pembelian tidak terpenuhi.",
-            "inactive":      "Kode promo tidak aktif.",
-        }.get(reason, "Kode promo tidak valid.")
+        lang = locale if locale in ("id", "en") else "id"
+        if reason == "below_minimum":
+            min_val = float(promo.min_amount or 0) if promo else 0
+            reason_msg = (
+                f"Minimum pembelian Rp {min_val:,.0f}." if lang == "id"
+                else f"Minimum purchase Rp {min_val:,.0f}."
+            )
+        else:
+            err = _PROMO_ERRORS.get(reason, {"id": "Kode promo tidak valid.", "en": "Invalid promo code."})
+            reason_msg = err[lang]
         return JSONResponse({"valid": False, "reason": reason, "message": reason_msg})
 
     breakdown = _calc_final_amount(base_idr, promo)
@@ -327,45 +400,15 @@ async def checkout_review(
     if not current_user:
         return RedirectResponse(url=f"/{locale}/login?next=/{locale}/checkout/{product_id}")
 
-    product = db.query(Product).filter(
-        Product.id == product_id, Product.status == ProductStatus.active
-    ).first()
-    if not product:
-        raise HTTPException(status_code=404, detail="Product not found")
-
     # Resolve currency
     if not currency or currency not in settings.SUPPORTED_CURRENCIES:
         currency = settings.DEFAULT_CURRENCY
 
-    # Resolve price — new path (package_price_id) or legacy (type + cycle)
-    package_price: PackagePrice | None = None
-    order_type = type
-    billing_cycle = cycle
-    amount_idr: float | None = None
-
-    if package_price_id:
-        try:
-            package_price = db.query(PackagePrice).filter(
-                PackagePrice.id == package_price_id,
-                PackagePrice.is_active == True,
-            ).first()
-        except Exception:
-            pass
-        if package_price and package_price.amount:
-            amount_idr    = float(package_price.amount)
-            order_type    = "one_time" if package_price.billing_type == BillingType.one_time else "subscription"
-            billing_cycle = package_price.billing_type.value if package_price.billing_type.value in ("monthly", "yearly") else "monthly"
-
-    if not amount_idr:
-        # Legacy fallback
-        if type == "one_time" and product.price_otf:
-            amount_idr = float(product.price_otf)
-        elif type == "subscription":
-            if cycle == "yearly" and product.price_yearly:
-                amount_idr = float(product.price_yearly)
-            elif product.price_monthly:
-                amount_idr = float(product.price_monthly)
-
+    product, _, package_price, amount_idr, order_type, billing_cycle = _resolve_checkout_pricing(
+        product_id, package_price_id, type, cycle, db
+    )
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found")
     if not amount_idr:
         raise HTTPException(status_code=400, detail="Invalid pricing configuration")
 
@@ -425,81 +468,33 @@ async def checkout_create_payment(
     promo_code          = str(body.get("promo_code", "")).strip().upper()
     payment_method      = str(body.get("payment_method", "")).strip().upper()
     payment_method_name = str(body.get("payment_method_name", "")).strip()
-    service_fee         = int(body.get("service_fee", 0))
+    order_type_param    = str(body.get("order_type", "one_time"))
+    billing_cycle_param = str(body.get("billing_cycle", "monthly"))
 
     if not payment_method:
         return JSONResponse({"detail": "Payment method is required"}, status_code=400)
 
-    # --- Resolve price via package (new path) or product flat price (legacy fallback) ---
-    package_price: PackagePrice | None = None
-    package: ProductPackage | None = None
-    product: Product | None = None
-    order_type    = "one_time"
-    billing_cycle = "monthly"
-
-    if package_price_id:
-        try:
-            package_price = db.query(PackagePrice).filter(
-                PackagePrice.id == package_price_id,
-                PackagePrice.is_active == True,
-            ).first()
-        except Exception:
-            package_price = None
-
-        if not package_price:
-            return JSONResponse({"detail": "Package price not found or inactive"}, status_code=404)
-
-        package = package_price.package
-        if not package or package.status != "active":
-            return JSONResponse({"detail": "Package is not active"}, status_code=400)
-
-        product = db.query(Product).filter(
-            Product.id == package.product_id,
-            Product.status == ProductStatus.active,
-        ).first()
-        if not product:
-            return JSONResponse({"detail": "Product not found"}, status_code=404)
-
-        if package_price.billing_type == BillingType.contact:
-            return JSONResponse({"detail": "Contact-seller packages cannot be checked out directly"}, status_code=400)
-
-        base_amount = float(package_price.amount)
-        order_type  = "one_time" if package_price.billing_type == BillingType.one_time else "subscription"
-        if package_price.billing_type == BillingType.yearly:
-            billing_cycle = "yearly"
-
-    else:
-        # Legacy path: product_id from URL + order_type/billing_cycle from body
-        order_type    = body.get("order_type", "one_time")
-        billing_cycle = body.get("billing_cycle", "monthly")
-
-        product = db.query(Product).filter(
-            Product.id == product_id, Product.status == ProductStatus.active
-        ).first()
-        if not product:
-            return JSONResponse({"detail": "Product not found"}, status_code=404)
-
-        base_amount = None
-        if order_type == "one_time":
-            base_amount = float(product.price_otf) if product.price_otf else None
-        elif order_type == "subscription":
-            base_amount = float(product.price_yearly) if billing_cycle == "yearly" and product.price_yearly else (
-                float(product.price_monthly) if product.price_monthly else None
-            )
-
-        if not base_amount:
-            return JSONResponse({"detail": "Invalid amount"}, status_code=400)
-
+    # Resolve product + pricing via shared helper
+    product, package, package_price, base_amount, order_type, billing_cycle = _resolve_checkout_pricing(
+        product_id, package_price_id, order_type_param, billing_cycle_param, db
+    )
+    if not product:
+        return JSONResponse({"detail": "Product not found"}, status_code=404)
     if not base_amount:
         return JSONResponse({"detail": "Invalid amount"}, status_code=400)
+    if package_price and package_price.billing_type == BillingType.contact:
+        return JSONResponse({"detail": "Contact-seller packages cannot be checked out directly"}, status_code=400)
+    if package and package.status != "active":
+        return JSONResponse({"detail": "Package is not active"}, status_code=400)
 
     # Resolve promo
     promo, promo_error = _resolve_promo(promo_code, base_amount, db)
     if promo_code and not promo:
         return JSONResponse({"detail": f"Promo tidak valid: {promo_error}"}, status_code=400)
 
-    # Calculate final amount: (base - discount + VAT) + service_fee
+    # Calculate base charge (base - discount + VAT), then add server-computed service fee
     breakdown = _calc_final_amount(base_amount, promo)
+    service_fee   = _compute_service_fee_server(payment_method, int(breakdown["final"]))
     charge_amount = int(breakdown["final"]) + service_fee
     logger.info(
         "Checkout breakdown — base=%.0f discount=%.0f subtotal=%.0f vat=%.0f service_fee=%d final=%d",
@@ -507,6 +502,19 @@ async def checkout_create_payment(
         breakdown["vat_amount"], service_fee, charge_amount,
     )
 
+    # Cancel any existing pending order for same user+product+package_price to avoid zombie orders
+    cutoff = datetime.utcnow() - timedelta(minutes=30)
+    existing_pending = db.query(Order).filter(
+        Order.user_id    == current_user.id,
+        Order.product_id == product.id,
+        Order.status     == OrderStatus.pending,
+        Order.created_at >= cutoff,
+    ).first()
+    if existing_pending:
+        existing_pending.status = OrderStatus.cancelled
+        db.commit()
+
+    order_enum_type = OrderType.one_time if order_type == "one_time" else OrderType.subscription
     order_number = generate_order_number()
     order = Order(
         id=uuid.uuid4(),
@@ -515,7 +523,7 @@ async def checkout_create_payment(
         product_id=product.id,
         package_id=package.id if package else None,
         package_price_id=package_price.id if package_price else None,
-        type=order_type,
+        type=order_enum_type,
         amount=base_amount,
         discount_amount=breakdown["discount"],
         final_amount=charge_amount,
@@ -550,17 +558,14 @@ async def checkout_create_payment(
         pay_code   = result.get("paymentCode") or result.get("payCode") or result.get("rcode") or ""
         payment_url = result.get("paymentUrl") or result.get("payment_url") or ""
 
+        expiry_minutes = _PAYMENT_EXPIRY_MINUTES.get(_method_type(payment_method), 1440)
         order.gateway_reference    = reference
         order.gateway_payment_url  = payment_url
-        order.payment_expired_at   = datetime.utcnow() + timedelta(minutes=1440)
+        order.payment_expired_at   = datetime.utcnow() + timedelta(minutes=expiry_minutes)
         order.va_number            = va_number
         order.qr_string            = qr_string
         order.payment_code         = pay_code
         db.commit()
-
-        if promo:
-            promo.used_count += 1
-            db.commit()
 
         return JSONResponse({
             "order_id":     str(order.id),
@@ -577,97 +582,6 @@ async def checkout_create_payment(
         duitku_msg = str(e)
         return JSONResponse({"detail": f"Payment gateway error: {duitku_msg}"}, status_code=502)
 
-
-@router.post("/{locale}/checkout/{product_id}/process")
-async def checkout_process(
-    request: Request, locale: str, product_id: str,
-    background_tasks: BackgroundTasks,
-    order_type: str = Form("one_time"),
-    billing_cycle: str = Form("monthly"),
-    gateway: str = Form("duitku"),
-    db: Session = Depends(get_db),
-):
-    current_user = get_current_user(request, db)
-    if not current_user:
-        return RedirectResponse(url=f"/{locale}/login?next=/{locale}/checkout/{product_id}")
-
-    product = db.query(Product).filter(
-        Product.id == product_id, Product.status == ProductStatus.active
-    ).first()
-    if not product:
-        raise HTTPException(status_code=404, detail="Product not found")
-
-    # Determine amount
-    amount = None
-    if order_type == "one_time":
-        amount = float(product.price_otf) if product.price_otf else None
-    elif order_type == "subscription":
-        if billing_cycle == "yearly":
-            amount = float(product.price_yearly) if product.price_yearly else None
-        else:
-            amount = float(product.price_monthly) if product.price_monthly else None
-
-    if not amount:
-        raise HTTPException(status_code=400, detail="Invalid amount")
-
-    order_number = generate_order_number()
-
-    order = Order(
-        id=uuid.uuid4(),
-        order_number=order_number,
-        user_id=current_user.id,
-        product_id=product.id,
-        type=order_type,
-        amount=amount,
-        status=OrderStatus.pending,
-        payment_gateway=PaymentGateway(gateway),
-    )
-    db.add(order)
-    db.commit()
-    db.refresh(order)
-
-    return_url = f"{settings.BASE_URL}/{locale}/checkout/return/{order.id}"
-    product_name = product.name_id if locale == "id" else product.name_en
-
-    try:
-        if gateway == "duitku":
-            result = await duitku.create_payment(
-                order_number=order_number,
-                amount=int(amount),
-                product_name=product_name,
-                customer_name=current_user.name,
-                customer_email=current_user.email,
-                return_url=return_url,
-            )
-            logger.debug(f"[duitku] response: {result}")
-            payment_url = result.get("paymentUrl") or result.get("payment_url")
-            reference = result.get("reference") or result.get("merchantOrderId")
-        else:
-            result = await mayar.create_payment(
-                order_number=order_number,
-                amount=int(amount),
-                product_name=product_name,
-                customer_name=current_user.name,
-                customer_email=current_user.email,
-                return_url=return_url,
-            )
-            payment_url = result.get("data", {}).get("link") or result.get("paymentLink")
-            reference = result.get("data", {}).get("id") or order_number
-
-        order.gateway_payment_url = payment_url
-        order.gateway_reference = reference
-        db.commit()
-
-        if payment_url:
-            return RedirectResponse(url=payment_url, status_code=303)
-
-    except Exception as e:
-        logger.error(f"[checkout/process] {e}")
-        order.status = OrderStatus.failed
-        db.commit()
-        return RedirectResponse(url=f"/{locale}/checkout/failed?order={order.id}", status_code=303)
-
-    return RedirectResponse(url=f"/{locale}/checkout/pending?order={order.id}", status_code=303)
 
 
 @router.get("/{locale}/checkout/payment/{order_id}")
@@ -824,9 +738,23 @@ async def mayar_callback(
 # ─── Helper ─────────────────────────────────────────────────────────────────
 
 def _mark_order_paid(order: Order, db: Session, background_tasks: BackgroundTasks):
+    # Idempotency guard — Duitku may retry webhook
+    if order.status == OrderStatus.paid:
+        return
+
     order.status = OrderStatus.paid
     order.paid_at = datetime.utcnow()
     db.commit()
+
+    # Increment promo usage only on confirmed payment
+    if order.promo_code:
+        try:
+            promo = db.query(PromoCode).filter(PromoCode.code == order.promo_code).first()
+            if promo:
+                promo.used_count += 1
+                db.commit()
+        except Exception:
+            pass
 
     order_id_str = str(order.id)
 
@@ -923,23 +851,14 @@ def _create_subscription(order: Order, db: Session):
 
     now = datetime.utcnow()
 
-    # Determine cycle from package_price (new path) or amount comparison (legacy fallback).
+    # Determine cycle — package_price is authoritative, fallback to monthly for legacy orders.
     pkg_price = order.package_price
     if pkg_price and pkg_price.billing_type.value == "yearly":
         cycle        = BillingCycle.yearly
         next_billing = now + timedelta(days=365)
-    elif pkg_price and pkg_price.billing_type.value == "monthly":
+    else:
         cycle        = BillingCycle.monthly
         next_billing = now + timedelta(days=30)
-    else:
-        # Legacy fallback: guess from amount vs product price
-        product = order.product
-        if product and product.price_yearly and float(order.amount) == float(product.price_yearly):
-            cycle        = BillingCycle.yearly
-            next_billing = now + timedelta(days=365)
-        else:
-            cycle        = BillingCycle.monthly
-            next_billing = now + timedelta(days=30)
 
     sub = Subscription(
         id=uuid.uuid4(),
@@ -953,3 +872,99 @@ def _create_subscription(order: Order, db: Session):
     )
     db.add(sub)
     db.commit()
+
+
+@router.post("/{locale}/checkout/{product_id}/request-quote")
+async def request_quote(
+    request: Request, locale: str, product_id: str,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+):
+    """
+    Contact-sales lead capture for BillingType.contact packages.
+    Saves a ContactMessage and emails admin.
+    """
+    current_user = get_current_user(request, db)
+    if not current_user:
+        return JSONResponse({"detail": "Login required"}, status_code=401)
+
+    try:
+        body = await request.json()
+    except Exception:
+        return JSONResponse({"detail": "Invalid request"}, status_code=400)
+
+    product = db.query(Product).filter(
+        Product.id == product_id, Product.status == ProductStatus.active
+    ).first()
+    if not product:
+        return JSONResponse({"detail": "Product not found"}, status_code=404)
+
+    package_id  = str(body.get("package_id", "")).strip()
+    user_message = str(body.get("message", "")).strip()
+    package_name = str(body.get("package_name", "")).strip()
+
+    product_name = product.name_id if locale == "id" else product.name_en
+    subject = f"[Quote Request] {product_name}" + (f" — {package_name}" if package_name else "")
+    full_message = (
+        f"Produk: {product_name}\n"
+        f"Paket: {package_name or '—'}\n"
+        f"User: {current_user.name} ({current_user.email})\n\n"
+        f"{user_message or '(tidak ada pesan tambahan)'}"
+    )
+
+    from app.models.contact import ContactMessage
+    contact = ContactMessage(
+        name=current_user.name,
+        email=current_user.email,
+        subject=subject,
+        message=full_message,
+        ip_address=request.client.host if request.client else None,
+    )
+    db.add(contact)
+    db.commit()
+
+    # Email admin
+    def _send_quote_email():
+        try:
+            import smtplib
+            from email.mime.text import MIMEText
+            from email.mime.multipart import MIMEMultipart
+            msg = MIMEMultipart()
+            msg["From"]    = settings.SMTP_FROM
+            msg["To"]      = settings.SMTP_FROM
+            msg["Subject"] = subject
+            msg.attach(MIMEText(full_message, "plain"))
+            with smtplib.SMTP_SSL(settings.SMTP_HOST, settings.SMTP_PORT) as s:
+                s.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
+                s.send_message(msg)
+        except Exception as e:
+            logger.error(f"[request-quote] email failed: {e}")
+
+    background_tasks.add_task(_send_quote_email)
+
+    return JSONResponse({"status": "sent"})
+
+
+@router.post("/checkout/orders/{order_id}/cancel")
+async def cancel_order(
+    request: Request, order_id: str,
+    db: Session = Depends(get_db),
+):
+    """AJAX — cancel a pending order owned by the logged-in user."""
+    current_user = get_current_user(request, db)
+    if not current_user:
+        return JSONResponse({"detail": "Login required"}, status_code=401)
+
+    order = db.query(Order).filter(Order.id == order_id).first()
+    if not order:
+        return JSONResponse({"detail": "Order not found"}, status_code=404)
+
+    if str(order.user_id) != str(current_user.id):
+        return JSONResponse({"detail": "Forbidden"}, status_code=403)
+
+    if order.status != OrderStatus.pending:
+        return JSONResponse({"detail": "Only pending orders can be cancelled"}, status_code=400)
+
+    order.status = OrderStatus.cancelled
+    db.commit()
+    return JSONResponse({"status": "cancelled", "order_id": str(order.id)})

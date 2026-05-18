@@ -311,6 +311,16 @@
           </button>
         </div>
 
+        <!-- Cancel order -->
+        <div class="text-center pt-1">
+          <button @click="cancelOrder()"
+                  :disabled="cancelling"
+                  class="text-xs text-gray-600 hover:text-red-400 underline underline-offset-2 disabled:opacity-40 transition-colors">
+            <span x-show="!cancelling">{% if locale == 'id' %}Batalkan pesanan ini{% else %}Cancel this order{% endif %}</span>
+            <span x-show="cancelling">{% if locale == 'id' %}Membatalkan...{% else %}Cancelling...{% endif %}</span>
+          </button>
+        </div>
+
       </div>
     </template>
 
@@ -328,7 +338,8 @@
         <p class="text-gray-400 text-sm mb-8">
           {% if locale == 'id' %}Invoice sudah kadaluarsa atau dibatalkan.{% else %}The invoice has expired or was cancelled.{% endif %}
         </p>
-        <a href="/{{ locale }}/checkout/{{ order.product_id }}?type={{ order.type.value }}" class="btn-primary px-8 py-3">
+        <a href="/{{ locale }}/checkout/{{ order.product_id }}?{% if order.package_price_id %}package_price_id={{ order.package_price_id }}{% else %}type={{ order.type.value }}{% endif %}"
+           class="btn-primary px-8 py-3">
           {% if locale == 'id' %}Coba Lagi{% else %}Try Again{% endif %}
         </a>
       </div>
@@ -474,6 +485,7 @@ function paymentPage(initialStatus, orderId, locale, secondsLeft) {
     status:      initialStatus,
     secondsLeft: secondsLeft,
     countdown:   '--:--:--',
+    cancelling:  false,
     _pollTimer:  null,
     _countTimer: null,
 
@@ -517,6 +529,27 @@ function paymentPage(initialStatus, orderId, locale, secondsLeft) {
           }
         }
       } catch(e) {}
+    },
+
+    async cancelOrder() {
+      if (this.cancelling) return;
+      const confirmed = confirm(
+        locale === 'id'
+          ? 'Yakin ingin membatalkan pesanan ini?'
+          : 'Are you sure you want to cancel this order?'
+      );
+      if (!confirmed) return;
+      this.cancelling = true;
+      try {
+        const r = await fetch(`/checkout/orders/${orderId}/cancel`, { method: 'POST' });
+        const d = await r.json();
+        if (r.ok) {
+          clearInterval(this._pollTimer);
+          clearInterval(this._countTimer);
+          this.status = 'cancelled';
+        }
+      } catch(e) {}
+      this.cancelling = false;
     },
   };
 }

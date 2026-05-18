@@ -1,0 +1,263 @@
+{% extends "admin/base_admin.html" %}
+{% set admin_section = "orders" %}
+{% block title %}Order {{ order.order_number }} — Admin{% endblock %}
+{% block page_title %}Detail Transaksi{% endblock %}
+
+{% block content %}
+<div class="mb-6 flex items-center gap-4">
+  <a href="/{{ locale }}/admin/orders" class="text-gray-500 hover:text-white text-sm flex items-center gap-1.5">
+    <i class="bi bi-arrow-left"></i>
+    {% if locale == 'id' %}Kembali{% else %}Back{% endif %}
+  </a>
+  <span class="text-gray-700">/</span>
+  <span class="text-gray-400 text-sm font-mono">{{ order.order_number }}</span>
+
+  {% set sc = {'paid':'bg-green-950 text-green-400 border-green-800','pending':'bg-yellow-950 text-yellow-400 border-yellow-800','failed':'bg-red-950 text-red-400 border-red-800','cancelled':'bg-gray-800 text-gray-500 border-gray-700','refunded':'bg-blue-950 text-blue-400 border-blue-800'} %}
+  <span class="badge text-xs {{ sc.get(order.status.value, '') }}">{{ order.status.value }}</span>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+  <!-- Left column: core order info -->
+  <div class="lg:col-span-2 space-y-4">
+
+    <!-- Produk & Package -->
+    <div class="border border-gray-800 bg-gray-950 p-5">
+      <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-4">
+        {% if locale == 'id' %}Produk{% else %}Product{% endif %}
+      </h3>
+      <div class="flex items-center gap-4">
+        {% if order.product and order.product.cover_image %}
+          <img src="/static/uploads/products/images/{{ order.product.cover_image }}"
+               class="w-14 h-14 object-cover flex-shrink-0 bg-gray-800" alt="" />
+        {% else %}
+          <div class="w-14 h-14 bg-gray-800 flex items-center justify-center flex-shrink-0 opacity-30">
+            <i class="bi bi-box-seam text-xl"></i>
+          </div>
+        {% endif %}
+        <div>
+          <div class="text-white font-semibold text-sm">{{ order.product['name_' + locale] if order.product else '—' }}</div>
+          {% if order.package %}
+            <div class="text-xs text-neon mt-0.5 font-medium">
+              <i class="bi bi-layers"></i> {{ order.package.name }} ({{ order.package.code }})
+            </div>
+          {% endif %}
+          {% if order.package_price %}
+            <div class="text-xs text-gray-500 mt-0.5">
+              {{ order.package_price.billing_type.value | capitalize }} ·
+              Rp {{ "{:,.0f}".format(order.package_price.amount) }}
+            </div>
+          {% endif %}
+          <div class="text-xs text-gray-600 mt-0.5">{{ order.type.value }}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pricing breakdown -->
+    <div class="border border-gray-800 bg-gray-950 p-5">
+      <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-4">
+        {% if locale == 'id' %}Rincian Harga{% else %}Price Breakdown{% endif %}
+      </h3>
+      <div class="space-y-2 text-sm">
+        <div class="flex justify-between">
+          <span class="text-gray-400">{% if locale == 'id' %}Harga Dasar{% else %}Base Price{% endif %}</span>
+          <span class="text-white">Rp {{ "{:,.0f}".format(order.amount) }}</span>
+        </div>
+        {% if order.discount_amount and order.discount_amount > 0 %}
+        <div class="flex justify-between">
+          <span class="text-neon flex items-center gap-1.5">
+            <i class="bi bi-tag text-xs"></i>
+            {% if locale == 'id' %}Diskon{% else %}Discount{% endif %}
+            {% if order.promo_code %}<span class="text-xs text-gray-500">({{ order.promo_code }})</span>{% endif %}
+          </span>
+          <span class="text-neon">- Rp {{ "{:,.0f}".format(order.discount_amount) }}</span>
+        </div>
+        {% endif %}
+        <div class="border-t border-gray-800 pt-2 flex justify-between font-semibold">
+          <span class="text-white">Total</span>
+          <span class="text-neon text-lg">Rp {{ "{:,.0f}".format(order.final_amount or order.amount) }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Payment details -->
+    <div class="border border-gray-800 bg-gray-950 p-5">
+      <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-4">
+        {% if locale == 'id' %}Detail Pembayaran{% else %}Payment Details{% endif %}
+      </h3>
+      <div class="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
+        <div>
+          <div class="text-xs text-gray-600 mb-0.5">Gateway</div>
+          <div class="text-white">{{ order.payment_gateway.value | upper if order.payment_gateway else '—' }}</div>
+        </div>
+        <div>
+          <div class="text-xs text-gray-600 mb-0.5">{% if locale == 'id' %}Metode{% else %}Method{% endif %}</div>
+          <div class="text-white">{{ order.payment_method_name or order.payment_method_code or '—' }}</div>
+        </div>
+        {% if order.gateway_reference %}
+        <div class="col-span-2">
+          <div class="text-xs text-gray-600 mb-0.5">Reference</div>
+          <div class="text-white font-mono text-xs">{{ order.gateway_reference }}</div>
+        </div>
+        {% endif %}
+        {% if order.va_number %}
+        <div class="col-span-2">
+          <div class="text-xs text-gray-600 mb-0.5">Virtual Account</div>
+          <div class="text-white font-mono">{{ order.va_number }}</div>
+        </div>
+        {% endif %}
+        {% if order.payment_code %}
+        <div class="col-span-2">
+          <div class="text-xs text-gray-600 mb-0.5">{% if locale == 'id' %}Kode Bayar{% else %}Payment Code{% endif %}</div>
+          <div class="text-white font-mono text-lg font-bold">{{ order.payment_code }}</div>
+        </div>
+        {% endif %}
+        <div>
+          <div class="text-xs text-gray-600 mb-0.5">{% if locale == 'id' %}Dibuat{% else %}Created{% endif %}</div>
+          <div class="text-white text-xs">{{ order.created_at.strftime('%d %b %Y %H:%M') }}</div>
+        </div>
+        {% if order.paid_at %}
+        <div>
+          <div class="text-xs text-gray-600 mb-0.5">{% if locale == 'id' %}Dibayar{% else %}Paid At{% endif %}</div>
+          <div class="text-neon text-xs font-semibold">{{ order.paid_at.strftime('%d %b %Y %H:%M') }}</div>
+        </div>
+        {% endif %}
+        {% if order.payment_expired_at %}
+        <div>
+          <div class="text-xs text-gray-600 mb-0.5">{% if locale == 'id' %}Kedaluwarsa{% else %}Expires{% endif %}</div>
+          <div class="text-gray-400 text-xs">{{ order.payment_expired_at.strftime('%d %b %Y %H:%M') }}</div>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- License (if exists) -->
+    {% if order.invoice and order.invoice.license %}
+    <div class="border border-gray-800 bg-gray-950 p-5">
+      <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-4">License</h3>
+      {% set lic = order.invoice.license %}
+      <div class="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
+        <div class="col-span-2">
+          <div class="text-xs text-gray-600 mb-0.5">Key / Token</div>
+          <div class="text-white font-mono text-xs break-all bg-black px-3 py-2 border border-gray-800">{{ lic.license_key }}</div>
+        </div>
+        <div>
+          <div class="text-xs text-gray-600 mb-0.5">Type</div>
+          <div class="text-white text-xs">{{ lic.license_type }}</div>
+        </div>
+        {% if lic.expires_at %}
+        <div>
+          <div class="text-xs text-gray-600 mb-0.5">Expires</div>
+          <div class="text-white text-xs">{{ lic.expires_at.strftime('%d %b %Y') }}</div>
+        </div>
+        {% endif %}
+        {% if lic.license_metadata and lic.license_metadata.get('limits') %}
+        <div class="col-span-2">
+          <div class="text-xs text-gray-600 mb-1.5">Limits (snapshot)</div>
+          <div class="flex flex-wrap gap-2">
+            {% for k, v in lic.license_metadata['limits'].items() %}
+            <span class="text-xs bg-gray-900 border border-gray-700 px-2 py-0.5">
+              <span class="text-gray-500">{{ k }}:</span>
+              <span class="text-white ml-1">{{ v if v is not none else '∞' }}</span>
+            </span>
+            {% endfor %}
+          </div>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+
+  </div>
+
+  <!-- Right column: customer + actions -->
+  <div class="space-y-4">
+
+    <!-- Customer -->
+    <div class="border border-gray-800 bg-gray-950 p-5">
+      <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-4">
+        {% if locale == 'id' %}Pelanggan{% else %}Customer{% endif %}
+      </h3>
+      {% if order.user %}
+      <div class="flex items-center gap-3">
+        {% if order.user.avatar_url %}
+          <img src="{{ order.user.avatar_url }}" class="w-10 h-10 rounded-full" alt="" />
+        {% else %}
+          <div class="w-10 h-10 bg-gray-700 flex items-center justify-center font-bold text-sm">
+            {{ order.user.name[0] | upper }}
+          </div>
+        {% endif %}
+        <div>
+          <div class="text-white text-sm font-medium">{{ order.user.name }}</div>
+          <div class="text-gray-500 text-xs">{{ order.user.email }}</div>
+        </div>
+      </div>
+      <a href="/{{ locale }}/admin/customers/{{ order.user.id }}" class="text-xs text-neon hover:underline mt-3 block">
+        {% if locale == 'id' %}Lihat profil pelanggan{% else %}View customer profile{% endif %} →
+      </a>
+      {% else %}
+      <span class="text-gray-600 text-sm">—</span>
+      {% endif %}
+    </div>
+
+    <!-- Invoice -->
+    {% if order.invoice %}
+    <div class="border border-gray-800 bg-gray-950 p-5">
+      <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-4">Invoice</h3>
+      <div class="text-sm">
+        <div class="text-gray-400 text-xs mb-0.5">Number</div>
+        <div class="text-white font-mono text-xs">{{ order.invoice.invoice_number }}</div>
+        <div class="mt-2 text-gray-400 text-xs mb-0.5">Status</div>
+        <div class="text-white text-xs">{{ order.invoice.status.value }}</div>
+      </div>
+      <a href="/{{ locale }}/admin/invoices/{{ order.invoice.id }}" class="text-xs text-neon hover:underline mt-3 block">
+        {% if locale == 'id' %}Lihat invoice{% else %}View invoice{% endif %} →
+      </a>
+    </div>
+    {% endif %}
+
+    <!-- Admin Actions -->
+    {% if order.status.value == 'paid' %}
+    <div class="border border-gray-800 bg-gray-950 p-5"
+         x-data="{ sending: null, msg: '' }">
+      <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-4">
+        {% if locale == 'id' %}Aksi Admin{% else %}Admin Actions{% endif %}
+      </h3>
+
+      <div class="space-y-2">
+        <button @click="
+          sending='invoice';
+          fetch('/{{ locale }}/admin/orders/{{ order.id }}/resend-invoice', {method:'POST'})
+            .then(r=>r.json())
+            .then(d=>{ msg='Invoice queued'; sending=null; })
+            .catch(()=>{ msg='Error'; sending=null; })"
+          :disabled="sending"
+          class="w-full text-left flex items-center gap-2 text-xs border border-gray-700 hover:border-neon hover:text-neon text-gray-400 px-3 py-2 transition-colors disabled:opacity-40">
+          <i class="bi bi-file-earmark-text"></i>
+          <span x-show="sending !== 'invoice'">{% if locale == 'id' %}Kirim Ulang Invoice{% else %}Resend Invoice{% endif %}</span>
+          <span x-show="sending === 'invoice'">{% if locale == 'id' %}Mengirim...{% else %}Sending...{% endif %}</span>
+        </button>
+
+        <button @click="
+          sending='license';
+          fetch('/{{ locale }}/admin/orders/{{ order.id }}/resend-license', {method:'POST'})
+            .then(r=>r.json())
+            .then(d=>{ msg='License queued'; sending=null; })
+            .catch(()=>{ msg='Error'; sending=null; })"
+          :disabled="sending"
+          class="w-full text-left flex items-center gap-2 text-xs border border-gray-700 hover:border-neon hover:text-neon text-gray-400 px-3 py-2 transition-colors disabled:opacity-40">
+          <i class="bi bi-key"></i>
+          <span x-show="sending !== 'license'">{% if locale == 'id' %}Kirim Ulang License{% else %}Resend License{% endif %}</span>
+          <span x-show="sending === 'license'">{% if locale == 'id' %}Mengirim...{% else %}Sending...{% endif %}</span>
+        </button>
+
+        <div x-show="msg" x-cloak class="text-xs text-neon flex items-center gap-1.5 pt-1">
+          <i class="bi bi-check-lg"></i><span x-text="msg"></span>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+  </div>
+</div>
+{% endblock %}

@@ -24,21 +24,23 @@ class Subscription(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
 
-    user_id    = Column(UUID(as_uuid=True), ForeignKey("users.id"),            nullable=False)
-    product_id = Column(UUID(as_uuid=True), ForeignKey("products.id"),         nullable=False)
-    package_id = Column(UUID(as_uuid=True), ForeignKey("product_packages.id"), nullable=True)
+    user_id               = Column(UUID(as_uuid=True), ForeignKey("users.id"),            nullable=False)
+    product_id            = Column(UUID(as_uuid=True), ForeignKey("products.id"),         nullable=False)
+    package_id            = Column(UUID(as_uuid=True), ForeignKey("product_packages.id"), nullable=True)
+    scheduled_package_id  = Column(UUID(as_uuid=True), ForeignKey("product_packages.id"), nullable=True)
 
-    status = Column(Enum(SubscriptionStatus), default=SubscriptionStatus.active)
+    status        = Column(Enum(SubscriptionStatus), default=SubscriptionStatus.active)
     billing_cycle = Column(Enum(BillingCycle), nullable=False)
 
-    started_at = Column(DateTime, default=datetime.utcnow)
+    started_at        = Column(DateTime, default=datetime.utcnow)
     next_billing_date = Column(DateTime, nullable=False)
-    cancelled_at = Column(DateTime, nullable=True)
-    expires_at = Column(DateTime, nullable=True)
+    cancelled_at      = Column(DateTime, nullable=True)
+    expires_at        = Column(DateTime, nullable=True)
 
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
-    user    = relationship("User",           back_populates="subscriptions")
-    product = relationship("Product",        back_populates="subscriptions")
-    package = relationship("ProductPackage", foreign_keys=[package_id])
+    user              = relationship("User",           back_populates="subscriptions")
+    product           = relationship("Product",        back_populates="subscriptions")
+    package           = relationship("ProductPackage", foreign_keys=[package_id])
+    scheduled_package = relationship("ProductPackage", foreign_keys=[scheduled_package_id])

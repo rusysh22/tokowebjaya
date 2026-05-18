@@ -10,8 +10,8 @@ import uuid
 from datetime import datetime
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
-from fastapi.responses import RedirectResponse
+from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, HTTPException, Request, UploadFile
+from fastapi.responses import JSONResponse, RedirectResponse
 from sqlalchemy import desc, func
 from sqlalchemy.orm import Session
 
@@ -407,7 +407,8 @@ async def admin_product_delete(
 @router.get("/{locale}/admin/orders")
 async def admin_orders(
     request: Request, locale: str,
-    page: int = 1, status: str = "",
+    page: int = 1, status: str = "", product_id: str = "",
+    date_from: str = "", date_to: str = "",
     db: Session = Depends(get_db),
 ):
     user = _require_admin(request, db)
@@ -417,9 +418,23 @@ async def admin_orders(
     query = db.query(Order)
     if status:
         query = query.filter(Order.status == status)
+    if product_id:
+        query = query.filter(Order.product_id == product_id)
+    if date_from:
+        try:
+            query = query.filter(Order.created_at >= datetime.strptime(date_from, "%Y-%m-%d"))
+        except ValueError:
+            pass
+    if date_to:
+        try:
+            from datetime import timedelta
+            query = query.filter(Order.created_at < datetime.strptime(date_to, "%Y-%m-%d") + timedelta(days=1))
+        except ValueError:
+            pass
 
     total = query.count()
     orders = query.order_by(desc(Order.created_at)).offset((page - 1) * per_page).limit(per_page).all()
+    products = db.query(Product).filter(Product.status == ProductStatus.active).order_by(Product.name_id).all()
 
     return templates.TemplateResponse(
         request, "admin/orders.html",
@@ -432,9 +447,87 @@ async def admin_orders(
             "page": page,
             "per_page": per_page,
             "status_filter": status,
+            "product_filter": product_id,
+            "date_from": date_from,
+            "date_to": date_to,
+            "order_statuses": [s.value for s in OrderStatus],
+            "products": products,
+        },
+    )
+
+
+@router.get("/{locale}/admin/orders/{order_id}")
+async def admin_order_detail(
+    request: Request, locale: str, order_id: str,
+    db: Session = Depends(get_db),
+):
+    user = _require_admin(request, db)
+    from app.main import templates
+
+    order = db.query(Order).filter(Order.id == order_id).first()
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+
+    return templates.TemplateResponse(
+        request, "admin/order_detail.html",
+        {
+            "locale": locale,
+            "current_user": user,
+            "active_page": "admin",
+            "order": order,
             "order_statuses": [s.value for s in OrderStatus],
         },
     )
+
+
+@router.post("/{locale}/admin/orders/{order_id}/resend-invoice")
+async def admin_resend_invoice(
+    request: Request, locale: str, order_id: str,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+):
+    from fastapi import BackgroundTasks as BT
+    user = _require_admin(request, db)
+    from fastapi.responses import JSONResponse
+
+    order = db.query(Order).filter(Order.id == order_id, Order.status == OrderStatus.paid).first()
+    if not order:
+        return JSONResponse({"detail": "Paid order not found"}, status_code=404)
+
+    try:
+        from app.services.invoice import create_invoice
+        background_tasks.add_task(create_invoice, str(order.id))
+        from app.services.email import send_order_confirmation
+        background_tasks.add_task(send_order_confirmation, order)
+    except Exception as e:
+        return JSONResponse({"detail": str(e)}, status_code=500)
+
+    return JSONResponse({"status": "queued"})
+
+
+@router.post("/{locale}/admin/orders/{order_id}/resend-license")
+async def admin_resend_license(
+    request: Request, locale: str, order_id: str,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+):
+    user = _require_admin(request, db)
+    from fastapi.responses import JSONResponse
+
+    order = db.query(Order).filter(Order.id == order_id, Order.status == OrderStatus.paid).first()
+    if not order:
+        return JSONResponse({"detail": "Paid order not found"}, status_code=404)
+
+    try:
+        from app.services.license import generate_license
+        from app.services.email import send_license_delivery
+        lic = generate_license(db, order)
+        if lic:
+            background_tasks.add_task(send_license_delivery, order, lic)
+    except Exception as e:
+        return JSONResponse({"detail": str(e)}, status_code=500)
+
+    return JSONResponse({"status": "queued"})
 
 
 # ─── Invoices ───────────────────────────────────────────────────────────────
@@ -981,6 +1074,31 @@ async def admin_availability_toggle(
 
 
 # ─── Package Management ──────────────────────────────────────────────────────
+
+@router.get("/{locale}/admin/packages")
+async def admin_packages_overview(
+    request: Request, locale: str,
+    db: Session = Depends(get_db),
+):
+    """Overview page listing all products and their package counts."""
+    user = _require_admin(request, db)
+    products = (
+        db.query(Product)
+        .filter(Product.status == ProductStatus.active)
+        .order_by(Product.name_id)
+        .all()
+    )
+    from app.main import templates
+    return templates.TemplateResponse(
+        request, "admin/packages/overview.html",
+        {
+            "locale": locale,
+            "current_user": user,
+            "active_page": "packages",
+            "products": products,
+        },
+    )
+
 
 @router.get("/{locale}/admin/products/{product_id}/packages")
 async def admin_packages_list(

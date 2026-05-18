@@ -22,6 +22,7 @@ from app.core.config import settings
 from app.models.subscription import Subscription, SubscriptionStatus, BillingCycle
 from app.models.order import Order, OrderStatus, OrderType, PaymentGateway
 from app.models.invoice import Invoice, InvoiceStatus
+from app.models.package import BillingType, PackagePrice, ProductPackage
 from app.models.product import Product
 from app.services.payment import generate_order_number
 
@@ -122,17 +123,38 @@ def charge_subscription(self, subscription_id: str):
         if not product:
             return
 
-        amount = (
-            float(product.price_monthly)
-            if sub.billing_cycle == BillingCycle.monthly
-            else float(product.price_yearly)
-        )
+        # Use package price if available, fall back to product flat price columns
+        billing_type = BillingType.monthly if sub.billing_cycle == BillingCycle.monthly else BillingType.yearly
+        active_package = sub.package
+        pkg_price = None
+        if active_package:
+            pkg_price = (
+                db.query(PackagePrice)
+                .filter(
+                    PackagePrice.package_id == active_package.id,
+                    PackagePrice.billing_type == billing_type,
+                    PackagePrice.is_active == True,
+                )
+                .first()
+            )
+
+        if pkg_price:
+            amount = float(pkg_price.amount)
+        elif sub.billing_cycle == BillingCycle.monthly and product.price_monthly:
+            amount = float(product.price_monthly)
+        elif sub.billing_cycle == BillingCycle.yearly and product.price_yearly:
+            amount = float(product.price_yearly)
+        else:
+            logger.error(f"[billing] No price found for subscription {sub.id}, skipping")
+            return
 
         order = Order(
             id=uuid.uuid4(),
             order_number=generate_order_number(),
             user_id=sub.user_id,
             product_id=sub.product_id,
+            package_id=sub.package_id,
+            package_price_id=pkg_price.id if pkg_price else None,
             type=OrderType.subscription,
             amount=amount,
             status=OrderStatus.pending,
@@ -214,6 +236,12 @@ def confirm_subscription_renewal(order_id: str):
         if not sub:
             return
 
+        # Apply scheduled package upgrade/downgrade if any
+        if sub.scheduled_package_id:
+            logger.info(f"[billing] Applying scheduled package change {sub.package_id} → {sub.scheduled_package_id} for sub {sub.id}")
+            sub.package_id = sub.scheduled_package_id
+            sub.scheduled_package_id = None
+
         # Advance next billing date
         if sub.billing_cycle == BillingCycle.monthly:
             sub.next_billing_date = sub.next_billing_date + timedelta(days=30)
@@ -227,7 +255,7 @@ def confirm_subscription_renewal(order_id: str):
         from app.tasks.invoice import create_invoice_task
         create_invoice_task.delay(str(order.id))
 
-        logger.info(f"[billing] Subscription {sub.id} renewed, next billing: {sub.next_billing_date}")
+        logger.info(f"[billing] Subscription {sub.id} renewed, next billing: {sub.next_billing_date}, package: {sub.package_id}")
 
     finally:
         db.close()

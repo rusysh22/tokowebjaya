@@ -9,12 +9,29 @@
     {% if subscriptions %}
     <div class="space-y-4">
       {% for sub in subscriptions %}
-      <div class="border {% if sub.status.value == 'active' %}border-gray-700{% else %}border-gray-800{% endif %} p-5">
+      {% set pkgs = sub_packages.get(sub.id | string, []) %}
+
+      <div class="border {% if sub.status.value == 'active' %}border-gray-700{% else %}border-gray-800{% endif %} p-5"
+           x-data="{
+             showChangePlan: false,
+             loading: false,
+             msg: '',
+             msgType: '',
+             scheduledName: '{{ sub.scheduled_package.name_id if sub.scheduled_package and locale == 'id' else (sub.scheduled_package.name_en if sub.scheduled_package else '') }}',
+             scheduledDate: '{{ sub.next_billing_date.strftime('%d %b %Y') if sub.next_billing_date else '' }}'
+           }">
+
         <div class="flex items-start justify-between mb-3">
           <div>
             <h3 class="text-white font-semibold text-sm">
               {{ sub.product['name_' + locale] if sub.product else '—' }}
             </h3>
+            {% if sub.package %}
+            <div class="text-neon text-xs mt-0.5 font-medium">
+              <i class="bi bi-layers"></i>
+              {{ sub.package['name_' + locale] }}
+            </div>
+            {% endif %}
             <p class="text-gray-500 text-xs mt-1">
               {{ sub.billing_cycle.value | capitalize }} —
               {% if locale == 'id' %}Mulai{% else %}Started{% endif %}: {{ sub.started_at.strftime('%d %b %Y') }}
@@ -25,19 +42,125 @@
         </div>
 
         {% if sub.status.value == 'active' %}
-        <div class="flex items-center justify-between text-xs text-gray-500 mb-4">
-          <span>
-            {% if locale == 'id' %}Tagihan berikutnya{% else %}Next billing{% endif %}:
-            <span class="text-white">{{ sub.next_billing_date.strftime('%d %b %Y') }}</span>
-          </span>
+        <div class="text-xs text-gray-500 mb-4">
+          {% if locale == 'id' %}Tagihan berikutnya{% else %}Next billing{% endif %}:
+          <span class="text-white">{{ sub.next_billing_date.strftime('%d %b %Y') }}</span>
         </div>
-        <form method="post" action="/{{ locale }}/dashboard/subscriptions/{{ sub.id }}/cancel"
-              onsubmit="return confirm('{% if locale == 'id' %}Batalkan langganan ini?{% else %}Cancel this subscription?{% endif %}')">
-          <button type="submit" class="text-xs text-red-500 hover:text-red-400 border border-red-900 hover:border-red-700 px-4 py-2 transition-colors">
-            {% if locale == 'id' %}Batalkan Langganan{% else %}Cancel Subscription{% endif %}
+
+        <!-- Scheduled change notice -->
+        <div x-show="scheduledName" x-cloak
+             class="mb-4 text-xs border border-yellow-800/50 bg-yellow-950/20 text-yellow-400 px-3 py-2.5 flex items-center justify-between gap-3">
+          <span>
+            <i class="bi bi-clock-history mr-1"></i>
+            {% if locale == 'id' %}Akan beralih ke{% else %}Switching to{% endif %}
+            <strong x-text="scheduledName"></strong>
+            {% if locale == 'id' %}pada{% else %}on{% endif %}
+            <span x-text="scheduledDate"></span>
+          </span>
+          <button @click="
+            loading = true;
+            fetch('/{{ locale }}/dashboard/subscriptions/{{ sub.id }}/cancel-change', {method:'POST'})
+              .then(r => r.json())
+              .then(() => { scheduledName = ''; loading = false; })"
+            :disabled="loading"
+            class="text-yellow-600 hover:text-red-400 underline underline-offset-2 flex-shrink-0">
+            {% if locale == 'id' %}Batalkan{% else %}Cancel{% endif %}
           </button>
-        </form>
+        </div>
+
+        <!-- Feedback message -->
+        <div x-show="msg" x-cloak
+             :class="msgType === 'success' ? 'border-neon/40 text-neon' : 'border-red-800 text-red-400'"
+             class="mb-4 text-xs border px-3 py-2 flex items-center gap-2">
+          <i :class="msgType === 'success' ? 'bi bi-check-lg' : 'bi bi-exclamation-triangle'"></i>
+          <span x-text="msg"></span>
+        </div>
+
+        <div class="flex flex-wrap gap-2">
+          {% if pkgs | length > 1 %}
+          <button @click="showChangePlan = !showChangePlan"
+                  class="text-xs border border-gray-700 hover:border-neon hover:text-neon text-gray-400 px-4 py-2 transition-colors">
+            <i class="bi bi-arrow-left-right mr-1.5"></i>
+            {% if locale == 'id' %}Ganti Paket{% else %}Change Plan{% endif %}
+          </button>
+          {% endif %}
+
+          <form method="post" action="/{{ locale }}/dashboard/subscriptions/{{ sub.id }}/cancel"
+                onsubmit="return confirm('{% if locale == 'id' %}Batalkan langganan ini?{% else %}Cancel this subscription?{% endif %}')">
+            <button type="submit" class="text-xs text-red-500 hover:text-red-400 border border-red-900 hover:border-red-700 px-4 py-2 transition-colors">
+              {% if locale == 'id' %}Batalkan Langganan{% else %}Cancel Subscription{% endif %}
+            </button>
+          </form>
+        </div>
+
+        <!-- Change plan panel -->
+        {% if pkgs | length > 1 %}
+        <div x-show="showChangePlan" x-cloak
+             x-transition:enter="transition ease-out duration-150"
+             x-transition:enter-start="opacity-0 -translate-y-1"
+             x-transition:enter-end="opacity-100 translate-y-0"
+             class="mt-4 border border-gray-800 bg-black p-4">
+          <p class="text-xs text-gray-500 mb-3">
+            {% if locale == 'id' %}
+              Pilih paket baru. Perubahan berlaku mulai tagihan berikutnya ({{ sub.next_billing_date.strftime('%d %b %Y') }}).
+            {% else %}
+              Choose a new plan. Change takes effect at your next billing date ({{ sub.next_billing_date.strftime('%d %b %Y') }}).
+            {% endif %}
+          </p>
+          <div class="space-y-2">
+            {% for pkg in pkgs %}
+            {% set billing_key = 'monthly' if sub.billing_cycle.value == 'monthly' else 'yearly' %}
+            {% set price = pkg.get_price(billing_key) %}
+            {% if price %}
+            <div class="flex items-center justify-between border p-3 text-sm
+                        {% if sub.package and sub.package.id == pkg.id %}border-neon/40 bg-neon/5{% else %}border-gray-800 hover:border-gray-600{% endif %}">
+              <div>
+                <div class="text-white font-semibold text-xs">{{ pkg['name_' + locale] }}</div>
+                {% if pkg.tagline_id or pkg.tagline_en %}
+                <div class="text-gray-500 text-xs mt-0.5">{{ pkg['tagline_' + locale] or '' }}</div>
+                {% endif %}
+              </div>
+              <div class="flex items-center gap-3 flex-shrink-0">
+                <span class="text-xs text-gray-400">Rp {{ "{:,.0f}".format(price.amount) }}/{{ sub.billing_cycle.value }}</span>
+                {% if sub.package and sub.package.id == pkg.id %}
+                  <span class="text-xs text-neon font-semibold">{% if locale == 'id' %}Aktif{% else %}Current{% endif %}</span>
+                {% else %}
+                  <button @click="
+                    loading = true;
+                    fetch('/{{ locale }}/dashboard/subscriptions/{{ sub.id }}/schedule-change', {
+                      method: 'POST',
+                      headers: {'Content-Type': 'application/json'},
+                      body: JSON.stringify({package_price_id: '{{ price.id }}'})
+                    })
+                    .then(r => r.json())
+                    .then(d => {
+                      if (d.status === 'scheduled') {
+                        scheduledName = d.package_name;
+                        scheduledDate = d.effective_date;
+                        msg = '{% if locale == 'id' %}Perubahan paket dijadwalkan!{% else %}Plan change scheduled!{% endif %}';
+                        msgType = 'success';
+                        showChangePlan = false;
+                      } else {
+                        msg = d.detail || 'Error';
+                        msgType = 'error';
+                      }
+                      loading = false;
+                    })
+                    .catch(() => { msg = 'Error'; msgType = 'error'; loading = false; })"
+                    :disabled="loading"
+                    class="text-xs border border-gray-700 hover:border-neon hover:text-neon text-gray-400 px-3 py-1.5 transition-colors disabled:opacity-40">
+                    {% if locale == 'id' %}Pilih{% else %}Select{% endif %}
+                  </button>
+                {% endif %}
+              </div>
+            </div>
+            {% endif %}
+            {% endfor %}
+          </div>
+        </div>
         {% endif %}
+
+        {% endif %}{# end active #}
       </div>
       {% endfor %}
     </div>
