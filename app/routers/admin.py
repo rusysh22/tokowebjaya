@@ -1105,7 +1105,7 @@ async def admin_packages_list(
     request: Request, locale: str, product_id: str,
     db: Session = Depends(get_db),
 ):
-    _require_admin(request, db)
+    user = _require_admin(request, db)
     product = db.query(Product).filter(Product.id == product_id).first()
     if not product:
         raise HTTPException(status_code=404)
@@ -1126,6 +1126,8 @@ async def admin_packages_list(
         request, "admin/packages/list.html",
         {
             "locale": locale,
+            "current_user": user,
+            "active_page": "packages",
             "product": product,
             "packages": packages,
             "limit_schemas": limit_schemas,
