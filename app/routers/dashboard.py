@@ -67,6 +67,7 @@ async def dashboard(request: Request, locale: str, db: Session = Depends(get_db)
     from app.models.license import ProductLicense
     from app.models.refund import Refund, RefundStatus
     from datetime import datetime, timedelta
+    from sqlalchemy import func as sqlfunc
 
     recent_orders = (
         db.query(Order).filter(Order.user_id == user.id)
@@ -100,34 +101,32 @@ async def dashboard(request: Request, locale: str, db: Session = Depends(get_db)
     )
     expiring_soon = []
     try:
-        all_licenses = db.query(ProductLicense).filter(
+        now = datetime.utcnow()
+        expiring_soon = db.query(ProductLicense).filter(
             ProductLicense.user_id == user.id,
             ProductLicense.is_active == True,
+            ProductLicense.expires_at != None,
+            ProductLicense.expires_at >= now,
+            ProductLicense.expires_at <= now + timedelta(days=7),
         ).all()
-        expiring_soon = [
-            lic for lic in all_licenses
-            if lic.days_until_expiry is not None and 0 <= lic.days_until_expiry <= 7
-        ]
     except Exception:
-        pass
+        logger.warning("Failed to query expiring_soon licenses", exc_info=True)
     pending_refunds = []
     try:
-        from app.models.refund import Refund, RefundStatus
         pending_refunds = db.query(Refund).filter(
             Refund.user_id == user.id,
             Refund.status == RefundStatus.pending,
         ).all()
     except Exception:
-        pass
+        logger.warning("Failed to query pending_refunds", exc_info=True)
 
     total_orders = db.query(Order).filter(Order.user_id == user.id).count()
-    total_spent = sum(
-        int(o.final_amount or o.amount or 0)
-        for o in db.query(Order).filter(
-            Order.user_id == user.id,
-            Order.status == OrderStatus.paid,
-        ).all()
-    )
+    total_spent = db.query(
+        sqlfunc.sum(sqlfunc.coalesce(Order.final_amount, Order.amount))
+    ).filter(
+        Order.user_id == user.id,
+        Order.status == OrderStatus.paid,
+    ).scalar() or 0
 
     return templates.TemplateResponse(
         request, "dashboard/index.html",
@@ -210,7 +209,7 @@ async def order_detail(request: Request, locale: str, order_id: str, db: Session
             .all()
         )
     except Exception:
-        pass
+        logger.warning("Failed to load order events for %s", order_id, exc_info=True)
 
     # License
     license_obj = None
@@ -225,9 +224,9 @@ async def order_detail(request: Request, locale: str, order_id: str, db: Session
             try:
                 download_url = get_signed_download_url(license_obj.license_file_path)
             except Exception:
-                pass
+                logger.warning("Failed to generate signed download URL for license %s", license_obj.id, exc_info=True)
     except Exception:
-        pass
+        logger.warning("Failed to load license for order %s", order_id, exc_info=True)
 
     # Refund(s)
     refunds = []
@@ -235,16 +234,25 @@ async def order_detail(request: Request, locale: str, order_id: str, db: Session
         from app.models.refund import Refund
         refunds = db.query(Refund).filter(Refund.order_id == order_id).order_by(desc(Refund.created_at)).all()
     except Exception:
-        pass
+        logger.warning("Failed to load refunds for order %s", order_id, exc_info=True)
 
-    # Subscription linked to this order
+    # Subscription linked to this order — find the most recent active one for this product,
+    # falling back to any status if no active sub exists (handles cancelled/expired)
     from app.models.subscription import Subscription, SubscriptionStatus
     linked_sub = None
     if order.type and order.type.value == "subscription":
-        linked_sub = db.query(Subscription).filter(
-            Subscription.user_id == user.id,
-            Subscription.product_id == order.product_id,
-        ).order_by(desc(Subscription.started_at)).first()
+        linked_sub = (
+            db.query(Subscription)
+            .filter(
+                Subscription.user_id == user.id,
+                Subscription.product_id == order.product_id,
+            )
+            .order_by(
+                desc(Subscription.status == SubscriptionStatus.active),
+                desc(Subscription.started_at),
+            )
+            .first()
+        )
 
     from app.main import templates
     return templates.TemplateResponse(

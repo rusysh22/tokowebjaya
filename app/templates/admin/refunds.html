@@ -173,13 +173,13 @@
               </span>
             </td>
             <td class="px-4 py-3 text-gray-500 text-xs whitespace-nowrap">{{ refund.requested_at.strftime('%d %b %Y') }}</td>
-            <td class="px-4 py-3">
+            <td class="px-4 py-3 relative">
               {% if refund.status.value == 'pending' %}
               <button @click="showAction = !showAction"
                       class="text-xs border border-gray-700 text-gray-400 px-3 py-1.5 hover:border-neon hover:text-neon transition-colors whitespace-nowrap">
                 Review
               </button>
-              <div x-show="showAction" x-cloak class="absolute z-10 mt-1 right-4 bg-gray-900 border border-gray-700 p-4 w-72 shadow-xl">
+              <div x-show="showAction" x-cloak class="absolute z-10 mt-1 right-0 bg-gray-900 border border-gray-700 p-4 w-72 shadow-xl">
                 <p class="text-xs text-gray-400 font-semibold mb-3">Review Refund</p>
                 <textarea x-model="approveNote" rows="2" placeholder="Admin note (optional)"
                           class="w-full bg-black border border-gray-700 text-white text-xs px-2 py-1.5 resize-none focus:outline-none mb-2"></textarea>
