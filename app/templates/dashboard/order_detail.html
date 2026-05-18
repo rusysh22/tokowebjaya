@@ -124,8 +124,8 @@
           </div>
           {% endif %}
           {% if order.final_amount and order.final_amount != order.amount %}
-          {% set subtotal = order.amount - (order.discount_amount or 0) %}
-          {% set service_fee = order.final_amount - subtotal * 1.11 %}
+          {% set subtotal = (order.amount - (order.discount_amount or 0)) | float %}
+          {% set service_fee = order.final_amount | float - subtotal * 1.11 %}
           <div class="flex justify-between text-gray-500 text-xs">
             <span>PPN 11%</span>
             <span>+ Rp {{ "{:,.0f}".format(subtotal * 0.11) }}</span>
