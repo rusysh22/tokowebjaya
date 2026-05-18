@@ -2,169 +2,272 @@
 {% block title %}Dashboard — Toko Web Jaya{% endblock %}
 
 {% block content %}
-<section class="bg-black min-h-[calc(100vh-4rem)] pt-24 pb-16">
+<section class="bg-black min-h-[calc(100vh-4rem)] pt-20 pb-16">
   <div class="container-main">
 
-    <!-- Welcome header -->
-    <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-10 reveal">
+    {# ── Header ────────────────────────────────────────────────────────────── #}
+    <div class="flex items-center justify-between gap-3 mb-6 sm:mb-8">
       <div>
-        <p class="text-label mb-2">Dashboard</p>
-        <h1 class="heading-md text-white">
-          {{ t(locale, 'dashboard_welcome') }}, {{ current_user.name.split()[0] }} <i class="bi bi-hand-wave"></i>
+        <p class="text-xs text-gray-600 uppercase tracking-widest mb-1">Dashboard</p>
+        <h1 class="text-xl sm:text-2xl font-bold text-white leading-tight">
+          {{ t(locale, 'dashboard_welcome') }}, {{ current_user.name.split()[0] }} 👋
         </h1>
       </div>
-      <div class="flex items-center gap-3 flex-shrink-0">
+      <div class="flex items-center gap-2 flex-shrink-0">
         {% if current_user.avatar_url %}
-          <img src="{{ current_user.avatar_url }}" class="w-10 h-10 rounded-full" alt="" />
+          <img src="{{ current_user.avatar_url }}" class="w-9 h-9 sm:w-10 sm:h-10 rounded-full ring-2 ring-gray-700" alt="" />
+        {% else %}
+          <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-gray-800 flex items-center justify-center ring-2 ring-gray-700">
+            <i class="bi bi-person text-gray-400 text-sm"></i>
+          </div>
         {% endif %}
-        <a href="/auth/logout" class="btn-secondary text-xs py-2 px-4">
+        <a href="/auth/logout" class="hidden sm:inline-flex btn-secondary text-xs py-1.5 px-3">
           {{ t(locale, 'nav_logout') }}
         </a>
       </div>
     </div>
 
-    <!-- Quick stats -->
-    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
-      {% set stats = [
-        {'label_id': 'Total Pesanan', 'label_en': 'Total Orders', 'value': recent_orders | length, 'icon': 'bi-receipt'},
-        {'label_id': 'Langganan Aktif', 'label_en': 'Active Subs', 'value': active_subs | length, 'icon': 'bi-arrow-repeat'},
-        {'label_id': 'Invoice', 'label_en': 'Invoices', 'value': recent_invoices | length, 'icon': 'bi-file-earmark-text'},
-        {'label_id': 'Akun', 'label_en': 'Account', 'value': 'Google', 'icon': 'bi-shield-lock'},
-      ] %}
-      {% for s in stats %}
-      <div class="card p-5 reveal">
-        <i class="bi {{ s.icon }} text-2xl mb-2 block text-gray-400"></i>
-        <div class="text-white font-bold text-lg">{{ s.value }}</div>
-        <div class="text-gray-500 text-xs">{{ s['label_' + locale] }}</div>
+    {# ── Stats row ─────────────────────────────────────────────────────────── #}
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+      <div class="border border-gray-800 bg-gray-950 p-4">
+        <i class="bi bi-receipt text-lg text-gray-500 block mb-2"></i>
+        <div class="text-white font-bold text-xl leading-none mb-1">{{ total_orders }}</div>
+        <div class="text-gray-500 text-xs">{{ t(locale, 'dashboard_total_orders') }}</div>
       </div>
-      {% endfor %}
+      <div class="border border-gray-800 bg-gray-950 p-4">
+        <i class="bi bi-arrow-repeat text-lg text-gray-500 block mb-2"></i>
+        <div class="text-white font-bold text-xl leading-none mb-1">{{ active_subs | length }}</div>
+        <div class="text-gray-500 text-xs">{{ t(locale, 'dashboard_active_subs') }}</div>
+      </div>
+      <div class="border border-gray-800 bg-gray-950 p-4">
+        <i class="bi bi-shield-lock text-lg text-gray-500 block mb-2"></i>
+        <div class="text-white font-bold text-xl leading-none mb-1">{{ expiring_soon | length }}</div>
+        <div class="text-gray-500 text-xs">{{ t(locale, 'dashboard_expiring_soon') }}</div>
+      </div>
+      <div class="border border-gray-800 bg-gray-950 p-4">
+        <i class="bi bi-currency-exchange text-lg text-gray-500 block mb-2"></i>
+        <div class="text-neon font-bold text-lg leading-none mb-1 truncate">
+          {% if total_spent >= 1000000 %}
+            {{ "Rp %.1fJt" | format(total_spent / 1000000) }}
+          {% else %}
+            Rp {{ "{:,.0f}".format(total_spent) }}
+          {% endif %}
+        </div>
+        <div class="text-gray-500 text-xs">Total Spent</div>
+      </div>
     </div>
 
-    <!-- Nav tabs -->
+    {# ── Nav tabs ──────────────────────────────────────────────────────────── #}
     {% include "dashboard/_tabs.html" %}
 
-    <!-- Recent orders -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      <div>
-        <div class="flex items-center justify-between mb-4">
-          <h2 class="text-sm font-semibold text-white">
-            {% if locale == 'id' %}Pesanan Terbaru{% else %}Recent Orders{% endif %}
-          </h2>
-          <a href="/{{ locale }}/dashboard/orders" class="text-xs text-neon hover:underline">
-            {% if locale == 'id' %}Lihat Semua{% else %}View All{% endif %}
+    {# ── Needs Attention ───────────────────────────────────────────────────── #}
+    {% set attention_items = pending_orders | length + failed_orders | length + expiring_soon | length + pending_refunds | length %}
+    {% if attention_items > 0 %}
+    <div class="mb-6 sm:mb-8">
+      <div class="flex items-center gap-2 mb-3">
+        <div class="w-2 h-2 rounded-full bg-yellow-400 animate-pulse"></div>
+        <h2 class="text-sm font-semibold text-yellow-400">{{ t(locale, 'dashboard_needs_attention') }}</h2>
+        <span class="text-xs bg-yellow-900/60 text-yellow-400 border border-yellow-800/50 px-1.5 py-0.5">{{ attention_items }}</span>
+      </div>
+      <div class="space-y-2">
+
+        {% for order in pending_orders %}
+        <div class="border border-yellow-800/40 bg-yellow-950/10 px-4 py-3 flex items-center justify-between gap-3">
+          <div class="flex items-center gap-3 min-w-0">
+            <i class="bi bi-clock text-yellow-400 flex-shrink-0"></i>
+            <div class="min-w-0">
+              <div class="text-white text-xs font-medium truncate">{{ order.product['name_' + locale] if order.product else order.order_number }}</div>
+              <div class="text-yellow-600 text-xs">{{ t(locale, 'status_pending') }} · {{ order.order_number }}</div>
+            </div>
+          </div>
+          <a href="/{{ locale }}/checkout/payment/{{ order.id }}"
+             class="flex-shrink-0 text-xs bg-yellow-400 text-black font-semibold px-3 py-1.5 hover:bg-yellow-300 transition-colors whitespace-nowrap">
+            {{ t(locale, 'dashboard_continue_pay') }}
           </a>
         </div>
+        {% endfor %}
 
-        <div class="space-y-3">
-          {% if recent_orders %}
-            {% for order in recent_orders %}
-            <div class="card p-4 flex items-center justify-between gap-4">
-              <div class="min-w-0 flex-1">
-                <div class="text-white text-xs font-semibold truncate">
-                  {{ order.product['name_' + locale] if order.product else order.order_number }}
-                </div>
-                <div class="text-gray-600 text-xs font-mono mt-0.5">{{ order.order_number }}</div>
-              </div>
-              <div class="text-right flex-shrink-0">
-                <div class="text-white text-sm font-bold">Rp {{ "{:,.0f}".format(order.amount) }}</div>
-                {% set sc = {'paid':'text-green-400','pending':'text-yellow-400','failed':'text-red-400','cancelled':'text-gray-500'} %}
-                <div class="text-xs {{ sc.get(order.status.value, 'text-gray-500') }} mb-1">{{ order.status.value }}</div>
-                {% if order.status.value == 'pending' %}
-                <a href="/{{ locale }}/checkout/payment/{{ order.id }}"
-                   class="inline-flex items-center gap-1 text-[11px] border border-yellow-600/50 text-yellow-400 px-2 py-0.5 hover:bg-yellow-500/10 transition-colors">
-                  <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/>
-                  </svg>
-                  {% if locale == 'id' %}Lanjutkan{% else %}Continue{% endif %}
-                </a>
-                {% endif %}
+        {% for order in failed_orders %}
+        <div class="border border-red-800/40 bg-red-950/10 px-4 py-3 flex items-center justify-between gap-3">
+          <div class="flex items-center gap-3 min-w-0">
+            <i class="bi bi-x-circle text-red-400 flex-shrink-0"></i>
+            <div class="min-w-0">
+              <div class="text-white text-xs font-medium truncate">{{ order.product['name_' + locale] if order.product else order.order_number }}</div>
+              <div class="text-red-500 text-xs">{{ t(locale, 'status_failed') }} · {{ order.order_number }}</div>
+            </div>
+          </div>
+          <a href="/{{ locale }}/dashboard/orders/{{ order.id }}"
+             class="flex-shrink-0 text-xs border border-red-700 text-red-400 px-3 py-1.5 hover:bg-red-900/30 transition-colors whitespace-nowrap">
+            {{ t(locale, 'dashboard_retry_pay') }}
+          </a>
+        </div>
+        {% endfor %}
+
+        {% for lic in expiring_soon %}
+        <div class="border border-orange-800/40 bg-orange-950/10 px-4 py-3 flex items-center justify-between gap-3">
+          <div class="flex items-center gap-3 min-w-0">
+            <i class="bi bi-exclamation-triangle text-orange-400 flex-shrink-0"></i>
+            <div class="min-w-0">
+              <div class="text-white text-xs font-medium truncate">{{ lic.product['name_' + locale] if lic.product else '—' }}</div>
+              <div class="text-orange-400 text-xs">
+                {{ t(locale, 'dashboard_expiring_soon') }} ·
+                {% if locale == 'id' %}{{ lic.days_until_expiry }} hari lagi{% else %}{{ lic.days_until_expiry }} days left{% endif %}
               </div>
             </div>
+          </div>
+          <a href="/{{ locale }}/dashboard/licenses/{{ lic.id }}"
+             class="flex-shrink-0 text-xs border border-orange-700 text-orange-400 px-3 py-1.5 hover:bg-orange-900/30 transition-colors whitespace-nowrap">
+            {{ t(locale, 'license_renew') }}
+          </a>
+        </div>
+        {% endfor %}
+
+        {% for refund in pending_refunds %}
+        <div class="border border-blue-800/40 bg-blue-950/10 px-4 py-3 flex items-center justify-between gap-3">
+          <div class="flex items-center gap-3 min-w-0">
+            <i class="bi bi-arrow-counterclockwise text-blue-400 flex-shrink-0"></i>
+            <div class="min-w-0">
+              <div class="text-white text-xs font-medium">Refund · Rp {{ "{:,.0f}".format(refund.amount) }}</div>
+              <div class="text-blue-400 text-xs">{{ t(locale, 'refund_status_pending') }}</div>
+            </div>
+          </div>
+          <a href="/{{ locale }}/dashboard/orders/{{ refund.order_id }}"
+             class="flex-shrink-0 text-xs border border-blue-700 text-blue-400 px-3 py-1.5 hover:bg-blue-900/30 transition-colors">
+            {% if locale == 'id' %}Detail{% else %}Detail{% endif %}
+          </a>
+        </div>
+        {% endfor %}
+
+      </div>
+    </div>
+    {% endif %}
+
+    {# ── Main content grid ─────────────────────────────────────────────────── #}
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+      {# Recent orders #}
+      <div>
+        <div class="flex items-center justify-between mb-3">
+          <h2 class="text-sm font-semibold text-white">{{ t(locale, 'dashboard_recent_orders') }}</h2>
+          <a href="/{{ locale }}/dashboard/orders" class="text-xs text-neon hover:underline">
+            {{ t(locale, 'dashboard_view_all') }} →
+          </a>
+        </div>
+        <div class="space-y-2">
+          {% if recent_orders %}
+            {% for order in recent_orders %}
+            <a href="/{{ locale }}/dashboard/orders/{{ order.id }}"
+               class="block border border-gray-800 bg-gray-950 p-3.5 hover:border-gray-600 transition-colors group">
+              <div class="flex items-center justify-between gap-3">
+                <div class="min-w-0 flex-1">
+                  <div class="text-white text-xs font-semibold truncate group-hover:text-neon transition-colors">
+                    {{ order.product['name_' + locale] if order.product else order.order_number }}
+                  </div>
+                  <div class="flex items-center gap-2 mt-1">
+                    <span class="text-gray-600 text-xs font-mono">{{ order.order_number }}</span>
+                    {% if order.package %}
+                    <span class="text-neon text-[10px] border border-neon/30 px-1">{{ order.package['name_' + locale] }}</span>
+                    {% endif %}
+                  </div>
+                </div>
+                <div class="text-right flex-shrink-0">
+                  <div class="text-white text-sm font-bold">Rp {{ "{:,.0f}".format(order.final_amount or order.amount) }}</div>
+                  {% set sc = {'paid':'text-green-400','pending':'text-yellow-400','failed':'text-red-400','cancelled':'text-gray-500','refunded':'text-blue-400'} %}
+                  <div class="text-xs {{ sc.get(order.status.value, 'text-gray-500') }}">{{ t(locale, 'status_' + order.status.value) }}</div>
+                </div>
+              </div>
+            </a>
             {% endfor %}
           {% else %}
-            <div class="card p-8 text-center text-gray-600 text-sm">
-              {% if locale == 'id' %}Belum ada pesanan.{% else %}No orders yet.{% endif %}
-              <a href="/{{ locale }}/catalog" class="text-neon hover:underline ml-1">
-                {% if locale == 'id' %}Mulai belanja{% else %}Start shopping{% endif %}
+            <div class="border border-gray-800 py-10 text-center">
+              <p class="text-gray-600 text-xs mb-3">{{ t(locale, 'dashboard_no_orders') }}</p>
+              <a href="/{{ locale }}/catalog" class="text-neon text-xs hover:underline">
+                {{ t(locale, 'dashboard_start_shopping') }} →
               </a>
             </div>
           {% endif %}
         </div>
       </div>
 
-      <!-- Active subscriptions -->
+      {# Active subscriptions #}
       <div>
-        <div class="flex items-center justify-between mb-4">
-          <h2 class="text-sm font-semibold text-white">
-            {% if locale == 'id' %}Langganan Aktif{% else %}Active Subscriptions{% endif %}
-          </h2>
+        <div class="flex items-center justify-between mb-3">
+          <h2 class="text-sm font-semibold text-white">{{ t(locale, 'dashboard_active_subs') }}</h2>
           <a href="/{{ locale }}/dashboard/subscriptions" class="text-xs text-neon hover:underline">
-            {% if locale == 'id' %}Kelola{% else %}Manage{% endif %}
+            {{ t(locale, 'dashboard_manage') }} →
           </a>
         </div>
-
-        <div class="space-y-3">
+        <div class="space-y-2">
           {% if active_subs %}
             {% for sub in active_subs %}
-            <div class="card p-4">
-              <div class="flex items-start justify-between mb-2">
-                <div class="text-white text-xs font-semibold">
-                  {{ sub.product['name_' + locale] if sub.product else '—' }}
+            <div class="border border-gray-800 bg-gray-950 p-3.5">
+              <div class="flex items-start justify-between gap-3 mb-2">
+                <div class="min-w-0">
+                  <div class="text-white text-xs font-semibold truncate">{{ sub.product['name_' + locale] if sub.product else '—' }}</div>
+                  {% if sub.package %}
+                  <div class="text-neon text-[10px] mt-0.5">
+                    <i class="bi bi-layers mr-0.5"></i>{{ sub.package['name_' + locale] }}
+                  </div>
+                  {% endif %}
                 </div>
-                <span class="badge-neon text-xs">Active</span>
+                <span class="badge badge-neon text-xs flex-shrink-0">Active</span>
               </div>
-              <div class="text-gray-500 text-xs">
-                {{ sub.billing_cycle.value | capitalize }} —
-                {% if locale == 'id' %}Tagihan berikutnya{% else %}Next billing{% endif %}:
-                {{ sub.next_billing_date.strftime('%d %b %Y') }}
+              <div class="flex items-center gap-3 text-xs text-gray-500">
+                <span><i class="bi bi-arrow-repeat mr-1"></i>{{ sub.billing_cycle.value | capitalize }}</span>
+                <span>·</span>
+                <span>
+                  {% if locale == 'id' %}Tagihan{% else %}Next billing{% endif %}:
+                  <span class="text-gray-300 ml-1">{{ sub.next_billing_date.strftime('%d %b %Y') }}</span>
+                </span>
               </div>
             </div>
             {% endfor %}
           {% else %}
-            <div class="card p-8 text-center text-gray-600 text-sm">
-              {% if locale == 'id' %}Tidak ada langganan aktif.{% else %}No active subscriptions.{% endif %}
+            <div class="border border-gray-800 py-10 text-center">
+              <p class="text-gray-600 text-xs mb-3">{{ t(locale, 'dashboard_no_subs') }}</p>
+              <a href="/{{ locale }}/catalog?pricing=subscription" class="text-neon text-xs hover:underline">
+                {% if locale == 'id' %}Lihat produk berlangganan{% else %}Browse subscription products{% endif %} →
+              </a>
             </div>
           {% endif %}
         </div>
       </div>
     </div>
 
-    <!-- Recent invoices -->
+    {# ── Recent invoices ───────────────────────────────────────────────────── #}
     {% if recent_invoices %}
-    <div class="mt-8">
-      <div class="flex items-center justify-between mb-4">
-        <h2 class="text-sm font-semibold text-white">
-          {% if locale == 'id' %}Invoice Terbaru{% else %}Recent Invoices{% endif %}
-        </h2>
+    <div class="mt-6">
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="text-sm font-semibold text-white">{{ t(locale, 'dashboard_recent_invoices') }}</h2>
         <a href="/{{ locale }}/dashboard/invoices" class="text-xs text-neon hover:underline">
-          {% if locale == 'id' %}Lihat Semua{% else %}View All{% endif %}
+          {{ t(locale, 'dashboard_view_all') }} →
         </a>
       </div>
       <div class="border border-gray-800 overflow-x-auto">
-        <table class="w-full text-sm min-w-[500px]">
+        <table class="w-full text-xs min-w-[480px]">
           <thead class="bg-gray-950 border-b border-gray-800">
             <tr>
-              <th class="text-left px-4 py-3 text-xs text-gray-500 font-semibold uppercase">Invoice #</th>
-              <th class="text-left px-4 py-3 text-xs text-gray-500 font-semibold uppercase">Amount</th>
-              <th class="text-left px-4 py-3 text-xs text-gray-500 font-semibold uppercase">Status</th>
-              <th class="text-left px-4 py-3 text-xs text-gray-500 font-semibold uppercase">Tanggal</th>
-              <th class="px-4 py-3"></th>
+              <th class="text-left px-4 py-2.5 text-gray-500 font-semibold uppercase tracking-wide">{{ t(locale, 'invoice_number') }}</th>
+              <th class="text-left px-4 py-2.5 text-gray-500 font-semibold uppercase tracking-wide">{{ t(locale, 'invoice_amount') }}</th>
+              <th class="text-left px-4 py-2.5 text-gray-500 font-semibold uppercase tracking-wide">{{ t(locale, 'invoice_status') }}</th>
+              <th class="text-left px-4 py-2.5 text-gray-500 font-semibold uppercase tracking-wide">{{ t(locale, 'invoice_date') }}</th>
+              <th class="px-4 py-2.5"></th>
             </tr>
           </thead>
           <tbody class="divide-y divide-gray-800">
             {% for inv in recent_invoices %}
             <tr class="hover:bg-gray-900/50">
-              <td class="px-4 py-3 font-mono text-xs text-gray-400">{{ inv.invoice_number }}</td>
-              <td class="px-4 py-3 text-white text-xs font-medium">Rp {{ "{:,.0f}".format(inv.amount) }}</td>
+              <td class="px-4 py-3 font-mono text-gray-400">{{ inv.invoice_number }}</td>
+              <td class="px-4 py-3 text-white font-medium">Rp {{ "{:,.0f}".format(inv.amount) }}</td>
               <td class="px-4 py-3">
                 {% set sc = {'paid':'bg-green-950 text-green-400 border-green-800','unpaid':'bg-yellow-950 text-yellow-400 border-yellow-800','overdue':'bg-red-950 text-red-400 border-red-800'} %}
-                <span class="badge text-xs {{ sc.get(inv.status.value, 'bg-gray-800 text-gray-400 border-gray-700') }}">{{ inv.status.value }}</span>
+                <span class="badge {{ sc.get(inv.status.value, 'bg-gray-800 text-gray-400 border-gray-700') }}">{{ inv.status.value }}</span>
               </td>
-              <td class="px-4 py-3 text-gray-500 text-xs">{{ inv.created_at.strftime('%d %b %Y') }}</td>
+              <td class="px-4 py-3 text-gray-500">{{ inv.created_at.strftime('%d %b %Y') }}</td>
               <td class="px-4 py-3">
                 {% if inv.pdf_path %}
                 <a href="/{{ locale }}/dashboard/invoices/{{ inv.id }}/download"
-                   class="text-xs text-neon hover:underline">PDF</a>
+                   class="text-neon hover:underline whitespace-nowrap">PDF</a>
                 {% endif %}
               </td>
             </tr>
@@ -174,6 +277,13 @@
       </div>
     </div>
     {% endif %}
+
+    {# ── Mobile logout ─────────────────────────────────────────────────────── #}
+    <div class="mt-8 sm:hidden">
+      <a href="/auth/logout" class="btn-secondary text-xs py-2.5 w-full text-center block">
+        {{ t(locale, 'nav_logout') }}
+      </a>
+    </div>
 
   </div>
 </section>

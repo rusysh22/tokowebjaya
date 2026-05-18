@@ -1,50 +1,103 @@
 {% extends "base.html" %}
 {% block title %}{{ t(locale, 'dashboard_invoices') }} — Toko Web Jaya{% endblock %}
 {% block content %}
-<section class="bg-black min-h-[calc(100vh-4rem)] pt-24 pb-16">
+<section class="bg-black min-h-[calc(100vh-4rem)] pt-20 pb-16">
   <div class="container-main">
-    <h1 class="heading-md text-white mb-8">{{ t(locale, 'dashboard_invoices') }}</h1>
+    <h1 class="heading-md text-white mb-6">{{ t(locale, 'dashboard_invoices') }}</h1>
     {% include "dashboard/_tabs.html" %}
-    <div class="border border-gray-800">
-      <div class="overflow-x-auto">
-        <table class="w-full text-sm min-w-[560px]">
-          <thead class="bg-gray-950 border-b border-gray-800">
-            <tr>
-              {% for col in ['Invoice #', 'Amount', 'Status', 'Due Date', 'Tanggal' if locale=='id' else 'Date', ''] %}
-              <th class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">{{ col }}</th>
-              {% endfor %}
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-gray-800">
-            {% if invoices %}
-              {% for inv in invoices %}
-              <tr class="hover:bg-gray-900/50">
-                <td class="px-4 py-3 font-mono text-xs text-gray-400">{{ inv.invoice_number }}</td>
-                <td class="px-4 py-3 text-xs font-medium text-white">Rp {{ "{:,.0f}".format(inv.amount) }}</td>
-                <td class="px-4 py-3">
-                  {% set sc={'paid':'bg-green-950 text-green-400 border-green-800','unpaid':'bg-yellow-950 text-yellow-400 border-yellow-800','overdue':'bg-red-950 text-red-400 border-red-800'} %}
-                  <span class="badge text-xs {{ sc.get(inv.status.value,'bg-gray-800 text-gray-400 border-gray-700') }}">{{ inv.status.value }}</span>
-                </td>
-                <td class="px-4 py-3 text-xs text-gray-500">{{ inv.due_date.strftime('%d %b %Y') }}</td>
-                <td class="px-4 py-3 text-xs text-gray-500">{{ inv.created_at.strftime('%d %b %Y') }}</td>
-                <td class="px-4 py-3">
-                  <a href="/{{ locale }}/dashboard/invoices/{{ inv.id }}/download"
-                     class="inline-flex items-center gap-1 text-xs text-neon hover:underline whitespace-nowrap">
-                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
-                    </svg>
-                    {% if locale == 'id' %}Unduh PDF{% else %}Download PDF{% endif %}
-                  </a>
-                </td>
-              </tr>
-              {% endfor %}
-            {% else %}
-              <tr><td colspan="6" class="px-4 py-16 text-center text-gray-600 text-sm">{% if locale=='id' %}Belum ada invoice.{% else %}No invoices yet.{% endif %}</td></tr>
-            {% endif %}
-          </tbody>
-        </table>
+
+    {% if invoices %}
+
+    {# Mobile: cards #}
+    <div class="sm:hidden space-y-3">
+      {% for inv in invoices %}
+      <div class="border border-gray-800 bg-gray-950 p-4">
+        <div class="flex items-start justify-between gap-3 mb-3">
+          <div>
+            <div class="text-white text-xs font-semibold font-mono">{{ inv.invoice_number }}</div>
+            <div class="text-gray-500 text-xs mt-0.5">{{ inv.created_at.strftime('%d %b %Y') }}</div>
+          </div>
+          <div class="text-right">
+            <div class="text-white font-bold text-sm">Rp {{ "{:,.0f}".format(inv.amount) }}</div>
+            {% set sc={'paid':'text-green-400','unpaid':'text-yellow-400','overdue':'text-red-400'} %}
+            <div class="text-xs {{ sc.get(inv.status.value, 'text-gray-400') }}">{{ inv.status.value }}</div>
+          </div>
+        </div>
+        {% if inv.pdf_path %}
+        <a href="/{{ locale }}/dashboard/invoices/{{ inv.id }}/download"
+           class="inline-flex items-center gap-1.5 text-xs border border-neon/40 text-neon px-3 py-1.5 hover:bg-neon/10 transition-colors">
+          <i class="bi bi-download"></i> {{ t(locale, 'invoice_download') }}
+        </a>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+
+    {# Desktop: table #}
+    <div class="hidden sm:block border border-gray-800 overflow-x-auto">
+      <table class="w-full text-sm min-w-[560px]">
+        <thead class="bg-gray-950 border-b border-gray-800">
+          <tr>
+            <th class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">{{ t(locale, 'invoice_number') }}</th>
+            <th class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">{{ t(locale, 'invoice_amount') }}</th>
+            <th class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">{{ t(locale, 'invoice_status') }}</th>
+            <th class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">{{ t(locale, 'invoice_due') }}</th>
+            <th class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">{{ t(locale, 'invoice_date') }}</th>
+            <th class="px-4 py-3"></th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-800">
+          {% for inv in invoices %}
+          <tr class="hover:bg-gray-900/50">
+            <td class="px-4 py-3 font-mono text-xs text-gray-400">{{ inv.invoice_number }}</td>
+            <td class="px-4 py-3 text-xs font-medium text-white">Rp {{ "{:,.0f}".format(inv.amount) }}</td>
+            <td class="px-4 py-3">
+              {% set sc={'paid':'bg-green-950 text-green-400 border-green-800','unpaid':'bg-yellow-950 text-yellow-400 border-yellow-800','overdue':'bg-red-950 text-red-400 border-red-800'} %}
+              <span class="badge text-xs {{ sc.get(inv.status.value,'bg-gray-800 text-gray-400 border-gray-700') }}">{{ inv.status.value }}</span>
+            </td>
+            <td class="px-4 py-3 text-xs text-gray-500">{{ inv.due_date.strftime('%d %b %Y') if inv.due_date else '—' }}</td>
+            <td class="px-4 py-3 text-xs text-gray-500">{{ inv.created_at.strftime('%d %b %Y') }}</td>
+            <td class="px-4 py-3">
+              {% if inv.pdf_path %}
+              <a href="/{{ locale }}/dashboard/invoices/{{ inv.id }}/download"
+                 class="inline-flex items-center gap-1 text-xs text-neon hover:underline whitespace-nowrap">
+                <i class="bi bi-download"></i> PDF
+              </a>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    {# Pagination #}
+    {% if total > per_page %}
+    {% set total_pages = (total / per_page) | round(0, 'ceil') | int %}
+    <div class="flex items-center justify-between mt-4 text-xs text-gray-500">
+      <span>
+        {% if locale == 'id' %}Menampilkan{% else %}Showing{% endif %}
+        {{ [(page - 1) * per_page + 1, total] | min }}–{{ [page * per_page, total] | min }}
+        {% if locale == 'id' %}dari{% else %}of{% endif %} {{ total }}
+      </span>
+      <div class="flex gap-2">
+        {% if page > 1 %}
+        <a href="?page={{ page - 1 }}" class="border border-gray-700 px-3 py-1.5 hover:border-gray-500 hover:text-white transition-colors">←</a>
+        {% endif %}
+        {% if page < total_pages %}
+        <a href="?page={{ page + 1 }}" class="border border-gray-700 px-3 py-1.5 hover:border-gray-500 hover:text-white transition-colors">→</a>
+        {% endif %}
       </div>
     </div>
+    {% endif %}
+
+    {% else %}
+    <div class="border border-gray-800 py-20 text-center">
+      <i class="bi bi-file-earmark-text text-4xl text-gray-700 block mb-4"></i>
+      <p class="text-gray-500 text-sm">{{ t(locale, 'invoice_no_invoices') }}</p>
+    </div>
+    {% endif %}
+
   </div>
 </section>
 {% endblock %}

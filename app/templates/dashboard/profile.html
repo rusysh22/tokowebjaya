@@ -1,0 +1,202 @@
+{% extends "base.html" %}
+{% block title %}{{ t(locale, 'dashboard_profile') }} — Toko Web Jaya{% endblock %}
+{% block content %}
+<section class="bg-black min-h-[calc(100vh-4rem)] pt-20 pb-16">
+  <div class="container-main max-w-2xl">
+    <h1 class="heading-md text-white mb-6">{{ t(locale, 'dashboard_profile') }}</h1>
+    {% include "dashboard/_tabs.html" %}
+
+    <div class="space-y-4">
+
+      {# ── Account info ─────────────────────────────────────────────────────── #}
+      <div class="border border-gray-800 bg-gray-950 p-5"
+           x-data="{ editing: false, name: '{{ current_user.name | replace("'", "\\'") }}', loading: false, msg: '', error: '' }">
+        <div class="flex items-center justify-between mb-4">
+          <p class="text-xs font-semibold text-gray-500 uppercase tracking-widest">
+            {% if locale == 'id' %}Informasi Akun{% else %}Account Info{% endif %}
+          </p>
+          <button @click="editing = !editing; msg = ''; error = ''"
+                  class="text-xs text-neon hover:underline">
+            <span x-show="!editing"><i class="bi bi-pencil mr-1"></i>{% if locale == 'id' %}Edit{% else %}Edit{% endif %}</span>
+            <span x-show="editing" x-cloak>{{ t(locale, 'cancel') }}</span>
+          </button>
+        </div>
+
+        {# Avatar + basic info #}
+        <div class="flex items-center gap-4 mb-4">
+          {% if current_user.avatar_url %}
+          <img src="{{ current_user.avatar_url }}" class="w-14 h-14 rounded-full ring-2 ring-gray-700" alt="" />
+          {% else %}
+          <div class="w-14 h-14 rounded-full bg-gray-800 flex items-center justify-center ring-2 ring-gray-700">
+            <span class="text-white font-bold text-xl">{{ current_user.name[0] | upper }}</span>
+          </div>
+          {% endif %}
+          <div>
+            <p class="text-white font-semibold" x-text="name">{{ current_user.name }}</p>
+            <p class="text-gray-500 text-xs">{{ current_user.email }}</p>
+            <p class="text-gray-600 text-xs mt-0.5 capitalize">
+              <i class="bi bi-{% if current_user.auth_provider.value == 'google' %}google{% else %}envelope{% endif %} mr-1"></i>
+              {{ current_user.auth_provider.value | capitalize }}
+            </p>
+          </div>
+        </div>
+
+        {# Edit name form #}
+        <div x-show="editing" x-cloak
+             x-transition:enter="transition ease-out duration-150"
+             x-transition:enter-start="opacity-0"
+             x-transition:enter-end="opacity-100">
+          <label class="block text-xs text-gray-500 mb-1.5">
+            {% if locale == 'id' %}Nama Lengkap{% else %}Full Name{% endif %}
+          </label>
+          <div class="flex gap-2">
+            <input x-model="name" type="text" maxlength="255"
+                   class="flex-1 bg-black border border-gray-700 text-white text-sm px-3 py-2 focus:outline-none focus:border-gray-500" />
+            <button @click="
+              if (!name.trim() || name.length < 2) { error = '{% if locale == 'id' %}Nama terlalu pendek.{% else %}Name is too short.{% endif %}'; return; }
+              loading = true; error = ''; msg = '';
+              fetch('/{{ locale }}/dashboard/profile/update-name', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({name: name.trim()})
+              }).then(r => r.json()).then(d => {
+                loading = false;
+                if (d.status === 'ok') {
+                  msg = '{{ t(locale, 'success_saved') }}';
+                  editing = false;
+                } else {
+                  error = d.detail || '{{ t(locale, 'error_generic') }}';
+                }
+              }).catch(() => { loading = false; error = '{{ t(locale, 'error_generic') }}'; })"
+              :disabled="loading"
+              class="text-xs bg-neon text-black font-semibold px-4 py-2 hover:opacity-90 transition-opacity disabled:opacity-40 whitespace-nowrap">
+              {{ t(locale, 'save') }}
+            </button>
+          </div>
+          <p x-show="error" x-cloak class="text-red-400 text-xs mt-1.5" x-text="error"></p>
+        </div>
+        <p x-show="msg" x-cloak class="text-green-400 text-xs flex items-center gap-1.5">
+          <i class="bi bi-check-lg"></i><span x-text="msg"></span>
+        </p>
+      </div>
+
+      {# ── Change password (email accounts only) ────────────────────────────── #}
+      {% if current_user.auth_provider.value == 'email' %}
+      <div class="border border-gray-800 bg-gray-950 p-5"
+           x-data="{ open: false, current: '', newpw: '', confirm: '', loading: false, msg: '', error: '' }">
+        <div class="flex items-center justify-between">
+          <p class="text-xs font-semibold text-gray-500 uppercase tracking-widest">
+            {% if locale == 'id' %}Ubah Password{% else %}Change Password{% endif %}
+          </p>
+          <button @click="open = !open; error = ''; msg = ''"
+                  class="text-xs text-gray-400 hover:text-white transition-colors">
+            <span x-show="!open"><i class="bi bi-chevron-down"></i></span>
+            <span x-show="open" x-cloak><i class="bi bi-chevron-up"></i></span>
+          </button>
+        </div>
+        <div x-show="open" x-cloak
+             x-transition:enter="transition ease-out duration-150"
+             x-transition:enter-start="opacity-0"
+             x-transition:enter-end="opacity-100"
+             class="mt-4 space-y-3">
+          <div>
+            <label class="block text-xs text-gray-500 mb-1.5">
+              {% if locale == 'id' %}Password Saat Ini{% else %}Current Password{% endif %}
+            </label>
+            <input x-model="current" type="password"
+                   class="w-full bg-black border border-gray-700 text-white text-sm px-3 py-2 focus:outline-none focus:border-gray-500" />
+          </div>
+          <div>
+            <label class="block text-xs text-gray-500 mb-1.5">
+              {% if locale == 'id' %}Password Baru{% else %}New Password{% endif %}
+            </label>
+            <input x-model="newpw" type="password" minlength="8"
+                   class="w-full bg-black border border-gray-700 text-white text-sm px-3 py-2 focus:outline-none focus:border-gray-500" />
+          </div>
+          <div>
+            <label class="block text-xs text-gray-500 mb-1.5">
+              {% if locale == 'id' %}Konfirmasi Password Baru{% else %}Confirm New Password{% endif %}
+            </label>
+            <input x-model="confirm" type="password"
+                   class="w-full bg-black border border-gray-700 text-white text-sm px-3 py-2 focus:outline-none focus:border-gray-500" />
+          </div>
+          <p x-show="error" x-cloak class="text-red-400 text-xs" x-text="error"></p>
+          <p x-show="msg" x-cloak class="text-green-400 text-xs flex items-center gap-1.5">
+            <i class="bi bi-check-lg"></i><span x-text="msg"></span>
+          </p>
+          <button @click="
+            if (!current) { error = '{% if locale == 'id' %}Masukkan password saat ini.{% else %}Enter your current password.{% endif %}'; return; }
+            if (newpw.length < 8) { error = '{% if locale == 'id' %}Password baru min 8 karakter.{% else %}New password min 8 characters.{% endif %}'; return; }
+            if (newpw !== confirm) { error = '{% if locale == 'id' %}Konfirmasi password tidak cocok.{% else %}Passwords do not match.{% endif %}'; return; }
+            loading = true; error = ''; msg = '';
+            fetch('/{{ locale }}/dashboard/profile/update-password', {
+              method: 'POST',
+              headers: {'Content-Type': 'application/json'},
+              body: JSON.stringify({current_password: current, new_password: newpw})
+            }).then(r => r.json()).then(d => {
+              loading = false;
+              if (d.status === 'ok') {
+                msg = '{% if locale == 'id' %}Password berhasil diubah!{% else %}Password changed successfully!{% endif %}';
+                current = ''; newpw = ''; confirm = ''; open = false;
+              } else {
+                error = d.detail || '{{ t(locale, 'error_generic') }}';
+              }
+            }).catch(() => { loading = false; error = '{{ t(locale, 'error_generic') }}'; })"
+            :disabled="loading"
+            class="text-xs bg-neon text-black font-semibold px-4 py-2 hover:opacity-90 transition-opacity disabled:opacity-40">
+            {% if locale == 'id' %}Ubah Password{% else %}Update Password{% endif %}
+          </button>
+        </div>
+      </div>
+      {% else %}
+      <div class="border border-gray-800 bg-gray-950 px-5 py-4 text-xs text-gray-600">
+        <i class="bi bi-{% if current_user.auth_provider.value == 'google' %}google{% else %}shield-lock{% endif %} mr-2"></i>
+        {% if locale == 'id' %}
+          Password dikelola oleh {{ current_user.auth_provider.value | capitalize }}. Login melalui OAuth tidak mendukung perubahan password di sini.
+        {% else %}
+          Password is managed by {{ current_user.auth_provider.value | capitalize }}. OAuth accounts don't support password changes here.
+        {% endif %}
+      </div>
+      {% endif %}
+
+      {# ── Account details ───────────────────────────────────────────────────── #}
+      <div class="border border-gray-800 bg-gray-950 p-5">
+        <p class="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-4">
+          {% if locale == 'id' %}Detail Akun{% else %}Account Details{% endif %}
+        </p>
+        <div class="space-y-2.5 text-sm">
+          <div class="flex justify-between">
+            <span class="text-gray-500">Email</span>
+            <span class="text-gray-300">{{ current_user.email }}</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-gray-500">{% if locale == 'id' %}Status{% else %}Status{% endif %}</span>
+            <span class="text-green-400 capitalize">{{ current_user.status.value }}</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-gray-500">{% if locale == 'id' %}Bergabung{% else %}Joined{% endif %}</span>
+            <span class="text-gray-400">{{ current_user.created_at.strftime('%d %B %Y') }}</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-gray-500">{% if locale == 'id' %}Login via{% else %}Auth via{% endif %}</span>
+            <span class="text-gray-400 capitalize">{{ current_user.auth_provider.value }}</span>
+          </div>
+        </div>
+      </div>
+
+      {# ── Danger zone ───────────────────────────────────────────────────────── #}
+      <div class="border border-gray-800 bg-gray-950 px-5 py-4">
+        <p class="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-3">
+          {% if locale == 'id' %}Lainnya{% else %}Other{% endif %}
+        </p>
+        <a href="/auth/logout"
+           class="inline-flex items-center gap-1.5 text-xs text-red-400 border border-red-900 px-4 py-2 hover:bg-red-950/30 transition-colors">
+          <i class="bi bi-box-arrow-right"></i>
+          {{ t(locale, 'nav_logout') }}
+        </a>
+      </div>
+
+    </div>
+  </div>
+</section>
+{% endblock %}

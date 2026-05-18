@@ -63,6 +63,10 @@ async def dashboard(request: Request, locale: str, db: Session = Depends(get_db)
         return RedirectResponse(url=f"/{locale}/admin")
 
     from app.main import templates
+    from app.models.order import OrderStatus
+    from app.models.license import ProductLicense
+    from app.models.refund import Refund, RefundStatus
+    from datetime import datetime, timedelta
 
     recent_orders = (
         db.query(Order).filter(Order.user_id == user.id)
@@ -81,6 +85,50 @@ async def dashboard(request: Request, locale: str, db: Session = Depends(get_db)
         .order_by(desc(Invoice.created_at)).limit(5).all()
     )
 
+    # "Needs Attention" items
+    pending_orders = (
+        db.query(Order).filter(
+            Order.user_id == user.id,
+            Order.status == OrderStatus.pending,
+        ).order_by(desc(Order.created_at)).limit(3).all()
+    )
+    failed_orders = (
+        db.query(Order).filter(
+            Order.user_id == user.id,
+            Order.status == OrderStatus.failed,
+        ).order_by(desc(Order.created_at)).limit(3).all()
+    )
+    expiring_soon = []
+    try:
+        all_licenses = db.query(ProductLicense).filter(
+            ProductLicense.user_id == user.id,
+            ProductLicense.is_active == True,
+        ).all()
+        expiring_soon = [
+            lic for lic in all_licenses
+            if lic.days_until_expiry is not None and 0 <= lic.days_until_expiry <= 7
+        ]
+    except Exception:
+        pass
+    pending_refunds = []
+    try:
+        from app.models.refund import Refund, RefundStatus
+        pending_refunds = db.query(Refund).filter(
+            Refund.user_id == user.id,
+            Refund.status == RefundStatus.pending,
+        ).all()
+    except Exception:
+        pass
+
+    total_orders = db.query(Order).filter(Order.user_id == user.id).count()
+    total_spent = sum(
+        int(o.final_amount or o.amount or 0)
+        for o in db.query(Order).filter(
+            Order.user_id == user.id,
+            Order.status == OrderStatus.paid,
+        ).all()
+    )
+
     return templates.TemplateResponse(
         request, "dashboard/index.html",
         {
@@ -90,6 +138,12 @@ async def dashboard(request: Request, locale: str, db: Session = Depends(get_db)
             "recent_orders": recent_orders,
             "active_subs": active_subs,
             "recent_invoices": recent_invoices,
+            "pending_orders": pending_orders,
+            "failed_orders": failed_orders,
+            "expiring_soon": expiring_soon,
+            "pending_refunds": pending_refunds,
+            "total_orders": total_orders,
+            "total_spent": total_spent,
         },
     )
 
@@ -129,6 +183,83 @@ async def dashboard_invoices(request: Request, locale: str, page: int = 1, db: S
     return templates.TemplateResponse(
         request, "dashboard/invoices.html",
         {"locale": locale, "current_user": user, "invoices": invoices, "total": total, "page": page, "per_page": per_page},
+    )
+
+
+@router.get("/{locale}/dashboard/orders/{order_id}")
+async def order_detail(request: Request, locale: str, order_id: str, db: Session = Depends(get_db)):
+    """Unified purchase hub — shows full order context, timeline, license, refund status."""
+    redirect, user = _require_user(request, db)
+    if redirect:
+        return redirect
+
+    order = db.query(Order).filter(Order.id == order_id, Order.user_id == user.id).first()
+    if not order:
+        raise HTTPException(status_code=404)
+
+    invoice = db.query(Invoice).filter(Invoice.order_id == order_id).first()
+
+    # Order events (timeline)
+    events = []
+    try:
+        from app.models.order_event import OrderEvent
+        events = (
+            db.query(OrderEvent)
+            .filter(OrderEvent.order_id == order_id)
+            .order_by(OrderEvent.created_at)
+            .all()
+        )
+    except Exception:
+        pass
+
+    # License
+    license_obj = None
+    download_url = None
+    try:
+        from app.models.license import ProductLicense
+        from app.services.license import get_signed_download_url
+        license_obj = db.query(ProductLicense).filter(
+            ProductLicense.order_id == order_id
+        ).first()
+        if license_obj and license_obj.license_type == "download" and license_obj.license_file_path:
+            try:
+                download_url = get_signed_download_url(license_obj.license_file_path)
+            except Exception:
+                pass
+    except Exception:
+        pass
+
+    # Refund(s)
+    refunds = []
+    try:
+        from app.models.refund import Refund
+        refunds = db.query(Refund).filter(Refund.order_id == order_id).order_by(desc(Refund.created_at)).all()
+    except Exception:
+        pass
+
+    # Subscription linked to this order
+    from app.models.subscription import Subscription, SubscriptionStatus
+    linked_sub = None
+    if order.type and order.type.value == "subscription":
+        linked_sub = db.query(Subscription).filter(
+            Subscription.user_id == user.id,
+            Subscription.product_id == order.product_id,
+        ).order_by(desc(Subscription.started_at)).first()
+
+    from app.main import templates
+    return templates.TemplateResponse(
+        request, "dashboard/order_detail.html",
+        {
+            "locale": locale,
+            "current_user": user,
+            "order": order,
+            "invoice": invoice,
+            "events": events,
+            "license_obj": license_obj,
+            "download_url": download_url,
+            "refunds": refunds,
+            "linked_sub": linked_sub,
+        },
     )
 
 
@@ -216,6 +347,81 @@ async def dashboard_subscriptions(request: Request, locale: str, db: Session = D
         request, "dashboard/subscriptions.html",
         {"locale": locale, "current_user": user, "subscriptions": subs, "sub_packages": sub_packages},
     )
+
+
+@router.get("/{locale}/dashboard/profile")
+async def dashboard_profile(request: Request, locale: str, db: Session = Depends(get_db)):
+    redirect, user = _require_user(request, db)
+    if redirect:
+        return redirect
+    from app.main import templates
+    return templates.TemplateResponse(
+        request, "dashboard/profile.html",
+        {"locale": locale, "current_user": user, "active_page": "dashboard"},
+    )
+
+
+@router.post("/{locale}/dashboard/profile/update-name")
+async def dashboard_update_name(request: Request, locale: str, db: Session = Depends(get_db)):
+    from fastapi.responses import JSONResponse
+    redirect, user = _require_user(request, db)
+    if redirect:
+        return JSONResponse({"detail": "Login required"}, status_code=401)
+
+    try:
+        body = await request.json()
+        name = str(body.get("name", "")).strip()
+    except Exception:
+        return JSONResponse({"detail": "Invalid request"}, status_code=400)
+
+    if len(name) < 2:
+        detail = "Nama terlalu pendek." if locale == "id" else "Name is too short."
+        return JSONResponse({"detail": detail}, status_code=400)
+    if len(name) > 255:
+        detail = "Nama terlalu panjang." if locale == "id" else "Name is too long."
+        return JSONResponse({"detail": detail}, status_code=400)
+
+    user.name = name
+    db.commit()
+    return JSONResponse({"status": "ok", "name": name})
+
+
+@router.post("/{locale}/dashboard/profile/update-password")
+async def dashboard_update_password(request: Request, locale: str, db: Session = Depends(get_db)):
+    from fastapi.responses import JSONResponse
+    from app.models.user import AuthProvider
+    redirect, user = _require_user(request, db)
+    if redirect:
+        return JSONResponse({"detail": "Login required"}, status_code=401)
+
+    if user.auth_provider != AuthProvider.email:
+        detail = "Password hanya bisa diubah untuk akun email." if locale == "id" else "Password can only be changed for email accounts."
+        return JSONResponse({"detail": detail}, status_code=400)
+
+    try:
+        body = await request.json()
+        current_pw = str(body.get("current_password", ""))
+        new_pw = str(body.get("new_password", ""))
+    except Exception:
+        return JSONResponse({"detail": "Invalid request"}, status_code=400)
+
+    if len(new_pw) < 8:
+        detail = "Password baru minimal 8 karakter." if locale == "id" else "New password must be at least 8 characters."
+        return JSONResponse({"detail": detail}, status_code=400)
+
+    # Verify current password
+    try:
+        from app.core.security import verify_password, hash_password
+        if not verify_password(current_pw, user.password_hash):
+            detail = "Password saat ini salah." if locale == "id" else "Current password is incorrect."
+            return JSONResponse({"detail": detail}, status_code=400)
+        user.password_hash = hash_password(new_pw)
+        db.commit()
+    except Exception as e:
+        logger.error(f"[profile] password update failed: {e}")
+        return JSONResponse({"detail": "Error updating password."}, status_code=500)
+
+    return JSONResponse({"status": "ok"})
 
 
 @router.get("/{locale}/dashboard/api-keys")
@@ -390,3 +596,103 @@ async def cancel_subscription_change(
     sub.scheduled_package_id = None
     db.commit()
     return JSONResponse({"status": "cancelled"})
+
+
+# ─── Refund: customer request ─────────────────────────────────────────────────
+
+@router.post("/{locale}/dashboard/orders/{order_id}/request-refund")
+async def request_refund(
+    request: Request, locale: str, order_id: str,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+):
+    """AJAX — customer submits a refund request for a paid order."""
+    from fastapi.responses import JSONResponse
+    from app.models.order import OrderStatus
+    from app.models.refund import Refund, RefundStatus
+
+    redirect, user = _require_user(request, db)
+    if redirect:
+        return JSONResponse({"detail": "Login required"}, status_code=401)
+
+    try:
+        body = await request.json()
+    except Exception:
+        return JSONResponse({"detail": "Invalid request"}, status_code=400)
+
+    reason = str(body.get("reason", "")).strip()
+    if len(reason) < 10:
+        return JSONResponse({"detail": "Reason too short (min 10 characters)"}, status_code=400)
+
+    order = db.query(Order).filter(Order.id == order_id, Order.user_id == user.id).first()
+    if not order:
+        return JSONResponse({"detail": "Order not found"}, status_code=404)
+
+    if order.status != OrderStatus.paid:
+        detail = "Permintaan refund hanya untuk pesanan yang sudah dibayar." if locale == "id" else "Refund only available for paid orders."
+        return JSONResponse({"detail": detail}, status_code=400)
+
+    # Prevent duplicate pending/approved refunds
+    existing = db.query(Refund).filter(
+        Refund.order_id == order_id,
+        Refund.status.in_([RefundStatus.pending, RefundStatus.approved]),
+    ).first()
+    if existing:
+        detail = "Permintaan refund sudah diajukan." if locale == "id" else "A refund request is already pending."
+        return JSONResponse({"detail": detail, "status": "duplicate"}, status_code=400)
+
+    refund = Refund(
+        order_id=order.id,
+        user_id=user.id,
+        amount=int(order.final_amount or order.amount),
+        reason=reason,
+        status=RefundStatus.pending,
+    )
+    db.add(refund)
+    db.commit()
+    db.refresh(refund)
+
+    # Log event
+    try:
+        from app.services import order_events as ev
+        ev.log_refund_requested(db, order, refund.id, refund.amount, actor_id=user.id)
+    except Exception:
+        pass
+
+    # Notify customer
+    try:
+        from app.services.notification import notify_refund_requested
+        notify_refund_requested(db, refund, order, locale)
+    except Exception:
+        pass
+
+    # Email admin
+    def _email_admin_refund():
+        try:
+            import smtplib
+            from email.mime.text import MIMEText
+            from email.mime.multipart import MIMEMultipart
+            from app.core.config import settings as s
+            product_name = order.product.name_id if order.product else str(order.product_id)
+            msg = MIMEMultipart()
+            msg["From"] = s.SMTP_FROM
+            msg["To"] = s.SMTP_FROM
+            msg["Subject"] = f"[Refund Request] {order.order_number} — Rp {refund.amount:,.0f}"
+            body_text = (
+                f"Order: {order.order_number}\n"
+                f"Produk: {product_name}\n"
+                f"Customer: {user.name} ({user.email})\n"
+                f"Amount: Rp {refund.amount:,.0f}\n\n"
+                f"Alasan:\n{reason}\n\n"
+                f"Review: /{locale}/admin/refunds"
+            )
+            msg.attach(MIMEText(body_text, "plain"))
+            with smtplib.SMTP_SSL(s.SMTP_HOST, s.SMTP_PORT) as smtp:
+                smtp.login(s.SMTP_USER, s.SMTP_PASSWORD)
+                smtp.send_message(msg)
+        except Exception as e:
+            logger.error(f"[refund] admin email failed: {e}")
+
+    background_tasks.add_task(_email_admin_refund)
+
+    return JSONResponse({"status": "submitted", "refund_id": str(refund.id)})

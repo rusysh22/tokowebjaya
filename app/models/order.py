@@ -13,11 +13,12 @@ class OrderType(str, enum.Enum):
 
 
 class OrderStatus(str, enum.Enum):
-    pending = "pending"
-    paid = "paid"
-    failed = "failed"
-    cancelled = "cancelled"
-    refunded = "refunded"
+    pending             = "pending"
+    paid                = "paid"
+    failed              = "failed"
+    cancelled           = "cancelled"
+    refunded            = "refunded"
+    partially_refunded  = "partially_refunded"
 
 
 class PaymentGateway(str, enum.Enum):
@@ -65,3 +66,5 @@ class Order(Base):
     package       = relationship("ProductPackage", foreign_keys=[package_id])
     package_price = relationship("PackagePrice",   foreign_keys=[package_price_id])
     invoice       = relationship("Invoice",        back_populates="order", uselist=False)
+    events        = relationship("OrderEvent",     back_populates="order", order_by="OrderEvent.created_at", cascade="all, delete-orphan")
+    refunds       = relationship("Refund",         back_populates="order")

@@ -1323,6 +1323,262 @@ async def admin_package_prices_save(
     return {"ok": True}
 
 
+# ─── Refund Management ────────────────────────────────────────────────────────
+
+@router.get("/{locale}/admin/refunds")
+async def admin_refunds(
+    request: Request, locale: str,
+    status: str = "pending",
+    page: int = 1,
+    db: Session = Depends(get_db),
+):
+    """Admin refund review queue."""
+    from app.models.refund import Refund, RefundStatus
+    admin = _require_admin(request, db)
+    from app.main import templates
+
+    per_page = 20
+    valid_statuses = [s.value for s in RefundStatus]
+    if status not in valid_statuses:
+        status = "pending"
+
+    q = db.query(Refund)
+    if status != "all":
+        q = q.filter(Refund.status == RefundStatus(status))
+    total = q.count()
+    refunds = q.order_by(desc(Refund.requested_at)).offset((page - 1) * per_page).limit(per_page).all()
+
+    return templates.TemplateResponse(
+        request, "admin/refunds.html",
+        {
+            "locale": locale,
+            "current_user": admin,
+            "active_page": "admin",
+            "admin_section": "refunds",
+            "refunds": refunds,
+            "status_filter": status,
+            "total": total,
+            "page": page,
+            "per_page": per_page,
+            "statuses": ["pending", "approved", "rejected", "processed", "failed", "all"],
+        },
+    )
+
+
+@router.post("/{locale}/admin/refunds/{refund_id}/approve")
+async def admin_approve_refund(
+    request: Request, locale: str, refund_id: str,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+):
+    """Approve a refund and notify customer."""
+    from app.models.refund import Refund, RefundStatus
+    admin = _require_admin(request, db)
+
+    refund = db.query(Refund).filter(Refund.id == refund_id).first()
+    if not refund:
+        return JSONResponse({"detail": "Refund not found"}, status_code=404)
+    if refund.status != RefundStatus.pending:
+        return JSONResponse({"detail": "Only pending refunds can be approved"}, status_code=400)
+
+    try:
+        body = await request.json()
+        admin_note = str(body.get("admin_note", "")).strip()
+    except Exception:
+        admin_note = ""
+
+    refund.status = RefundStatus.approved
+    refund.reviewed_by = admin.id
+    refund.reviewed_at = datetime.utcnow()
+    refund.admin_note = admin_note or None
+    db.commit()
+
+    order = db.query(Order).filter(Order.id == refund.order_id).first()
+
+    try:
+        from app.services import order_events as ev
+        if order:
+            ev.log_refund_approved(db, order, refund.id, actor_id=admin.id)
+    except Exception:
+        pass
+
+    try:
+        from app.services.notification import notify_refund_approved
+        if order:
+            notify_refund_approved(db, refund, order, locale)
+    except Exception:
+        pass
+
+    def _email_approved():
+        try:
+            import smtplib
+            from email.mime.text import MIMEText
+            from email.mime.multipart import MIMEMultipart
+            from app.core.config import settings as s
+            from app.core.database import SessionLocal
+            with SessionLocal() as session:
+                r = session.query(Refund).filter(Refund.id == refund_id).first()
+                if not r:
+                    return
+                o = session.query(Order).filter(Order.id == r.order_id).first()
+                u = r.user
+                if not u:
+                    return
+                msg = MIMEMultipart()
+                msg["From"] = s.SMTP_FROM
+                msg["To"] = u.email
+                msg["Subject"] = f"Refund Disetujui — {o.order_number if o else ''}"
+                body_txt = (
+                    f"Halo {u.name},\n\n"
+                    f"Permintaan refund Rp {r.amount:,.0f} untuk pesanan {o.order_number if o else ''} telah disetujui.\n"
+                    f"Dana akan dikembalikan dalam 3–7 hari kerja ke metode pembayaran asal.\n\n"
+                    + (f"Catatan: {r.admin_note}\n\n" if r.admin_note else "")
+                    + "Terima kasih,\nToko Web Jaya"
+                )
+                msg.attach(MIMEText(body_txt, "plain"))
+                with smtplib.SMTP_SSL(s.SMTP_HOST, s.SMTP_PORT) as smtp:
+                    smtp.login(s.SMTP_USER, s.SMTP_PASSWORD)
+                    smtp.send_message(msg)
+        except Exception as e:
+            logger.error(f"[refund-approve] email failed: {e}")
+
+    background_tasks.add_task(_email_approved)
+    return JSONResponse({"status": "approved", "refund_id": refund_id})
+
+
+@router.post("/{locale}/admin/refunds/{refund_id}/reject")
+async def admin_reject_refund(
+    request: Request, locale: str, refund_id: str,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+):
+    """Reject a refund with a reason shown to the customer."""
+    from app.models.refund import Refund, RefundStatus
+    admin = _require_admin(request, db)
+
+    refund = db.query(Refund).filter(Refund.id == refund_id).first()
+    if not refund:
+        return JSONResponse({"detail": "Refund not found"}, status_code=404)
+    if refund.status != RefundStatus.pending:
+        return JSONResponse({"detail": "Only pending refunds can be rejected"}, status_code=400)
+
+    try:
+        body = await request.json()
+        rejection_reason = str(body.get("rejection_reason", "")).strip()
+        admin_note = str(body.get("admin_note", "")).strip()
+    except Exception:
+        rejection_reason = ""
+        admin_note = ""
+
+    if not rejection_reason:
+        return JSONResponse({"detail": "rejection_reason required"}, status_code=400)
+
+    refund.status = RefundStatus.rejected
+    refund.reviewed_by = admin.id
+    refund.reviewed_at = datetime.utcnow()
+    refund.rejection_reason = rejection_reason
+    refund.admin_note = admin_note or None
+    db.commit()
+
+    order = db.query(Order).filter(Order.id == refund.order_id).first()
+
+    try:
+        from app.services import order_events as ev
+        if order:
+            ev.log_refund_rejected(db, order, refund.id, reason=rejection_reason, actor_id=admin.id)
+    except Exception:
+        pass
+
+    try:
+        from app.services.notification import notify_refund_rejected
+        if order:
+            notify_refund_rejected(db, refund, order, locale)
+    except Exception:
+        pass
+
+    def _email_rejected():
+        try:
+            import smtplib
+            from email.mime.text import MIMEText
+            from email.mime.multipart import MIMEMultipart
+            from app.core.config import settings as s
+            from app.core.database import SessionLocal
+            with SessionLocal() as session:
+                r = session.query(Refund).filter(Refund.id == refund_id).first()
+                if not r:
+                    return
+                o = session.query(Order).filter(Order.id == r.order_id).first()
+                u = r.user
+                if not u:
+                    return
+                msg = MIMEMultipart()
+                msg["From"] = s.SMTP_FROM
+                msg["To"] = u.email
+                msg["Subject"] = f"Refund Tidak Disetujui — {o.order_number if o else ''}"
+                body_txt = (
+                    f"Halo {u.name},\n\n"
+                    f"Mohon maaf, permintaan refund untuk pesanan {o.order_number if o else ''} tidak dapat diproses.\n\n"
+                    f"Alasan: {r.rejection_reason}\n\n"
+                    f"Jika ada pertanyaan, silakan hubungi kami.\n\nToko Web Jaya"
+                )
+                msg.attach(MIMEText(body_txt, "plain"))
+                with smtplib.SMTP_SSL(s.SMTP_HOST, s.SMTP_PORT) as smtp:
+                    smtp.login(s.SMTP_USER, s.SMTP_PASSWORD)
+                    smtp.send_message(msg)
+        except Exception as e:
+            logger.error(f"[refund-reject] email failed: {e}")
+
+    background_tasks.add_task(_email_rejected)
+    return JSONResponse({"status": "rejected", "refund_id": refund_id})
+
+
+@router.post("/{locale}/admin/refunds/{refund_id}/mark-processed")
+async def admin_mark_refund_processed(
+    request: Request, locale: str, refund_id: str,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+):
+    """Mark an approved refund as processed (fund transferred to customer)."""
+    from app.models.refund import Refund, RefundStatus
+    admin = _require_admin(request, db)
+
+    refund = db.query(Refund).filter(Refund.id == refund_id).first()
+    if not refund:
+        return JSONResponse({"detail": "Refund not found"}, status_code=404)
+    if refund.status != RefundStatus.approved:
+        return JSONResponse({"detail": "Only approved refunds can be marked processed"}, status_code=400)
+
+    try:
+        body = await request.json()
+        gateway_refund_id = str(body.get("gateway_refund_id", "")).strip() or None
+    except Exception:
+        gateway_refund_id = None
+
+    refund.status = RefundStatus.processed
+    refund.processed_at = datetime.utcnow()
+    refund.gateway_refund_id = gateway_refund_id
+    db.commit()
+
+    order = db.query(Order).filter(Order.id == refund.order_id).first()
+    if order:
+        order.status = OrderStatus.refunded
+        db.commit()
+
+        try:
+            from app.services import order_events as ev
+            ev.log_refunded(db, order, refund.id, refund.amount)
+        except Exception:
+            pass
+
+        try:
+            from app.services.notification import notify_refund_processed
+            notify_refund_processed(db, refund, order, locale)
+        except Exception:
+            pass
+
+    return JSONResponse({"status": "processed", "refund_id": refund_id})
+
+
 # ─── Package Features ────────────────────────────────────────────────────────
 
 @router.post("/{locale}/admin/packages/{package_id}/features/save")

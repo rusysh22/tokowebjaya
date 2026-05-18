@@ -40,7 +40,8 @@ class User(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
-    orders = relationship("Order", back_populates="user")
+    orders        = relationship("Order",        back_populates="user")
     subscriptions = relationship("Subscription", back_populates="user")
-    api_keys = relationship("ApiKey", back_populates="user")
+    api_keys      = relationship("ApiKey",       back_populates="user")
     notifications = relationship("Notification", back_populates="user", order_by="Notification.created_at.desc()")
+    refunds       = relationship("Refund",       back_populates="user", foreign_keys="Refund.user_id")

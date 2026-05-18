@@ -1,0 +1,518 @@
+{% extends "base.html" %}
+{% block title %}
+  {% if locale == 'id' %}Detail Pesanan{% else %}Order Detail{% endif %}
+  {{ order.order_number }} — Toko Web Jaya
+{% endblock %}
+
+{% block content %}
+<section class="bg-black min-h-screen pt-20 pb-16">
+  <div class="container-main max-w-3xl">
+
+    {# ── Back nav ─────────────────────────────────────────────────────────── #}
+    <a href="/{{ locale }}/dashboard/orders"
+       class="inline-flex items-center gap-1.5 text-xs text-gray-500 hover:text-white transition-colors mb-6">
+      <i class="bi bi-arrow-left"></i>
+      {{ t(locale, 'back') }}{% if locale == 'id' %} ke Pesanan{% else %} to Orders{% endif %}
+    </a>
+
+    {# ── Header ───────────────────────────────────────────────────────────── #}
+    <div class="flex items-start justify-between gap-4 mb-6 flex-wrap">
+      <div>
+        <p class="text-xs text-gray-600 uppercase tracking-widest mb-1">
+          {% if locale == 'id' %}Pesanan{% else %}Order{% endif %}
+        </p>
+        <h1 class="text-xl sm:text-2xl font-bold text-white font-mono">{{ order.order_number }}</h1>
+        <p class="text-gray-500 text-xs mt-1">{{ order.created_at.strftime('%d %B %Y, %H:%M') }} UTC</p>
+      </div>
+      {% set sc_badge = {
+        'paid':               'bg-green-950 text-green-400 border-green-800',
+        'pending':            'bg-yellow-950 text-yellow-400 border-yellow-800',
+        'failed':             'bg-red-950 text-red-400 border-red-800',
+        'cancelled':          'bg-gray-800 text-gray-500 border-gray-700',
+        'refunded':           'bg-blue-950 text-blue-400 border-blue-800',
+        'partially_refunded': 'bg-purple-950 text-purple-400 border-purple-800',
+      } %}
+      <span class="badge {{ sc_badge.get(order.status.value, 'bg-gray-800 text-gray-400 border-gray-700') }} text-sm px-3 py-1">
+        {{ t(locale, 'status_' + order.status.value) }}
+      </span>
+    </div>
+
+    {# ── Action banners: pending / failed ─────────────────────────────────── #}
+    {% if order.status.value == 'pending' %}
+    <div class="border border-yellow-800/50 bg-yellow-950/10 px-4 py-3 flex items-center justify-between gap-3 mb-5">
+      <div>
+        <p class="text-yellow-400 text-sm font-semibold">
+          {% if locale == 'id' %}Menunggu Pembayaran{% else %}Payment Pending{% endif %}
+        </p>
+        {% if order.payment_expired_at %}
+        <p class="text-yellow-700 text-xs mt-0.5">
+          {% if locale == 'id' %}Kedaluwarsa{% else %}Expires{% endif %}
+          {{ order.payment_expired_at.strftime('%d %b %Y %H:%M') }} UTC
+        </p>
+        {% endif %}
+      </div>
+      <a href="/{{ locale }}/checkout/payment/{{ order.id }}"
+         class="flex-shrink-0 bg-yellow-400 text-black text-xs font-bold px-4 py-2 hover:bg-yellow-300 transition-colors whitespace-nowrap">
+        {{ t(locale, 'dashboard_continue_pay') }}
+      </a>
+    </div>
+    {% elif order.status.value == 'failed' %}
+    <div class="border border-red-800/50 bg-red-950/10 px-4 py-3 flex items-center justify-between gap-3 mb-5"
+         x-data="{ retrying: false }">
+      <div>
+        <p class="text-red-400 text-sm font-semibold">
+          {% if locale == 'id' %}Pembayaran Gagal{% else %}Payment Failed{% endif %}
+        </p>
+        <p class="text-red-700 text-xs mt-0.5">
+          {% if locale == 'id' %}Coba lagi dengan metode pembayaran berbeda.{% else %}Try again with a different payment method.{% endif %}
+        </p>
+      </div>
+      <a href="/{{ locale }}/checkout/{{ order.product_id }}{% if order.package_price_id %}?package_price_id={{ order.package_price_id }}{% elif order.type %}?type={{ order.type.value }}{% endif %}"
+         class="flex-shrink-0 border border-red-700 text-red-400 text-xs px-4 py-2 hover:bg-red-900/30 transition-colors whitespace-nowrap">
+        {{ t(locale, 'dashboard_retry_pay') }}
+      </a>
+    </div>
+    {% endif %}
+
+    <div class="space-y-4">
+
+      {# ── Product & package ────────────────────────────────────────────────── #}
+      <div class="border border-gray-800 bg-gray-950 p-4 sm:p-5">
+        <p class="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-4">
+          {% if locale == 'id' %}Produk{% else %}Product{% endif %}
+        </p>
+        <div class="flex items-start gap-4">
+          {% if order.product and order.product.cover_image %}
+          <img src="/static/uploads/products/images/{{ order.product.cover_image }}"
+               class="w-12 h-12 object-cover flex-shrink-0" alt="" />
+          {% else %}
+          <div class="w-12 h-12 bg-gray-800 flex items-center justify-center flex-shrink-0">
+            <i class="bi bi-box-seam text-gray-600 text-lg"></i>
+          </div>
+          {% endif %}
+          <div class="flex-1 min-w-0">
+            <p class="text-white font-semibold text-sm">{{ order.product['name_' + locale] if order.product else '—' }}</p>
+            {% if order.package %}
+            <div class="inline-flex items-center gap-1 text-neon text-xs mt-1 border border-neon/30 px-2 py-0.5">
+              <i class="bi bi-layers"></i> {{ order.package['name_' + locale] }}
+            </div>
+            {% endif %}
+            <p class="text-gray-500 text-xs mt-1.5 capitalize">
+              {{ order.type.value.replace('_', ' ') if order.type else '—' }}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {# ── Price breakdown ───────────────────────────────────────────────────── #}
+      <div class="border border-gray-800 bg-gray-950 p-4 sm:p-5">
+        <p class="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-4">
+          {% if locale == 'id' %}Rincian Pembayaran{% else %}Payment Breakdown{% endif %}
+        </p>
+        <div class="space-y-2 text-sm">
+          <div class="flex justify-between">
+            <span class="text-gray-500">{% if locale == 'id' %}Harga dasar{% else %}Base price{% endif %}</span>
+            <span class="text-gray-300">Rp {{ "{:,.0f}".format(order.amount) }}</span>
+          </div>
+          {% if order.discount_amount and order.discount_amount > 0 %}
+          <div class="flex justify-between">
+            <span class="text-gray-500">
+              {% if locale == 'id' %}Diskon{% else %}Discount{% endif %}
+              {% if order.promo_code %}<span class="text-neon text-xs ml-1">{{ order.promo_code }}</span>{% endif %}
+            </span>
+            <span class="text-green-400">− Rp {{ "{:,.0f}".format(order.discount_amount) }}</span>
+          </div>
+          {% endif %}
+          {% if order.final_amount and order.final_amount != order.amount %}
+          {% set subtotal = order.amount - (order.discount_amount or 0) %}
+          {% set service_fee = order.final_amount - subtotal * 1.11 %}
+          <div class="flex justify-between text-gray-500 text-xs">
+            <span>PPN 11%</span>
+            <span>+ Rp {{ "{:,.0f}".format(subtotal * 0.11) }}</span>
+          </div>
+          {% if service_fee and service_fee > 1 %}
+          <div class="flex justify-between text-gray-500 text-xs">
+            <span>{% if locale == 'id' %}Biaya layanan{% else %}Service fee{% endif %}</span>
+            <span>+ Rp {{ "{:,.0f}".format(service_fee) }}</span>
+          </div>
+          {% endif %}
+          {% endif %}
+          <div class="flex justify-between border-t border-gray-800 pt-2 mt-2">
+            <span class="text-white font-semibold">Total</span>
+            <span class="text-neon font-bold text-base">Rp {{ "{:,.0f}".format(order.final_amount or order.amount) }}</span>
+          </div>
+        </div>
+      </div>
+
+      {# ── Payment details ───────────────────────────────────────────────────── #}
+      {% if order.payment_gateway %}
+      <div class="border border-gray-800 bg-gray-950 p-4 sm:p-5">
+        <p class="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-4">
+          {% if locale == 'id' %}Detail Pembayaran{% else %}Payment Details{% endif %}
+        </p>
+        <div class="space-y-2.5 text-sm">
+          <div class="flex justify-between">
+            <span class="text-gray-500">Gateway</span>
+            <span class="text-gray-300 capitalize">{{ order.payment_gateway.value }}</span>
+          </div>
+          {% if order.payment_method_name %}
+          <div class="flex justify-between">
+            <span class="text-gray-500">{% if locale == 'id' %}Metode{% else %}Method{% endif %}</span>
+            <span class="text-gray-300">{{ order.payment_method_name }}</span>
+          </div>
+          {% endif %}
+          {% if order.va_number %}
+          <div class="flex justify-between">
+            <span class="text-gray-500">Virtual Account</span>
+            <span class="text-white font-mono text-xs">{{ order.va_number }}</span>
+          </div>
+          {% endif %}
+          {% if order.payment_code %}
+          <div class="flex justify-between">
+            <span class="text-gray-500">Payment Code</span>
+            <span class="text-white font-mono text-xs">{{ order.payment_code }}</span>
+          </div>
+          {% endif %}
+          {% if order.gateway_reference %}
+          <div class="flex justify-between">
+            <span class="text-gray-500">Reference</span>
+            <span class="text-gray-400 font-mono text-xs break-all text-right max-w-[180px]">{{ order.gateway_reference }}</span>
+          </div>
+          {% endif %}
+          {% if order.paid_at %}
+          <div class="flex justify-between">
+            <span class="text-gray-500">{% if locale == 'id' %}Dibayar pada{% else %}Paid at{% endif %}</span>
+            <span class="text-green-400 text-xs">{{ order.paid_at.strftime('%d %b %Y %H:%M') }} UTC</span>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+      {% endif %}
+
+      {# ── License / Access ─────────────────────────────────────────────────── #}
+      {% if license_obj %}
+      <div class="border border-gray-800 bg-gray-950 p-4 sm:p-5" x-data="{ revealed: false }">
+        <div class="flex items-center justify-between mb-4">
+          <p class="text-xs font-semibold text-gray-500 uppercase tracking-widest">
+            {% if locale == 'id' %}Lisensi & Akses{% else %}License & Access{% endif %}
+          </p>
+          <a href="/{{ locale }}/dashboard/licenses/{{ license_obj.id }}"
+             class="text-xs text-neon hover:underline">
+            {% if locale == 'id' %}Lihat Lengkap{% else %}Full Detail{% endif %} →
+          </a>
+        </div>
+
+        {# Token key #}
+        {% if license_obj.license_type == 'token' and license_obj.license_key %}
+        <div class="flex items-center gap-2 p-3 bg-black border border-gray-700">
+          <span class="text-neon font-mono text-sm font-bold flex-1 break-all">{{ license_obj.license_key }}</span>
+          <button onclick="copyText('{{ license_obj.license_key }}', this)"
+                  class="text-neon text-xs border border-neon/40 px-2.5 py-1 hover:bg-neon hover:text-black transition-colors flex-shrink-0">
+            <i class="bi bi-copy"></i>
+          </button>
+        </div>
+
+        {# Password / credential: redacted preview #}
+        {% elif license_obj.license_type in ['password', 'credential'] %}
+        <div class="flex items-center gap-2 p-3 bg-black border border-gray-700">
+          <span class="text-gray-400 font-mono text-sm flex-1">••••••••••••</span>
+          <a href="/{{ locale }}/dashboard/licenses/{{ license_obj.id }}"
+             class="text-xs border border-gray-700 text-gray-400 px-2.5 py-1 hover:text-white hover:border-gray-500 transition-colors">
+            {% if locale == 'id' %}Buka{% else %}Reveal{% endif %}
+          </a>
+        </div>
+
+        {# Download #}
+        {% elif license_obj.license_type == 'download' %}
+        {% if download_url %}
+        <a href="{{ download_url }}"
+           class="btn-primary flex items-center justify-center gap-2 py-2.5 text-sm">
+          <i class="bi bi-download"></i>
+          {% if locale == 'id' %}Download File{% else %}Download File{% endif %}
+        </a>
+        <p class="text-gray-600 text-xs mt-2 text-center">
+          {% if locale == 'id' %}Tersisa {{ license_obj.max_downloads - license_obj.download_count }}x unduhan{% else %}{{ license_obj.max_downloads - license_obj.download_count }} downloads remaining{% endif %}
+        </p>
+        {% else %}
+        <p class="text-red-400 text-xs">{% if locale == 'id' %}Download tidak tersedia{% else %}Download unavailable{% endif %}</p>
+        {% endif %}
+        {% endif %}
+
+        {# Access URL #}
+        {% if license_obj.access_url %}
+        <div class="flex items-center gap-2 p-2.5 bg-black border border-gray-700 mt-3">
+          <a href="{{ license_obj.access_url }}" target="_blank" rel="noopener"
+             class="text-neon text-xs flex-1 truncate hover:underline">{{ license_obj.access_url }}</a>
+          <a href="{{ license_obj.access_url }}" target="_blank" rel="noopener"
+             class="text-gray-400 hover:text-white flex-shrink-0 text-xs">
+            <i class="bi bi-box-arrow-up-right"></i>
+          </a>
+        </div>
+        {% endif %}
+
+        {# Validity row #}
+        <div class="flex items-center gap-4 mt-3 text-xs text-gray-500">
+          {% if license_obj.expires_at %}
+          <span>
+            <i class="bi bi-calendar3 mr-1"></i>
+            {{ t(locale, 'license_valid_until') }}:
+            <span class="text-gray-300 ml-1">{{ license_obj.expires_at.strftime('%d %b %Y') }}</span>
+          </span>
+          {% else %}
+          <span class="text-neon"><i class="bi bi-infinity mr-1"></i>{{ t(locale, 'license_lifetime') }}</span>
+          {% endif %}
+        </div>
+      </div>
+      {% endif %}
+
+      {# ── Subscription context ─────────────────────────────────────────────── #}
+      {% if linked_sub %}
+      <div class="border border-gray-800 bg-gray-950 p-4 sm:p-5">
+        <div class="flex items-center justify-between mb-3">
+          <p class="text-xs font-semibold text-gray-500 uppercase tracking-widest">Langganan</p>
+          <a href="/{{ locale }}/dashboard/subscriptions" class="text-xs text-neon hover:underline">
+            {{ t(locale, 'dashboard_manage') }} →
+          </a>
+        </div>
+        <div class="flex items-center justify-between text-sm">
+          <div>
+            <span class="text-white font-medium capitalize">{{ linked_sub.billing_cycle.value }}</span>
+            <span class="text-gray-500 text-xs ml-2">
+              {% if locale == 'id' %}Tagihan berikutnya{% else %}Next billing{% endif %}:
+              {{ linked_sub.next_billing_date.strftime('%d %b %Y') }}
+            </span>
+          </div>
+          {% set sub_badge = {'active':'badge-neon','cancelled':'bg-gray-800 text-gray-500 border-gray-700','expired':'bg-red-950 text-red-400 border-red-800'} %}
+          <span class="badge {{ sub_badge.get(linked_sub.status.value, 'badge-gray') }} text-xs">{{ linked_sub.status.value }}</span>
+        </div>
+      </div>
+      {% endif %}
+
+      {# ── Invoice ──────────────────────────────────────────────────────────── #}
+      {% if invoice %}
+      <div class="border border-gray-800 bg-gray-950 p-4 sm:p-5">
+        <div class="flex items-center justify-between flex-wrap gap-3">
+          <div>
+            <p class="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-1">Invoice</p>
+            <p class="text-white font-mono text-sm">{{ invoice.invoice_number }}</p>
+            <p class="text-gray-500 text-xs mt-0.5">{{ invoice.created_at.strftime('%d %b %Y') }}</p>
+          </div>
+          <div class="flex flex-col sm:flex-row items-start sm:items-center gap-2">
+            <a href="/{{ locale }}/dashboard/orders/{{ order.id }}/receipt"
+               class="inline-flex items-center gap-1.5 text-xs border border-gray-700 text-gray-300 px-3 py-1.5 hover:border-gray-500 hover:text-white transition-colors">
+              <i class="bi bi-receipt"></i> Receipt
+            </a>
+            {% if invoice.pdf_path %}
+            <a href="/{{ locale }}/dashboard/invoices/{{ invoice.id }}/download"
+               class="inline-flex items-center gap-1.5 text-xs border border-neon/40 text-neon px-3 py-1.5 hover:bg-neon/10 transition-colors">
+              <i class="bi bi-download"></i> {{ t(locale, 'invoice_download') }}
+            </a>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      {# ── Refund status(es) ────────────────────────────────────────────────── #}
+      {% if refunds %}
+      {% for refund in refunds %}
+      {% set rs_colors = {
+        'pending':   'border-yellow-800/50 bg-yellow-950/10 text-yellow-400',
+        'approved':  'border-blue-800/50 bg-blue-950/10 text-blue-400',
+        'rejected':  'border-red-800/50 bg-red-950/10 text-red-400',
+        'processed': 'border-green-800/50 bg-green-950/10 text-green-400',
+        'failed':    'border-red-800/50 bg-red-950/10 text-red-400',
+      } %}
+      <div class="border p-4 {{ rs_colors.get(refund.status.value, 'border-gray-800 bg-gray-950') }}">
+        <div class="flex items-start justify-between gap-3 mb-2">
+          <div>
+            <p class="font-semibold text-sm text-white">
+              Refund · Rp {{ "{:,.0f}".format(refund.amount) }}
+            </p>
+            <p class="text-xs mt-0.5">{{ t(locale, 'refund_status_' + refund.status.value) }}</p>
+          </div>
+          <span class="text-xs text-gray-500">{{ refund.requested_at.strftime('%d %b %Y') }}</span>
+        </div>
+        {% if refund.reason %}
+        <p class="text-xs text-gray-500 mb-2">{{ refund.reason }}</p>
+        {% endif %}
+        {% if refund.rejection_reason %}
+        <p class="text-xs text-red-400 border border-red-900/40 bg-red-950/20 px-3 py-2">
+          <i class="bi bi-info-circle mr-1"></i>{{ refund.rejection_reason }}
+        </p>
+        {% endif %}
+      </div>
+      {% endfor %}
+      {% endif %}
+
+      {# ── Request refund ───────────────────────────────────────────────────── #}
+      {% if order.status.value == 'paid' and not refunds %}
+      <div x-data="{ showRefund: false, loading: false, msg: '', error: '' }" class="border border-gray-800 bg-gray-950 p-4 sm:p-5">
+        <div class="flex items-center justify-between mb-1">
+          <p class="text-xs font-semibold text-gray-500 uppercase tracking-widest">
+            {% if locale == 'id' %}Bantuan & Refund{% else %}Support & Refund{% endif %}
+          </p>
+        </div>
+        <p class="text-gray-600 text-xs mb-3">
+          {% if locale == 'id' %}Ada masalah dengan pesanan ini? Ajukan permintaan refund.{% else %}Issue with this order? Submit a refund request.{% endif %}
+        </p>
+
+        <button @click="showRefund = !showRefund"
+                class="text-xs border border-gray-700 text-gray-400 px-4 py-2 hover:border-neon hover:text-neon transition-colors">
+          <i class="bi bi-arrow-counterclockwise mr-1.5"></i>
+          {{ t(locale, 'refund_request') }}
+        </button>
+
+        <div x-show="showRefund" x-cloak
+             x-transition:enter="transition ease-out duration-150"
+             x-transition:enter-start="opacity-0 -translate-y-1"
+             x-transition:enter-end="opacity-100 translate-y-0"
+             class="mt-4">
+          <label class="block text-xs text-gray-500 mb-1.5">{{ t(locale, 'refund_reason') }} *</label>
+          <textarea x-model="reason"
+                    rows="3"
+                    class="w-full bg-black border border-gray-700 text-white text-sm px-3 py-2 focus:outline-none focus:border-gray-500 resize-none placeholder-gray-700"
+                    placeholder="{{ t(locale, 'refund_reason_placeholder') }}"></textarea>
+
+          <div x-show="msg" class="mt-2 text-xs text-green-400 flex items-center gap-2">
+            <i class="bi bi-check-lg"></i><span x-text="msg"></span>
+          </div>
+          <div x-show="error" class="mt-2 text-xs text-red-400 flex items-center gap-2">
+            <i class="bi bi-exclamation-triangle"></i><span x-text="error"></span>
+          </div>
+
+          <div class="flex gap-2 mt-3">
+            <button @click="
+              if (!reason || reason.trim().length < 10) { error = '{% if locale == 'id' %}Jelaskan alasanmu (min 10 karakter).{% else %}Please describe your reason (min 10 chars).{% endif %}'; return; }
+              loading = true; error = '';
+              fetch('/{{ locale }}/dashboard/orders/{{ order.id }}/request-refund', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({reason: reason.trim()})
+              })
+              .then(r => r.json())
+              .then(d => {
+                loading = false;
+                if (d.status === 'submitted') {
+                  msg = '{% if locale == 'id' %}Permintaan refund berhasil diajukan!{% else %}Refund request submitted!{% endif %}';
+                  showRefund = false;
+                  setTimeout(() => location.reload(), 1500);
+                } else {
+                  error = d.detail || '{{ t(locale, 'error_generic') }}';
+                }
+              })
+              .catch(() => { loading = false; error = '{{ t(locale, 'error_generic') }}'; })"
+              :disabled="loading"
+              class="text-xs bg-neon text-black font-semibold px-4 py-2 hover:opacity-90 transition-opacity disabled:opacity-40">
+              <span x-show="!loading">{{ t(locale, 'refund_submit') }}</span>
+              <span x-show="loading">{{ t(locale, 'loading') }}</span>
+            </button>
+            <button @click="showRefund = false; error = ''"
+                    class="text-xs border border-gray-700 text-gray-500 px-4 py-2 hover:text-white hover:border-gray-500 transition-colors">
+              {{ t(locale, 'cancel') }}
+            </button>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      {# ── Order timeline ────────────────────────────────────────────────────── #}
+      {% if events %}
+      <div class="border border-gray-800 bg-gray-950 p-4 sm:p-5">
+        <p class="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-4">
+          {% if locale == 'id' %}Riwayat Pesanan{% else %}Order Timeline{% endif %}
+        </p>
+        <div class="relative">
+          <div class="absolute left-3.5 top-0 bottom-0 w-px bg-gray-800"></div>
+          <div class="space-y-4">
+            {% set ev_icons = {
+              'created':              ('bi-plus-circle', 'text-gray-400'),
+              'payment_initiated':    ('bi-credit-card', 'text-yellow-400'),
+              'paid':                 ('bi-check-circle-fill', 'text-green-400'),
+              'failed':               ('bi-x-circle-fill', 'text-red-400'),
+              'cancelled':            ('bi-dash-circle', 'text-gray-500'),
+              'refund_requested':     ('bi-arrow-counterclockwise', 'text-blue-400'),
+              'refund_approved':      ('bi-hand-thumbs-up', 'text-blue-400'),
+              'refund_rejected':      ('bi-hand-thumbs-down', 'text-red-400'),
+              'refunded':             ('bi-arrow-left-circle-fill', 'text-blue-400'),
+              'partially_refunded':   ('bi-arrow-left-circle', 'text-purple-400'),
+              'license_issued':       ('bi-shield-fill-check', 'text-neon'),
+              'invoice_created':      ('bi-file-earmark-check', 'text-gray-400'),
+              'subscription_created': ('bi-arrow-repeat', 'text-neon'),
+              'subscription_renewed': ('bi-arrow-clockwise', 'text-neon'),
+              'note_added':           ('bi-chat-left-text', 'text-gray-400'),
+            } %}
+            {% set ev_labels_id = {
+              'created':              'Pesanan dibuat',
+              'payment_initiated':    'Pembayaran dimulai',
+              'paid':                 'Pembayaran berhasil',
+              'failed':               'Pembayaran gagal',
+              'cancelled':            'Pesanan dibatalkan',
+              'refund_requested':     'Permintaan refund diajukan',
+              'refund_approved':      'Refund disetujui',
+              'refund_rejected':      'Refund ditolak',
+              'refunded':             'Refund selesai',
+              'partially_refunded':   'Refund sebagian selesai',
+              'license_issued':       'Lisensi diterbitkan',
+              'invoice_created':      'Invoice dibuat',
+              'subscription_created': 'Langganan diaktifkan',
+              'subscription_renewed': 'Langganan diperpanjang',
+              'note_added':           'Catatan ditambahkan',
+            } %}
+            {% set ev_labels_en = {
+              'created':              'Order created',
+              'payment_initiated':    'Payment initiated',
+              'paid':                 'Payment confirmed',
+              'failed':               'Payment failed',
+              'cancelled':            'Order cancelled',
+              'refund_requested':     'Refund requested',
+              'refund_approved':      'Refund approved',
+              'refund_rejected':      'Refund rejected',
+              'refunded':             'Refund completed',
+              'partially_refunded':   'Partial refund completed',
+              'license_issued':       'License issued',
+              'invoice_created':      'Invoice created',
+              'subscription_created': 'Subscription activated',
+              'subscription_renewed': 'Subscription renewed',
+              'note_added':           'Note added',
+            } %}
+            {% set ev_labels = ev_labels_id if locale == 'id' else ev_labels_en %}
+            {% for e in events %}
+            {% set icon_info = ev_icons.get(e.event_type, ('bi-circle', 'text-gray-600')) %}
+            <div class="relative pl-9">
+              <div class="absolute left-0 w-7 h-7 flex items-center justify-center bg-gray-900 border border-gray-800 rounded-full">
+                <i class="bi {{ icon_info[0] }} text-xs {{ icon_info[1] }}"></i>
+              </div>
+              <div>
+                <p class="text-white text-xs font-medium">
+                  {{ ev_labels.get(e.event_type, e.event_type | replace('_', ' ') | capitalize) }}
+                </p>
+                {% if e.note %}
+                <p class="text-gray-500 text-xs mt-0.5">{{ e.note }}</p>
+                {% endif %}
+                <p class="text-gray-700 text-xs mt-0.5">{{ e.created_at.strftime('%d %b %Y, %H:%M') }} UTC</p>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+    </div>{# end space-y-4 #}
+  </div>
+</section>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+function copyText(text, btn) {
+  navigator.clipboard.writeText(text).then(() => {
+    const orig = btn.innerHTML;
+    btn.innerHTML = '<i class="bi bi-check-lg"></i>';
+    btn.classList.add('bg-neon', 'text-black', 'border-neon');
+    setTimeout(() => { btn.innerHTML = orig; btn.classList.remove('bg-neon', 'text-black', 'border-neon'); }, 2000);
+  });
+}
+</script>
+{% endblock %}

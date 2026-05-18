@@ -7,13 +7,27 @@ from sqlalchemy.orm import Session
 from app.models.notification import Notification, NotificationType
 
 
-def _create(db: Session, user_id, type: NotificationType, title: str, body: str = None, link: str = None):
+def _create(
+    db: Session,
+    user_id,
+    type: NotificationType,
+    title: str,
+    body: str = None,
+    link: str = None,
+    *,
+    order_id=None,
+    subscription_id=None,
+    invoice_id=None,
+):
     notif = Notification(
         user_id=user_id,
         type=type,
         title=title,
         body=body,
         link=link,
+        order_id=order_id,
+        subscription_id=subscription_id,
+        invoice_id=invoice_id,
     )
     db.add(notif)
     db.commit()
@@ -38,7 +52,8 @@ def notify_order_paid(db: Session, order, locale: str = "id"):
         db, order.user_id,
         NotificationType.order_paid,
         title, body,
-        link=f"/{locale}/dashboard/orders/{order.id}/receipt",
+        link=f"/{locale}/dashboard/orders/{order.id}",
+        order_id=order.id,
     )
 
 
@@ -54,7 +69,8 @@ def notify_order_failed(db: Session, order, locale: str = "id"):
         db, order.user_id,
         NotificationType.order_failed,
         title, body,
-        link=f"/{locale}/catalog",
+        link=f"/{locale}/dashboard/orders/{order.id}",
+        order_id=order.id,
     )
 
 
@@ -70,7 +86,9 @@ def notify_invoice_created(db: Session, invoice, order, locale: str = "id"):
         db, order.user_id,
         NotificationType.invoice_created,
         title, body,
-        link=f"/{locale}/dashboard/invoices",
+        link=f"/{locale}/dashboard/orders/{order.id}",
+        order_id=order.id,
+        invoice_id=invoice.id,
     )
 
 
@@ -94,6 +112,7 @@ def notify_subscription_new(db: Session, subscription, product, user_id, locale:
         NotificationType.subscription_new,
         title, body,
         link=f"/{locale}/dashboard/subscriptions",
+        subscription_id=subscription.id,
     )
 
 
@@ -112,6 +131,7 @@ def notify_subscription_renewal(db: Session, subscription, product, user_id, loc
         NotificationType.subscription_renewal,
         title, body,
         link=f"/{locale}/dashboard/subscriptions",
+        subscription_id=subscription.id,
     )
 
 
@@ -130,6 +150,7 @@ def notify_subscription_expiring(db: Session, subscription, product, user_id, da
         NotificationType.subscription_expiring,
         title, body,
         link=f"/{locale}/dashboard/subscriptions",
+        subscription_id=subscription.id,
     )
 
 
@@ -148,4 +169,76 @@ def notify_subscription_cancelled(db: Session, subscription, product, user_id, l
         NotificationType.subscription_cancelled,
         title, body,
         link=f"/{locale}/dashboard/subscriptions",
+        subscription_id=subscription.id,
+    )
+
+
+# ─── Refund notifications ─────────────────────────────────────────────────────
+
+def notify_refund_requested(db: Session, refund, order, locale: str = "id"):
+    if locale == "id":
+        title = f"Permintaan refund diterima — {order.order_number}"
+        body  = f"Permintaan refund Rp {refund.amount:,.0f} sedang ditinjau. Kami akan memberi tahu Anda segera."
+    else:
+        title = f"Refund request received — {order.order_number}"
+        body  = f"Your refund request of Rp {refund.amount:,.0f} is under review. We'll notify you shortly."
+
+    return _create(
+        db, order.user_id,
+        NotificationType.refund_requested,
+        title, body,
+        link=f"/{locale}/dashboard/orders/{order.id}",
+        order_id=order.id,
+    )
+
+
+def notify_refund_approved(db: Session, refund, order, locale: str = "id"):
+    if locale == "id":
+        title = f"Refund disetujui — {order.order_number}"
+        body  = f"Refund Rp {refund.amount:,.0f} Anda telah disetujui dan sedang diproses ke metode pembayaran asal."
+    else:
+        title = f"Refund approved — {order.order_number}"
+        body  = f"Your refund of Rp {refund.amount:,.0f} has been approved and is being processed to your original payment method."
+
+    return _create(
+        db, order.user_id,
+        NotificationType.refund_approved,
+        title, body,
+        link=f"/{locale}/dashboard/orders/{order.id}",
+        order_id=order.id,
+    )
+
+
+def notify_refund_rejected(db: Session, refund, order, locale: str = "id"):
+    reason = refund.rejection_reason or ""
+    if locale == "id":
+        title = f"Refund ditolak — {order.order_number}"
+        body  = f"Permintaan refund Anda tidak dapat diproses.{' Alasan: ' + reason if reason else ''}"
+    else:
+        title = f"Refund rejected — {order.order_number}"
+        body  = f"Your refund request could not be processed.{' Reason: ' + reason if reason else ''}"
+
+    return _create(
+        db, order.user_id,
+        NotificationType.refund_rejected,
+        title, body,
+        link=f"/{locale}/dashboard/orders/{order.id}",
+        order_id=order.id,
+    )
+
+
+def notify_refund_processed(db: Session, refund, order, locale: str = "id"):
+    if locale == "id":
+        title = f"Refund berhasil diproses — {order.order_number}"
+        body  = f"Rp {refund.amount:,.0f} telah dikembalikan. Dana akan masuk dalam 3–7 hari kerja."
+    else:
+        title = f"Refund processed — {order.order_number}"
+        body  = f"Rp {refund.amount:,.0f} has been refunded. Funds will arrive within 3–7 business days."
+
+    return _create(
+        db, order.user_id,
+        NotificationType.refund_processed,
+        title, body,
+        link=f"/{locale}/dashboard/orders/{order.id}",
+        order_id=order.id,
     )

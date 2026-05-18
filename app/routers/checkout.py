@@ -36,6 +36,7 @@ from app.models.product import Product, ProductStatus
 from app.models.promo import PromoCode
 from app.models.subscription import BillingCycle, Subscription, SubscriptionStatus
 from app.services.payment import _method_type, duitku, generate_order_number, mayar
+from app.services import order_events as ev
 
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["checkout"])
@@ -746,6 +747,12 @@ def _mark_order_paid(order: Order, db: Session, background_tasks: BackgroundTask
     order.paid_at = datetime.utcnow()
     db.commit()
 
+    # Audit log
+    try:
+        ev.log_order_paid(db, order)
+    except Exception:
+        pass
+
     # Increment promo usage only on confirmed payment
     if order.promo_code:
         try:
@@ -873,6 +880,11 @@ def _create_subscription(order: Order, db: Session):
     db.add(sub)
     db.commit()
 
+    try:
+        ev.log_subscription_created(db, order, subscription_id=sub.id)
+    except Exception:
+        pass
+
 
 @router.post("/{locale}/checkout/{product_id}/request-quote")
 async def request_quote(
@@ -967,4 +979,11 @@ async def cancel_order(
 
     order.status = OrderStatus.cancelled
     db.commit()
+
+    try:
+        from app.models.order_event import OrderActorType
+        ev.log_order_cancelled(db, order, actor_type=OrderActorType.customer, actor_id=current_user.id)
+    except Exception:
+        pass
+
     return JSONResponse({"status": "cancelled", "order_id": str(order.id)})

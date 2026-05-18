@@ -5,6 +5,7 @@ __pycache__/
 .env
 *.egg-info/
 .DS_Store
+Thumbs.db
 node_modules/
 static/uploads/
 static/css/main.css
@@ -15,3 +16,15 @@ migrations/versions/
 htmlcov/
 dist/
 build/
+
+# Claude Code local settings (machine-specific, not for VCS)
+.claude/
+
+# Celery runtime files
+celerybeat-schedule
+celerybeat.pid
+*.pid
+
+# Logs
+*.log
+logs/
