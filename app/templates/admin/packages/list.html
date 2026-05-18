@@ -252,7 +252,7 @@
       <div class="px-5 py-3 border-b border-gray-800">
         <div class="flex items-center justify-between mb-2">
           <span class="text-xs font-semibold text-gray-400 uppercase tracking-widest">Prices</span>
-          <button @click="openPrices('{{ pkg.id }}', {{ pkg.prices | tojson }}, '{{ product.pricing_model.value }}')"
+          <button @click="openPrices('{{ pkg.id }}', {{ pkg.prices | tojson(default=str) }}, '{{ product.pricing_model.value }}')"
                   class="text-[11px] text-neon hover:underline">Edit prices</button>
         </div>
         {% if pkg.prices %}
