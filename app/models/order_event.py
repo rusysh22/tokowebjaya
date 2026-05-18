@@ -39,7 +39,7 @@ class OrderEvent(Base):
     event_type = Column(String(50), nullable=False)
     actor_type = Column(String(20), nullable=False, default=OrderActorType.system.value)
     actor_id   = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
-    metadata   = Column(JSONB, nullable=True)
+    meta       = Column("metadata", JSONB, nullable=True)
     note       = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 

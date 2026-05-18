@@ -5,7 +5,7 @@ BEGIN;
 
 -- ─── 1. Extend order_status enum ────────────────────────────────────────────
 DO $$ BEGIN
-    ALTER TYPE order_status ADD VALUE IF NOT EXISTS 'partially_refunded';
+    ALTER TYPE orderstatus ADD VALUE IF NOT EXISTS 'partially_refunded';
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
@@ -64,22 +64,22 @@ CREATE INDEX IF NOT EXISTS idx_notifications_subscription_id ON notifications(su
 
 -- ─── 6. Extend notification_type enum ───────────────────────────────────────
 DO $$ BEGIN
-    ALTER TYPE notification_type ADD VALUE IF NOT EXISTS 'refund_requested';
+    ALTER TYPE notificationtype ADD VALUE IF NOT EXISTS 'refund_requested';
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
 DO $$ BEGIN
-    ALTER TYPE notification_type ADD VALUE IF NOT EXISTS 'refund_approved';
+    ALTER TYPE notificationtype ADD VALUE IF NOT EXISTS 'refund_approved';
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
 DO $$ BEGIN
-    ALTER TYPE notification_type ADD VALUE IF NOT EXISTS 'refund_rejected';
+    ALTER TYPE notificationtype ADD VALUE IF NOT EXISTS 'refund_rejected';
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
 DO $$ BEGIN
-    ALTER TYPE notification_type ADD VALUE IF NOT EXISTS 'refund_processed';
+    ALTER TYPE notificationtype ADD VALUE IF NOT EXISTS 'refund_processed';
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 

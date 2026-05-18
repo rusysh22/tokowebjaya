@@ -181,14 +181,12 @@ WHERE price.package_id = o.package_id
 -- Match package_price_id: order subscription → cari berdasarkan billing_cycle di subscription
 UPDATE orders o
 SET package_price_id = price.id
-FROM subscriptions sub
-JOIN package_prices price ON price.package_id = o.package_id
-WHERE sub.id IN (
-    SELECT s.id FROM subscriptions s
-    WHERE s.user_id = o.user_id AND s.product_id = o.product_id
-    LIMIT 1
-)
-  AND price.billing_type = sub.billing_cycle::billing_type_enum
+FROM package_prices price,
+     subscriptions sub
+WHERE price.package_id          = o.package_id
+  AND sub.product_id            = o.product_id
+  AND sub.user_id               = o.user_id
+  AND price.billing_type::text  = sub.billing_cycle::text
   AND o.type = 'subscription'
   AND o.package_price_id IS NULL;
 
