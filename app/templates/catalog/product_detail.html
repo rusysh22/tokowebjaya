@@ -222,7 +222,7 @@
                   </a>
                   {% endif %}
                   {% if product.contact_whatsapp %}
-                  <a href="https://wa.me/{{ product.contact_whatsapp }}?text={{ ('Halo, saya tertarik dengan ' + product['name_' + locale]) | urlencode }}"
+                  <a href="https://wa.me/{{ product.contact_whatsapp }}?text={{ (('Halo, saya tertarik dengan ' if locale == 'id' else 'Hi, I\'m interested in ') + product['name_' + locale]) | urlencode }}"
                      target="_blank" rel="noopener"
                      class="flex items-center gap-3 w-full border border-green-800 bg-green-950/40 hover:bg-green-950/80 text-green-400 px-4 py-2 text-sm font-semibold transition-colors">
                     <i class="bi bi-whatsapp text-lg"></i><span>WhatsApp</span>
@@ -487,8 +487,8 @@
             <div class="border border-yellow-900/40 bg-yellow-950/10 p-4 mb-4 text-xs text-yellow-500 flex items-start gap-2">
               <i class="bi bi-exclamation-triangle flex-shrink-0 mt-0.5"></i>
               <span>
-                Produk ini belum memiliki paket aktif.
-                <a href="/{{ locale }}/admin/products/{{ product.id }}/packages" class="underline hover:text-yellow-300">Tambahkan paket & harga →</a>
+                {% if locale == 'id' %}Produk ini belum memiliki paket aktif.{% else %}This product has no active packages yet.{% endif %}
+                <a href="/{{ locale }}/admin/products/{{ product.id }}/packages" class="underline hover:text-yellow-300">{% if locale == 'id' %}Tambahkan paket & harga →{% else %}Add packages & pricing →{% endif %}</a>
               </span>
             </div>
           {% else %}

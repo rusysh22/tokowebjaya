@@ -78,8 +78,9 @@
                 <p class="text-white text-sm font-bold leading-tight line-clamp-1 my-0.5">{{ p0['name_' + locale] }}</p>
                 <div class="flex items-center justify-between gap-2">
                   <span class="text-neon text-sm font-black">
-                    {% if p0.price_otf %}Rp {{ "{:,.0f}".format(p0.price_otf) }}
-                    {% elif p0.price_monthly %}Rp {{ "{:,.0f}".format(p0.price_monthly) }}
+                    {% set mp0 = min_prices.get(p0.id | string) %}
+                    {% if mp0 %}Rp {{ "{:,.0f}".format(mp0.amount) }}
+                    {% elif p0.pricing_model.value == 'contact_seller' %}—
                     {% else %}—{% endif %}
                   </span>
                   <span class="flex-shrink-0 text-[10px] font-bold text-black bg-neon px-2 py-0.5" style="border-radius:3px;">
@@ -181,13 +182,12 @@
                          style="text-shadow:0 1px 4px rgba(0,0,0,1)">{{ sdesc }}</p>
                       {% endif %}
                       <div class="mt-2">
-                        {% if product.price_otf %}
-                          <span class="text-neon font-black text-xl" style="text-shadow:0 0 12px rgba(202,255,0,0.4)">Rp {{ "{:,.0f}".format(product.price_otf) }}</span>
-                        {% elif product.price_monthly %}
-                          <span class="text-neon font-black text-xl" style="text-shadow:0 0 12px rgba(202,255,0,0.4)">Rp {{ "{:,.0f}".format(product.price_monthly) }}</span>
-                          <span class="text-gray-300 text-sm">/bln</span>
+                        {% set mp = min_prices.get(product.id | string) %}
+                        {% if mp %}
+                          <span class="text-neon font-black text-xl" style="text-shadow:0 0 12px rgba(202,255,0,0.4)">Rp {{ "{:,.0f}".format(mp.amount) }}</span>
+                          {% if mp.billing_type == 'monthly' %}<span class="text-gray-300 text-sm">/bln</span>{% endif %}
                         {% elif product.pricing_model.value == 'contact_seller' %}
-                          <span class="text-gray-200 text-sm">Hubungi Penjual</span>
+                          <span class="text-gray-200 text-sm">{% if locale == 'id' %}Hubungi Penjual{% else %}Contact Seller{% endif %}</span>
                         {% endif %}
                       </div>
                     </div>
@@ -416,20 +416,16 @@
 
           <div class="flex items-center justify-between">
             <div>
-              {% if product.pricing_model.value == 'subscription' %}
-                <span class="text-neon font-bold text-lg">
-                  Rp {{ "{:,.0f}".format(product.price_monthly) }}
-                </span>
-                <span class="text-gray-500 text-xs">{{ t(locale, 'per_month') }}</span>
-              {% elif product.price_otf %}
-                <span class="text-neon font-bold text-lg">
-                  Rp {{ "{:,.0f}".format(product.price_otf) }}
-                </span>
-              {% elif product.price_monthly %}
-                <span class="text-neon font-bold text-lg">
-                  Rp {{ "{:,.0f}".format(product.price_monthly) }}
-                </span>
-                <span class="text-gray-500 text-xs">{{ t(locale, 'per_month') }}</span>
+              {% set mp = min_prices.get(product.id | string) %}
+              {% if mp %}
+                <span class="text-neon font-bold text-lg">Rp {{ "{:,.0f}".format(mp.amount) }}</span>
+                {% if mp.billing_type == 'monthly' %}
+                  <span class="text-gray-500 text-xs">{{ t(locale, 'per_month') }}</span>
+                {% elif mp.billing_type == 'yearly' %}
+                  <span class="text-gray-500 text-xs">{{ t(locale, 'per_year') }}</span>
+                {% endif %}
+              {% elif product.pricing_model.value == 'contact_seller' %}
+                <span class="text-orange-400 text-sm font-semibold">{% if locale == 'id' %}Hubungi Penjual{% else %}Contact Seller{% endif %}</span>
               {% endif %}
             </div>
             <a href="/{{ locale }}/product/{{ product.slug }}" class="btn-primary text-xs py-2 px-4">

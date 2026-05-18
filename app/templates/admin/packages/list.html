@@ -48,13 +48,13 @@
           <span class="text-white font-semibold">{{ product.pricing_model.value | replace('_', ' ') | title }}</span>
           —
           {% if product.pricing_model.value == 'one_time' %}
-            Pastikan setiap paket aktif memiliki harga <span class="text-white">One-time</span>.
+            Ensure every active package has a <span class="text-white">One-time</span> price.
           {% elif product.pricing_model.value == 'subscription' %}
-            Pastikan setiap paket aktif memiliki harga <span class="text-white">Monthly</span> (dan Yearly opsional).
+            Ensure every active package has a <span class="text-white">Monthly</span> price (Yearly optional).
           {% elif product.pricing_model.value == 'both' %}
-            Setiap paket aktif harus punya harga <span class="text-white">One-time</span> dan <span class="text-white">Monthly</span>.
+            Every active package needs a <span class="text-white">One-time</span> and <span class="text-white">Monthly</span> price.
           {% elif product.pricing_model.value == 'contact_seller' %}
-            Produk ini tidak memerlukan harga — customer akan menghubungi Anda.
+            No pricing needed — customers will contact you directly.
           {% endif %}
         </p>
 
@@ -70,13 +70,13 @@
           </div>
           <div class="flex items-center gap-1.5 text-xs {% if readiness.check_pkg %}text-gray-400{% else %}text-red-400{% endif %}">
             <i class="bi {% if readiness.check_pkg %}bi-check-circle text-green-400{% else %}bi-x-circle text-red-400{% endif %} flex-shrink-0"></i>
-            Paket aktif ({{ readiness.active_pkg_count }})
+            Active packages ({{ readiness.active_pkg_count }})
           </div>
           <div class="flex items-center gap-1.5 text-xs {% if readiness.check_price %}text-gray-400{% else %}text-red-400{% endif %}">
             <i class="bi {% if readiness.check_price %}bi-check-circle text-green-400{% else %}bi-x-circle text-red-400{% endif %} flex-shrink-0"></i>
-            Harga terisi
+            Prices set
             {% if readiness.pkgs_no_price | length > 0 %}
-              <span class="text-yellow-400">({{ readiness.pkgs_no_price | length }} kurang)</span>
+              <span class="text-yellow-400">({{ readiness.pkgs_no_price | length }} missing)</span>
             {% endif %}
           </div>
         </div>
@@ -94,38 +94,38 @@
               if (d.ok) location.reload();
               else err = d.error;
             })
-            .catch(() => { activating = false; err = 'Terjadi kesalahan.'; })"
+            .catch(() => { activating = false; err = 'An error occurred.'; })"
           :disabled="activating"
           class="{% if readiness.is_ready %}btn-primary{% else %}btn-secondary opacity-50 cursor-not-allowed{% endif %} text-sm py-2 px-5 flex items-center gap-2"
-          {% if not readiness.is_ready %}title="Lengkapi checklist dulu sebelum publish"{% endif %}>
+          {% if not readiness.is_ready %}title="Complete the checklist before publishing"{% endif %}>
           <i class="bi bi-rocket-takeoff" x-show="!activating"></i>
           <i class="bi bi-arrow-clockwise animate-spin" x-show="activating" x-cloak></i>
-          <span x-show="!activating">Publish Produk</span>
+          <span x-show="!activating">Publish Product</span>
           <span x-show="activating" x-cloak>Publishing…</span>
         </button>
         <p x-show="err" x-cloak class="text-xs text-red-400 mt-2 max-w-[240px]" x-text="err"></p>
         {% if not readiness.is_ready %}
-        <p class="text-[10px] text-gray-600 mt-1">Lengkapi semua checklist untuk publish.</p>
+        <p class="text-[10px] text-gray-600 mt-1">Complete all checklist items to publish.</p>
         {% endif %}
       </div>
       {% elif product.status.value == 'active' %}
       <div class="flex-shrink-0 flex items-center gap-3" x-data="{ deactivating: false, err: '' }">
         <span class="text-xs text-green-400 flex items-center gap-1.5">
-          <i class="bi bi-check-circle-fill"></i> Live di katalog
+          <i class="bi bi-check-circle-fill"></i> Live in catalog
         </span>
         <button @click="
-          if (!confirm('Tarik produk dari katalog? Status akan kembali ke Draft.')) return;
+          if (!confirm('Remove from catalog? Status will revert to Draft.')) return;
           deactivating = true; err = '';
           fetch('/{{ locale }}/admin/products/{{ product.id }}/deactivate', {method:'POST'})
             .then(r=>r.json())
             .then(d => { deactivating = false; if (d.ok) location.reload(); else err = d.error; })
-            .catch(() => { deactivating = false; err = 'Terjadi kesalahan.'; })"
+            .catch(() => { deactivating = false; err = 'An error occurred.'; })"
           :disabled="deactivating"
           class="text-xs border border-gray-700 text-gray-400 hover:text-orange-400 hover:border-orange-900 px-3 py-1.5 transition-colors flex items-center gap-1.5">
           <i class="bi bi-arrow-down-circle" x-show="!deactivating"></i>
           <i class="bi bi-arrow-clockwise animate-spin" x-show="deactivating" x-cloak></i>
-          <span x-show="!deactivating">Tarik dari Katalog</span>
-          <span x-show="deactivating" x-cloak>Menarik…</span>
+          <span x-show="!deactivating">Unpublish</span>
+          <span x-show="deactivating" x-cloak>Unpublishing…</span>
         </button>
         <p x-show="err" x-cloak class="text-xs text-red-400" x-text="err"></p>
       </div>
@@ -223,7 +223,7 @@
   {% if packages %}
   <div class="grid grid-cols-1 xl:grid-cols-2 gap-5 mb-8">
     {% for pkg in packages %}
-    <div class="border {% if pkg.status.value == 'active' %}border-gray-700{% elif pkg.status.value == 'draft' %}border-gray-800{% else %}border-gray-900{% endif %} bg-gray-950">
+    <div class="border {% if pkg.status == 'active' %}border-gray-700{% elif pkg.status == 'draft' %}border-gray-800{% else %}border-gray-900{% endif %} bg-gray-950">
 
       <!-- Package header -->
       <div class="flex items-center justify-between px-5 py-4 border-b border-gray-800">
@@ -232,7 +232,7 @@
           <span class="text-white font-semibold">{{ pkg['name_' + locale] }}</span>
           {% if pkg.is_default %}<span class="badge-neon text-[10px]">Default</span>{% endif %}
           {% if pkg.is_popular %}<span class="badge text-[10px] bg-yellow-900/40 text-yellow-400 border-yellow-800">Popular</span>{% endif %}
-          <span class="text-[10px] px-1.5 py-0.5 border {% if pkg.status.value == 'active' %}border-green-800 text-green-400{% elif pkg.status.value == 'draft' %}border-gray-700 text-gray-500{% else %}border-red-900 text-red-500{% endif %}">{{ pkg.status.value }}</span>
+          <span class="text-[10px] px-1.5 py-0.5 border {% if pkg.status == 'active' %}border-green-800 text-green-400{% elif pkg.status == 'draft' %}border-gray-700 text-gray-500{% else %}border-red-900 text-red-500{% endif %}">{{ pkg.status }}</span>
         </div>
         <div class="flex items-center gap-2">
           <button @click="openEdit({{ loop.index0 }})"

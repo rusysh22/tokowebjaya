@@ -62,7 +62,7 @@ class ProductPackage(Base):
     webhook_url           = Column(String(500), nullable=True)
     download_file         = Column(String(500), nullable=True)
 
-    status     = Column(Enum(PackageStatus), nullable=False, default=PackageStatus.draft)
+    status     = Column(String(20), nullable=False, default=PackageStatus.draft.value)
 
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

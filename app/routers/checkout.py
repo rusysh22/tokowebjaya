@@ -129,12 +129,13 @@ def _resolve_checkout_pricing(
     """
     Resolve product, package, package_price, base_amount, order_type, billing_cycle.
 
-    Price source priority (single source of truth):
-      1. package_price_id provided → use PackagePrice.amount (tiered products)
-      2. Fallback to product.price_otf / price_monthly / price_yearly (simple products without packages)
-
-    Products with active packages MUST use path 1. Path 2 is kept only for legacy
-    products that have no packages configured.
+    Price source priority:
+      1. package_price_id provided → use that PackagePrice directly
+      2. No package_price_id but product has active packages → auto-select:
+           - is_default package first, then first active package
+           - matching billing_type from order_type_param/billing_cycle_param
+      3. No packages at all → fallback to product.price_otf/monthly/yearly
+         (for simple products / contact_seller without package setup)
 
     Returns (product, package, package_price, base_amount, order_type, billing_cycle).
     """
@@ -145,6 +146,7 @@ def _resolve_checkout_pricing(
     order_type = order_type_param
     billing_cycle = billing_cycle_param
 
+    # ── Path 1: explicit package_price_id ────────────────────────────────────
     if package_price_id:
         try:
             package_price = db.query(PackagePrice).filter(
@@ -165,12 +167,47 @@ def _resolve_checkout_pricing(
                 order_type    = "one_time" if package_price.billing_type == BillingType.one_time else "subscription"
                 billing_cycle = package_price.billing_type.value if package_price.billing_type.value in ("monthly", "yearly") else "monthly"
 
+    # ── Load product if not yet resolved ─────────────────────────────────────
     if not product:
         product = db.query(Product).filter(
             Product.id == product_id,
             Product.status == ProductStatus.active,
         ).first()
 
+    # ── Path 2: auto-select from active packages ──────────────────────────────
+    if not base_amount and product and not package_price_id:
+        # Determine target billing_type from caller params
+        if order_type_param == "one_time":
+            target_billing = BillingType.one_time
+        elif order_type_param == "subscription" and billing_cycle_param == "yearly":
+            target_billing = BillingType.yearly
+        else:
+            target_billing = BillingType.monthly
+
+        active_pkgs = [p for p in product.packages if p.status == "active"]
+        # Prefer is_default, then first in sort order
+        candidates = sorted(active_pkgs, key=lambda p: (not p.is_default, p.sort_order))
+
+        for candidate in candidates:
+            pr = next(
+                (p for p in candidate.prices if p.billing_type == target_billing and p.is_active and p.amount),
+                None,
+            )
+            # If exact billing type not found, take any available price
+            if not pr:
+                pr = next(
+                    (p for p in candidate.prices if p.is_active and p.amount),
+                    None,
+                )
+            if pr:
+                package       = candidate
+                package_price = pr
+                base_amount   = float(pr.amount)
+                order_type    = "one_time" if pr.billing_type == BillingType.one_time else "subscription"
+                billing_cycle = pr.billing_type.value if pr.billing_type.value in ("monthly", "yearly") else "monthly"
+                break
+
+    # ── Path 3: product-level prices (no packages configured) ────────────────
     if not base_amount and product:
         if order_type == "one_time" and product.price_otf:
             base_amount = float(product.price_otf)

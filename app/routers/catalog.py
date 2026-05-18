@@ -73,9 +73,7 @@ async def catalog(
 
     if sort in ("price_asc", "price_desc"):
         query = query.outerjoin(min_pkg_price_sq, min_pkg_price_sq.c.product_id == Product.id)
-        effective_price = func.coalesce(
-            min_pkg_price_sq.c.min_price, Product.price_otf, Product.price_monthly
-        )
+        effective_price = func.coalesce(min_pkg_price_sq.c.min_price)
         if sort == "price_asc":
             query = query.order_by(effective_price.asc().nullsfirst())
         else:

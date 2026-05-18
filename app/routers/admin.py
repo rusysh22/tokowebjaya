@@ -389,7 +389,7 @@ async def admin_product_update(
 
     # Prevent publishing via the edit form without going through readiness validation
     if status == "active" and old_status != "active" and pricing_model != "contact_seller":
-        active_pkgs = [pkg for pkg in product.packages if pkg.status.value == "active"]
+        active_pkgs = [pkg for pkg in product.packages if pkg.status == "active"]
         unpriced = [pkg for pkg in active_pkgs if not _pkg_priced(pkg)]
         if not active_pkgs or unpriced:
             raise HTTPException(
@@ -1111,7 +1111,7 @@ async def admin_packages_overview(
 
     # Compute readiness for each product
     def _product_readiness(p) -> dict:
-        active_pkgs = [pkg for pkg in p.packages if pkg.status.value == "active"]
+        active_pkgs = [pkg for pkg in p.packages if pkg.status == "active"]
         pkgs_with_price = [pkg for pkg in active_pkgs if _pkg_priced(pkg)]
         has_cover = bool(p.cover_image)
         has_name = bool(p.name_id and p.name_en)
@@ -1255,7 +1255,7 @@ async def admin_packages_create(
         guidebook_url=guidebook_url or None,
         webhook_url=webhook_url or None,
         download_file=download_file or None,
-        status=PackageStatus(status),
+        status=status,
     )
     db.add(pkg)
     db.commit()
@@ -1315,7 +1315,7 @@ async def admin_packages_edit(
     pkg.guidebook_url         = guidebook_url or None
     pkg.webhook_url           = webhook_url or None
     pkg.download_file         = download_file or None
-    pkg.status                = PackageStatus(status)
+    pkg.status = status
     pkg.updated_at            = datetime.utcnow()
     db.commit()
     return RedirectResponse(url=f"/{locale}/admin/products/{product_id}/packages", status_code=303)
@@ -1360,7 +1360,7 @@ async def admin_product_activate(
     if not product:
         raise HTTPException(status_code=404)
 
-    active_pkgs = [pkg for pkg in product.packages if pkg.status.value == "active"]
+    active_pkgs = [pkg for pkg in product.packages if pkg.status == "active"]
     if not active_pkgs:
         return JSONResponse({"ok": False, "error": "Minimal 1 paket harus berstatus Active sebelum produk bisa dipublish."}, status_code=400)
 

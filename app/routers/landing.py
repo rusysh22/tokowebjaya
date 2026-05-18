@@ -19,10 +19,13 @@ from fastapi import APIRouter, BackgroundTasks, Depends, Form, Request
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 
+from sqlalchemy import func
+
 from app.core.auth import get_current_user
 from app.core.config import settings
 from app.core.database import get_db
 from app.models.contact import ContactMessage
+from app.models.package import BillingType, PackagePrice, PackageStatus, ProductPackage
 from app.models.product import Product, ProductStatus
 
 router = APIRouter(tags=["landing"])
@@ -50,6 +53,33 @@ async def landing(request: Request, locale: str, db: Session = Depends(get_db)):
         .all()
     )
 
+    # Compute min active package price per featured product
+    featured_ids = [p.id for p in featured]
+    min_prices: dict = {}
+    if featured_ids:
+        rows = (
+            db.query(
+                ProductPackage.product_id,
+                func.min(PackagePrice.amount).label("min_price"),
+                PackagePrice.billing_type,
+            )
+            .join(PackagePrice, PackagePrice.package_id == ProductPackage.id)
+            .filter(
+                ProductPackage.product_id.in_(featured_ids),
+                ProductPackage.status == PackageStatus.active.value,
+                PackagePrice.is_active == True,
+                PackagePrice.amount.isnot(None),
+                PackagePrice.billing_type != BillingType.contact,
+            )
+            .group_by(ProductPackage.product_id, PackagePrice.billing_type)
+            .order_by(func.min(PackagePrice.amount).asc())
+            .all()
+        )
+        for r in rows:
+            pid = str(r.product_id)
+            if pid not in min_prices:
+                min_prices[pid] = {"amount": float(r.min_price), "billing_type": r.billing_type.value}
+
     return templates.TemplateResponse(
         request,
         "landing/index.html",
@@ -58,6 +88,7 @@ async def landing(request: Request, locale: str, db: Session = Depends(get_db)):
             "current_user": current_user,
             "active_page": "home",
             "featured_products": featured,
+            "min_prices": min_prices,
         },
     )
 
