@@ -1146,6 +1146,28 @@ async def admin_packages_list(
         .order_by(ProductLimitSchema.sort_order)
         .all()
     )
+
+    # Compute readiness in Python to keep template simple
+    active_pkgs = [p for p in packages if p.status.value == "active"]
+    pkgs_no_price = [
+        p for p in active_pkgs
+        if not any(pr.is_active and pr.amount for pr in p.prices)
+    ]
+    readiness = {
+        "check_name": bool(product.name_id and product.name_en),
+        "check_cover": bool(product.cover_image),
+        "check_pkg": len(active_pkgs) > 0,
+        "check_price": len(active_pkgs) > 0 and len(pkgs_no_price) == 0,
+        "active_pkg_count": len(active_pkgs),
+        "pkgs_no_price": [p.name_id for p in pkgs_no_price],
+    }
+    readiness["is_ready"] = all([
+        readiness["check_name"],
+        readiness["check_cover"],
+        readiness["check_pkg"],
+        readiness["check_price"],
+    ])
+
     from app.main import templates
     return templates.TemplateResponse(
         request, "admin/packages/list.html",
@@ -1158,6 +1180,7 @@ async def admin_packages_list(
             "limit_schemas": limit_schemas,
             "billing_types": [b.value for b in BillingType],
             "package_statuses": [s.value for s in PackageStatus],
+            "readiness": readiness,
         },
     )
 
