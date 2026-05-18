@@ -1078,16 +1078,40 @@ async def admin_availability_toggle(
 @router.get("/{locale}/admin/packages")
 async def admin_packages_overview(
     request: Request, locale: str,
+    status_filter: str = "all",
     db: Session = Depends(get_db),
 ):
     """Overview page listing all products and their package counts."""
     user = _require_admin(request, db)
-    products = (
-        db.query(Product)
-        .filter(Product.status == ProductStatus.active)
-        .order_by(Product.name_id)
-        .all()
-    )
+    q = db.query(Product)
+    if status_filter in ("active", "draft", "archived"):
+        q = q.filter(Product.status == ProductStatus(status_filter))
+    # Active first, then draft, then archived; alphabetical within each group
+    products = q.order_by(Product.status, Product.name_id).all()
+
+    # Compute readiness for each product
+    def _product_readiness(p) -> dict:
+        active_pkgs = [pkg for pkg in p.packages if pkg.status.value == "active"]
+        pkgs_with_price = [
+            pkg for pkg in active_pkgs
+            if any(pr.is_active and pr.amount for pr in pkg.prices)
+        ]
+        has_cover = bool(p.cover_image)
+        has_name = bool(p.name_id and p.name_en)
+        has_active_pkg = len(active_pkgs) > 0
+        all_priced = len(active_pkgs) > 0 and len(pkgs_with_price) == len(active_pkgs)
+        ready = has_name and has_cover and has_active_pkg and all_priced
+        return {
+            "has_cover": has_cover,
+            "has_name": has_name,
+            "active_pkgs": len(active_pkgs),
+            "pkgs_with_price": len(pkgs_with_price),
+            "all_priced": all_priced,
+            "ready": ready,
+        }
+
+    products_data = [{"product": p, "readiness": _product_readiness(p)} for p in products]
+
     from app.main import templates
     return templates.TemplateResponse(
         request, "admin/packages/overview.html",
@@ -1095,7 +1119,8 @@ async def admin_packages_overview(
             "locale": locale,
             "current_user": user,
             "active_page": "packages",
-            "products": products,
+            "products_data": products_data,
+            "status_filter": status_filter,
         },
     )
 
@@ -1270,6 +1295,35 @@ async def admin_packages_delete(
     db.delete(pkg)
     db.commit()
     return RedirectResponse(url=f"/{locale}/admin/products/{product_id}/packages", status_code=303)
+
+
+@router.post("/{locale}/admin/products/{product_id}/activate")
+async def admin_product_activate(
+    request: Request, locale: str, product_id: str,
+    db: Session = Depends(get_db),
+):
+    """Set product status to active. Validates at least one active package with a price exists."""
+    from fastapi.responses import JSONResponse
+    _require_admin(request, db)
+    product = db.query(Product).filter(Product.id == product_id).first()
+    if not product:
+        raise HTTPException(status_code=404)
+
+    active_pkgs = [pkg for pkg in product.packages if pkg.status.value == "active"]
+    if not active_pkgs:
+        return JSONResponse({"ok": False, "error": "Minimal 1 paket harus berstatus Active sebelum produk bisa dipublish."}, status_code=400)
+
+    unpriced = [
+        pkg for pkg in active_pkgs
+        if not any(pr.is_active and pr.amount for pr in pkg.prices)
+    ]
+    if unpriced:
+        names = ", ".join(pkg.name_id for pkg in unpriced)
+        return JSONResponse({"ok": False, "error": f"Paket berikut belum memiliki harga aktif: {names}"}, status_code=400)
+
+    product.status = ProductStatus.active
+    db.commit()
+    return JSONResponse({"ok": True})
 
 
 # ─── Package Prices ──────────────────────────────────────────────────────────

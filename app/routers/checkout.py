@@ -128,8 +128,14 @@ def _resolve_checkout_pricing(
 ) -> tuple:
     """
     Resolve product, package, package_price, base_amount, order_type, billing_cycle.
-    New path: package_price_id → PackagePrice → Product.
-    Legacy path: product_id + order_type + billing_cycle → Product price columns.
+
+    Price source priority (single source of truth):
+      1. package_price_id provided → use PackagePrice.amount (tiered products)
+      2. Fallback to product.price_otf / price_monthly / price_yearly (simple products without packages)
+
+    Products with active packages MUST use path 1. Path 2 is kept only for legacy
+    products that have no packages configured.
+
     Returns (product, package, package_price, base_amount, order_type, billing_cycle).
     """
     package_price: PackagePrice | None = None

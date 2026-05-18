@@ -2,24 +2,124 @@
 {% block page_title %}Packages — {{ product['name_' + locale] }}{% endblock %}
 
 {% block content %}
+
+{# ── Readiness checklist computed in template ── #}
+{% set active_pkgs = packages | selectattr('status', 'equalto', 'active') | list %}
+{% set pkgs_no_price = [] %}
+{% for pkg in active_pkgs %}
+  {% set has_price = pkg.prices | selectattr('is_active') | selectattr('amount') | list | length > 0 %}
+  {% if not has_price %}{% set _ = pkgs_no_price.append(pkg) %}{% endif %}
+{% endfor %}
+{% set check_name = product.name_id and product.name_en %}
+{% set check_cover = product.cover_image %}
+{% set check_pkg = active_pkgs | length > 0 %}
+{% set check_price = active_pkgs | length > 0 and pkgs_no_price | length == 0 %}
+{% set is_ready = check_name and check_cover and check_pkg and check_price %}
+
 <div x-data="packageAdmin()" x-init="init()">
 
   <!-- Header -->
-  <div class="flex items-center justify-between mb-6">
+  <div class="flex items-center justify-between mb-5">
     <div>
       <div class="text-xs text-gray-500 mb-1 flex items-center gap-1.5">
-        <a href="/{{ locale }}/admin/products" class="hover:text-white transition-colors">Products</a>
+        <a href="/{{ locale }}/admin/packages" class="hover:text-white transition-colors">Packages & Pricing</a>
         <span>/</span>
         <a href="/{{ locale }}/admin/products/{{ product.id }}/edit" class="hover:text-white transition-colors truncate max-w-[200px]">{{ product['name_' + locale] }}</a>
         <span>/</span>
         <span class="text-gray-400">Packages</span>
       </div>
-      <h2 class="text-lg font-bold text-white">Manage Packages</h2>
+      <div class="flex items-center gap-3">
+        <h2 class="text-lg font-bold text-white">{{ product['name_' + locale] }}</h2>
+        {% if product.status.value == 'active' %}
+          <span class="text-xs px-2 py-0.5 border border-green-800 text-green-400">Active</span>
+        {% elif product.status.value == 'draft' %}
+          <span class="text-xs px-2 py-0.5 border border-yellow-800 text-yellow-400">Draft</span>
+        {% endif %}
+      </div>
     </div>
     <button @click="openCreate()"
             class="btn-primary text-sm py-2 px-4 flex items-center gap-2">
       <i class="bi bi-plus-lg"></i> New Package
     </button>
+  </div>
+
+  {# ── Readiness + Pricing Model Banner ── #}
+  <div class="mb-6 border {% if is_ready and product.status.value == 'draft' %}border-neon/40 bg-neon/5{% elif not is_ready %}border-yellow-800/50 bg-yellow-950/10{% else %}border-gray-800 bg-gray-950{% endif %} p-4">
+    <div class="flex items-start justify-between gap-4 flex-wrap">
+      <div class="flex-1 min-w-0">
+        {# Pricing model context #}
+        <p class="text-xs text-gray-400 mb-3">
+          <i class="bi bi-info-circle mr-1"></i>
+          Pricing model:
+          <span class="text-white font-semibold">{{ product.pricing_model.value | replace('_', ' ') | title }}</span>
+          —
+          {% if product.pricing_model.value == 'one_time' %}
+            Pastikan setiap paket aktif memiliki harga <span class="text-white">One-time</span>.
+          {% elif product.pricing_model.value == 'subscription' %}
+            Pastikan setiap paket aktif memiliki harga <span class="text-white">Monthly</span> (dan Yearly opsional).
+          {% elif product.pricing_model.value == 'both' %}
+            Setiap paket aktif harus punya harga <span class="text-white">One-time</span> dan <span class="text-white">Monthly</span>.
+          {% elif product.pricing_model.value == 'contact_seller' %}
+            Produk ini tidak memerlukan harga — customer akan menghubungi Anda.
+          {% endif %}
+        </p>
+
+        {# Checklist items #}
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          <div class="flex items-center gap-1.5 text-xs {% if check_name %}text-gray-400{% else %}text-red-400{% endif %}">
+            <i class="bi {% if check_name %}bi-check-circle text-green-400{% else %}bi-x-circle text-red-400{% endif %} flex-shrink-0"></i>
+            Nama ID & EN
+          </div>
+          <div class="flex items-center gap-1.5 text-xs {% if check_cover %}text-gray-400{% else %}text-orange-400{% endif %}">
+            <i class="bi {% if check_cover %}bi-check-circle text-green-400{% else %}bi-exclamation-circle text-orange-400{% endif %} flex-shrink-0"></i>
+            Cover image
+          </div>
+          <div class="flex items-center gap-1.5 text-xs {% if check_pkg %}text-gray-400{% else %}text-red-400{% endif %}">
+            <i class="bi {% if check_pkg %}bi-check-circle text-green-400{% else %}bi-x-circle text-red-400{% endif %} flex-shrink-0"></i>
+            Paket aktif ({{ active_pkgs | length }})
+          </div>
+          <div class="flex items-center gap-1.5 text-xs {% if check_price %}text-gray-400{% else %}text-red-400{% endif %}">
+            <i class="bi {% if check_price %}bi-check-circle text-green-400{% else %}bi-x-circle text-red-400{% endif %} flex-shrink-0"></i>
+            Harga terisi
+            {% if pkgs_no_price | length > 0 %}
+              <span class="text-yellow-400">({{ pkgs_no_price | length }} kurang)</span>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      {# Activate button (only if draft) #}
+      {% if product.status.value == 'draft' %}
+      <div x-data="{ activating: false, err: '' }" class="flex-shrink-0">
+        <button @click="
+          activating = true; err = '';
+          fetch('/{{ locale }}/admin/products/{{ product.id }}/activate', {method:'POST'})
+            .then(r=>r.json())
+            .then(d => {
+              activating = false;
+              if (d.ok) location.reload();
+              else err = d.error;
+            })
+            .catch(() => { activating = false; err = 'Terjadi kesalahan.'; })"
+          :disabled="activating"
+          class="{% if is_ready %}btn-primary{% else %}btn-secondary opacity-50 cursor-not-allowed{% endif %} text-sm py-2 px-5 flex items-center gap-2"
+          {% if not is_ready %}title="Lengkapi checklist dulu sebelum publish"{% endif %}>
+          <i class="bi bi-rocket-takeoff" x-show="!activating"></i>
+          <i class="bi bi-arrow-clockwise animate-spin" x-show="activating" x-cloak></i>
+          <span x-show="!activating">Publish Produk</span>
+          <span x-show="activating" x-cloak>Publishing…</span>
+        </button>
+        <p x-show="err" x-cloak class="text-xs text-red-400 mt-2 max-w-[240px]" x-text="err"></p>
+        {% if not is_ready %}
+        <p class="text-[10px] text-gray-600 mt-1">Lengkapi semua checklist untuk publish.</p>
+        {% endif %}
+      </div>
+      {% elif product.status.value == 'active' %}
+      <div class="flex-shrink-0 text-xs text-green-400 flex items-center gap-1.5">
+        <i class="bi bi-check-circle-fill"></i> Produk sudah live di katalog
+      </div>
+      {% endif %}
+    </div>
   </div>
 
   <!-- Limit Schema section -->

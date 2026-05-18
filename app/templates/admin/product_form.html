@@ -426,13 +426,21 @@
   </div>
 
   <!-- Actions -->
-  <div class="flex items-center gap-4">
+  <div class="flex items-center flex-wrap gap-3">
     <button type="submit" class="btn-primary px-8 py-3">
       {% if product %}{% if locale == 'id' %}Simpan Perubahan{% else %}Save Changes{% endif %}{% else %}{% if locale == 'id' %}Tambah Produk{% else %}Add Product{% endif %}{% endif %}
     </button>
-    <a href="/{{ locale }}/admin/products" class="btn-ghost">
+    <a href="/{{ locale }}/admin/products" class="btn-secondary px-5 py-3">
       {% if locale == 'id' %}Batal{% else %}Cancel{% endif %}
     </a>
+    {% if product %}
+    <a href="/{{ locale }}/admin/products/{{ product.id }}/packages"
+       class="ml-auto flex items-center gap-2 text-sm text-neon border border-neon/40 px-5 py-3 hover:bg-neon/10 transition-colors">
+      <i class="bi bi-layers"></i>
+      {% if locale == 'id' %}Kelola Paket & Harga{% else %}Manage Packages & Pricing{% endif %}
+      <i class="bi bi-arrow-right text-xs"></i>
+    </a>
+    {% endif %}
   </div>
 
 </form>
