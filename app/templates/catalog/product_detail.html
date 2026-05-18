@@ -195,24 +195,40 @@
               {% endif %}
 
               {% if contact_price %}
-                {# Contact seller #}
+                {# Contact seller — quote request form #}
                 <p class="text-xs text-gray-500 uppercase tracking-widest font-semibold mb-4">
                   {% if locale == 'id' %}Hubungi Penjual{% else %}Contact Seller{% endif %}
                 </p>
-                {% include "components/_contact_seller.html" ignore missing %}
-                {% if product.contact_whatsapp %}
-                <a href="https://wa.me/{{ product.contact_whatsapp }}?text={{ ('Halo, saya tertarik dengan ' + product['name_' + locale]) | urlencode }}"
-                   target="_blank" rel="noopener"
-                   class="flex items-center gap-3 w-full border border-green-800 bg-green-950/40 hover:bg-green-950/80 text-green-400 px-4 py-3 text-sm font-semibold transition-colors">
-                  <i class="bi bi-whatsapp text-lg"></i><span>WhatsApp</span>
-                </a>
-                {% endif %}
-                {% if product.contact_email %}
-                <a href="mailto:{{ product.contact_email }}"
-                   class="mt-2 flex items-center gap-3 w-full border border-gray-700 hover:border-neon bg-gray-900 text-gray-300 hover:text-neon px-4 py-3 text-sm font-semibold transition-colors">
-                  <i class="bi bi-envelope text-lg"></i><span>{{ product.contact_email }}</span>
-                </a>
-                {% endif %}
+                <div x-data="quoteForm('{{ product.id }}', '{{ pkg.id }}', '{{ pkg['name_' + locale] | replace("'", "\\'") }}', '{{ locale }}')"
+                     x-init="init()">
+                  <textarea x-model="message" rows="3"
+                            placeholder="{% if locale == 'id' %}Ceritakan kebutuhan Anda...{% else %}Describe your needs...{% endif %}"
+                            class="input w-full text-sm resize-none mb-3"></textarea>
+                  {% if current_user %}
+                  <button type="button" @click="submit()" :disabled="loading || sent"
+                          class="btn-primary w-full justify-center py-3 text-sm mb-3">
+                    <i class="bi bi-send" x-show="!loading && !sent"></i>
+                    <i class="bi bi-arrow-clockwise animate-spin" x-show="loading" x-cloak></i>
+                    <i class="bi bi-check-lg" x-show="sent" x-cloak></i>
+                    <span x-show="!loading && !sent">{% if locale == 'id' %}Kirim Permintaan{% else %}Send Request{% endif %}</span>
+                    <span x-show="loading" x-cloak>{% if locale == 'id' %}Mengirim…{% else %}Sending…{% endif %}</span>
+                    <span x-show="sent" x-cloak>{% if locale == 'id' %}Terkirim!{% else %}Sent!{% endif %}</span>
+                  </button>
+                  <p x-show="error" x-cloak class="text-xs text-red-400 mb-2" x-text="error"></p>
+                  {% else %}
+                  <a href="/{{ locale }}/login" class="btn-secondary w-full justify-center py-3 text-sm block text-center mb-3">
+                    <i class="bi bi-box-arrow-in-right mr-1"></i>
+                    {% if locale == 'id' %}Masuk untuk mengirim permintaan{% else %}Sign in to send request{% endif %}
+                  </a>
+                  {% endif %}
+                  {% if product.contact_whatsapp %}
+                  <a href="https://wa.me/{{ product.contact_whatsapp }}?text={{ ('Halo, saya tertarik dengan ' + product['name_' + locale]) | urlencode }}"
+                     target="_blank" rel="noopener"
+                     class="flex items-center gap-3 w-full border border-green-800 bg-green-950/40 hover:bg-green-950/80 text-green-400 px-4 py-2 text-sm font-semibold transition-colors">
+                    <i class="bi bi-whatsapp text-lg"></i><span>WhatsApp</span>
+                  </a>
+                  {% endif %}
+                </div>
 
               {% else %}
                 {# Normal purchase flow #}
@@ -368,17 +384,30 @@
 
                   {# CTA #}
                   {% if contact_price %}
-                    {% if product.contact_whatsapp %}
-                    <a href="https://wa.me/{{ product.contact_whatsapp }}" target="_blank" rel="noopener"
-                       class="{% if pkg.is_popular %}btn-primary{% else %}btn-secondary{% endif %} w-full justify-center py-2.5 text-sm mt-auto">
-                      <i class="bi bi-whatsapp mr-1"></i>WhatsApp
-                    </a>
-                    {% elif product.contact_email %}
-                    <a href="mailto:{{ product.contact_email }}"
-                       class="{% if pkg.is_popular %}btn-primary{% else %}btn-secondary{% endif %} w-full justify-center py-2.5 text-sm mt-auto">
-                      <i class="bi bi-envelope mr-1"></i>Email
-                    </a>
-                    {% endif %}
+                    <div class="mt-auto"
+                         x-data="quoteForm('{{ product.id }}', '{{ pkg.id }}', '{{ pkg['name_' + locale] | replace("'", "\\'") }}', '{{ locale }}')"
+                         x-init="init()">
+                      {% if current_user %}
+                      <button type="button" @click="submit()" :disabled="loading || sent"
+                              class="{% if pkg.is_popular %}btn-primary{% else %}btn-secondary{% endif %} w-full justify-center py-2.5 text-sm mb-2">
+                        <i class="bi bi-send" x-show="!loading && !sent"></i>
+                        <i class="bi bi-check-lg" x-show="sent" x-cloak></i>
+                        <span x-show="!sent">{% if locale == 'id' %}Minta Penawaran{% else %}Request Quote{% endif %}</span>
+                        <span x-show="sent" x-cloak>{% if locale == 'id' %}Terkirim!{% else %}Sent!{% endif %}</span>
+                      </button>
+                      {% else %}
+                      <a href="/{{ locale }}/login"
+                         class="{% if pkg.is_popular %}btn-primary{% else %}btn-secondary{% endif %} w-full justify-center py-2.5 text-sm block text-center mb-2">
+                        {% if locale == 'id' %}Minta Penawaran{% else %}Request Quote{% endif %}
+                      </a>
+                      {% endif %}
+                      {% if product.contact_whatsapp %}
+                      <a href="https://wa.me/{{ product.contact_whatsapp }}" target="_blank" rel="noopener"
+                         class="flex items-center justify-center gap-1.5 w-full border border-green-800 text-green-400 hover:bg-green-950/40 py-2 text-xs transition-colors">
+                        <i class="bi bi-whatsapp"></i>WhatsApp
+                      </a>
+                      {% endif %}
+                    </div>
                   {% elif otf_price and not monthly_price %}
                     <a href="/{{ locale }}/checkout/{{ product.id }}?package_price_id={{ otf_price.id }}"
                        class="{% if pkg.is_popular %}btn-primary{% else %}btn-secondary{% endif %} w-full justify-center py-2.5 text-sm mt-auto">
@@ -414,11 +443,69 @@
           {% endif %}
 
         {% else %}
-          {# ── Legacy fallback: no packages yet, render from flat product.price_* ── #}
-          <div class="border border-yellow-900/40 bg-yellow-950/10 p-3 mb-4 text-xs text-yellow-600">
-            <i class="bi bi-exclamation-triangle mr-1"></i>
-            {% if locale == 'id' %}Admin: Produk ini belum memiliki paket. Tambahkan paket di admin panel.{% else %}Admin: This product has no packages yet. Add packages in the admin panel.{% endif %}
-          </div>
+          {# Fallback: product active but no packages (legacy flat price or misconfigured) #}
+          {% if product.price_otf or product.price_monthly or product.price_yearly %}
+            {# Legacy flat-price product — show price and checkout link #}
+            <div class="border border-gray-800 bg-gray-950 p-6 mb-6"
+                 x-data="{ cycle: '{{ 'monthly' if product.price_monthly else 'one_time' }}' }">
+              {% if product.price_monthly and product.price_yearly %}
+              <div class="flex border border-gray-700 overflow-hidden text-xs font-semibold mb-5 w-fit">
+                <button type="button" @click="cycle='monthly'" class="px-4 py-2 transition-colors" :class="cycle==='monthly' ? 'bg-neon text-black' : 'text-gray-400 hover:text-white'">{% if locale == 'id' %}Bulanan{% else %}Monthly{% endif %}</button>
+                <button type="button" @click="cycle='yearly'" class="px-4 py-2 transition-colors" :class="cycle==='yearly' ? 'bg-neon text-black' : 'text-gray-400 hover:text-white'">{% if locale == 'id' %}Tahunan{% else %}Yearly{% endif %}</button>
+              </div>
+              {% endif %}
+              {% if product.price_otf %}
+              <div {% if product.price_monthly %}x-show="cycle==='one_time'" x-cloak{% endif %}>
+                <div class="text-neon text-4xl font-black mb-1">Rp {{ "{:,.0f}".format(product.price_otf) }}</div>
+                <div class="text-gray-500 text-sm mb-5">{{ t(locale, 'price_otf') }}</div>
+                <a href="/{{ locale }}/checkout/{{ product.id }}?type=one_time" class="btn-primary w-full justify-center py-3.5 text-sm">{{ t(locale, 'buy_now') }}</a>
+              </div>
+              {% endif %}
+              {% if product.price_monthly %}
+              <div x-show="cycle==='monthly'">
+                <div class="text-neon text-4xl font-black mb-1">Rp {{ "{:,.0f}".format(product.price_monthly) }}</div>
+                <div class="text-gray-500 text-sm mb-5">/ {{ t(locale, 'per_month') }}</div>
+                <a href="/{{ locale }}/checkout/{{ product.id }}?type=subscription&cycle=monthly" class="btn-primary w-full justify-center py-3.5 text-sm">{{ t(locale, 'subscribe') }}</a>
+              </div>
+              {% endif %}
+              {% if product.price_yearly %}
+              <div x-show="cycle==='yearly'" x-cloak>
+                <div class="text-neon text-4xl font-black mb-1">Rp {{ "{:,.0f}".format(product.price_yearly) }}</div>
+                <div class="text-gray-500 text-sm mb-5">/ {{ t(locale, 'per_year') }}</div>
+                <a href="/{{ locale }}/checkout/{{ product.id }}?type=subscription&cycle=yearly" class="btn-primary w-full justify-center py-3.5 text-sm">{{ t(locale, 'subscribe') }}</a>
+              </div>
+              {% endif %}
+              {% if not current_user %}
+              <p class="text-xs text-gray-600 mt-4 text-center">
+                <a href="/{{ locale }}/login" class="text-neon hover:underline">{% if locale == 'id' %}Masuk{% else %}Sign in{% endif %}</a>
+                {% if locale == 'id' %}untuk melanjutkan pembelian{% else %}to proceed with purchase{% endif %}
+              </p>
+              {% endif %}
+            </div>
+          {% elif current_user and current_user.role and current_user.role.value == 'admin' %}
+            {# Admin only: show setup warning with link #}
+            <div class="border border-yellow-900/40 bg-yellow-950/10 p-4 mb-4 text-xs text-yellow-500 flex items-start gap-2">
+              <i class="bi bi-exclamation-triangle flex-shrink-0 mt-0.5"></i>
+              <span>
+                Produk ini belum memiliki paket aktif.
+                <a href="/{{ locale }}/admin/products/{{ product.id }}/packages" class="underline hover:text-yellow-300">Tambahkan paket & harga →</a>
+              </span>
+            </div>
+          {% else %}
+            {# Public: product temporarily unavailable #}
+            <div class="border border-gray-800 bg-gray-950 p-6 mb-6 text-center">
+              <i class="bi bi-clock-history text-gray-700 text-2xl block mb-3"></i>
+              <p class="text-gray-400 text-sm mb-4">
+                {% if locale == 'id' %}Produk ini sementara tidak tersedia untuk dibeli.{% else %}This product is temporarily unavailable.{% endif %}
+              </p>
+              {% if product.contact_whatsapp %}
+              <a href="https://wa.me/{{ product.contact_whatsapp }}" target="_blank" rel="noopener"
+                 class="inline-flex items-center gap-2 border border-green-800 bg-green-950/40 text-green-400 hover:bg-green-950/80 px-4 py-2 text-sm transition-colors">
+                <i class="bi bi-whatsapp"></i> {% if locale == 'id' %}Hubungi kami{% else %}Contact us{% endif %}
+              </a>
+              {% endif %}
+            </div>
+          {% endif %}
         {% endif %}
 
         <!-- Appointment Booking -->
@@ -630,10 +717,25 @@
           <h3 class="text-sm font-medium text-white group-hover:text-neon transition-colors line-clamp-2 mb-2">
             {{ p['name_' + locale] }}
           </h3>
-          {% if p.price_otf %}
-          <div class="text-neon text-sm font-bold">Rp {{ "{:,.0f}".format(p.price_otf) }}</div>
-          {% elif p.price_monthly %}
-          <div class="text-neon text-sm font-bold">Rp {{ "{:,.0f}".format(p.price_monthly) }}<span class="text-gray-500 text-xs font-normal">{{ t(locale, 'per_month') }}</span></div>
+          {% set rp = namespace(amount=None, suffix='') %}
+          {% for pkg in p.packages %}
+            {% if pkg.status.value == 'active' and rp.amount is none %}
+              {% for pr in pkg.prices %}
+                {% if pr.is_active and pr.amount is not none and rp.amount is none %}
+                  {% set rp.amount = pr.amount %}
+                  {% if pr.billing_type.value == 'monthly' %}{% set rp.suffix = '/' + t(locale, 'per_month') %}{% elif pr.billing_type.value == 'yearly' %}{% set rp.suffix = '/' + t(locale, 'per_year') %}{% endif %}
+                {% endif %}
+              {% endfor %}
+            {% endif %}
+          {% endfor %}
+          {% if rp.amount is none and p.price_otf %}{% set rp.amount = p.price_otf %}{% endif %}
+          {% if rp.amount is none and p.price_monthly %}{% set rp.amount = p.price_monthly %}{% set rp.suffix = '/' + t(locale, 'per_month') %}{% endif %}
+          {% if rp.amount is not none %}
+          <div class="text-neon text-sm font-bold">
+            Rp {{ "{:,.0f}".format(rp.amount) }}{% if rp.suffix %}<span class="text-gray-500 text-xs font-normal"> {{ rp.suffix }}</span>{% endif %}
+          </div>
+          {% elif p.pricing_model.value == 'contact_seller' %}
+          <div class="text-orange-400 text-xs font-medium">{% if locale == 'id' %}Hubungi Penjual{% else %}Contact Seller{% endif %}</div>
           {% endif %}
         </div>
       </a>
@@ -647,6 +749,38 @@
 
 {% block extra_scripts %}
 <script>
+function quoteForm(productId, packageId, packageName, locale) {
+  return {
+    message: '',
+    loading: false,
+    sent:    false,
+    error:   '',
+    init() {},
+    async submit() {
+      if (this.sent) return;
+      this.loading = true;
+      this.error   = '';
+      try {
+        const res  = await fetch(`/${locale}/checkout/${productId}/request-quote`, {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body:    JSON.stringify({ package_id: packageId, package_name: packageName, message: this.message }),
+        });
+        const data = await res.json();
+        if (res.ok && data.status === 'sent') {
+          this.sent = true;
+        } else {
+          this.error = data.detail || (locale === 'id' ? 'Gagal mengirim.' : 'Failed to send.');
+        }
+      } catch(e) {
+        this.error = locale === 'id' ? 'Terjadi kesalahan.' : 'An error occurred.';
+      } finally {
+        this.loading = false;
+      }
+    },
+  };
+}
+
 function appointmentBooker(productId, locale) {
   const today = new Date();
   const maxD  = new Date(); maxD.setDate(today.getDate() + 30);

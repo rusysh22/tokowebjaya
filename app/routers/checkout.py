@@ -411,7 +411,7 @@ async def checkout_review(
     if not currency or currency not in settings.SUPPORTED_CURRENCIES:
         currency = settings.DEFAULT_CURRENCY
 
-    product, _, package_price, amount_idr, order_type, billing_cycle = _resolve_checkout_pricing(
+    product, package, package_price, amount_idr, order_type, billing_cycle = _resolve_checkout_pricing(
         product_id, package_price_id, type, cycle, db
     )
     if not product:
@@ -438,6 +438,7 @@ async def checkout_review(
             "locale": locale,
             "current_user": current_user,
             "product": product,
+            "package": package,
             "package_price": package_price,
             "package_price_id": package_price_id,
             "order_type": order_type,
@@ -842,7 +843,11 @@ def _mark_order_paid(order: Order, db: Session, background_tasks: BackgroundTask
         ).first()
 
         if existing_sub:
-            # Renewal — confirm via Celery billing task
+            # Package upgrade/downgrade: update package_id if it changed
+            if order.package_id and str(existing_sub.package_id) != str(order.package_id):
+                existing_sub.package_id = order.package_id
+                db.commit()
+            # Extend billing via renewal task (covers both renewals and upgrades)
             try:
                 from app.tasks.billing import confirm_subscription_renewal
                 confirm_subscription_renewal.delay(order_id_str)

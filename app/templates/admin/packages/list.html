@@ -3,6 +3,13 @@
 
 {% block content %}
 
+{% if error %}
+<div class="mb-4 border border-red-800 bg-red-950/20 p-3 text-sm text-red-400 flex items-start gap-2">
+  <i class="bi bi-exclamation-triangle flex-shrink-0 mt-0.5"></i>
+  <span>{{ error }}</span>
+</div>
+{% endif %}
+
 <div x-data="packageAdmin()" x-init="init()">
 
   <!-- Header -->
@@ -102,8 +109,25 @@
         {% endif %}
       </div>
       {% elif product.status.value == 'active' %}
-      <div class="flex-shrink-0 text-xs text-green-400 flex items-center gap-1.5">
-        <i class="bi bi-check-circle-fill"></i> Produk sudah live di katalog
+      <div class="flex-shrink-0 flex items-center gap-3" x-data="{ deactivating: false, err: '' }">
+        <span class="text-xs text-green-400 flex items-center gap-1.5">
+          <i class="bi bi-check-circle-fill"></i> Live di katalog
+        </span>
+        <button @click="
+          if (!confirm('Tarik produk dari katalog? Status akan kembali ke Draft.')) return;
+          deactivating = true; err = '';
+          fetch('/{{ locale }}/admin/products/{{ product.id }}/deactivate', {method:'POST'})
+            .then(r=>r.json())
+            .then(d => { deactivating = false; if (d.ok) location.reload(); else err = d.error; })
+            .catch(() => { deactivating = false; err = 'Terjadi kesalahan.'; })"
+          :disabled="deactivating"
+          class="text-xs border border-gray-700 text-gray-400 hover:text-orange-400 hover:border-orange-900 px-3 py-1.5 transition-colors flex items-center gap-1.5">
+          <i class="bi bi-arrow-down-circle" x-show="!deactivating"></i>
+          <i class="bi bi-arrow-clockwise animate-spin" x-show="deactivating" x-cloak></i>
+          <span x-show="!deactivating">Tarik dari Katalog</span>
+          <span x-show="deactivating" x-cloak>Menarik…</span>
+        </button>
+        <p x-show="err" x-cloak class="text-xs text-red-400" x-text="err"></p>
       </div>
       {% endif %}
     </div>
@@ -228,7 +252,7 @@
       <div class="px-5 py-3 border-b border-gray-800">
         <div class="flex items-center justify-between mb-2">
           <span class="text-xs font-semibold text-gray-400 uppercase tracking-widest">Prices</span>
-          <button @click="openPrices('{{ pkg.id }}', {{ pkg.prices | tojson }})"
+          <button @click="openPrices('{{ pkg.id }}', {{ pkg.prices | tojson }}, '{{ product.pricing_model.value }}')"
                   class="text-[11px] text-neon hover:underline">Edit prices</button>
         </div>
         {% if pkg.prices %}
@@ -442,7 +466,7 @@
           <button @click="modal = null" class="text-gray-500 hover:text-white"><i class="bi bi-x-lg"></i></button>
         </div>
         <div class="p-6 space-y-3">
-          <template x-for="bt in ['one_time','monthly','yearly','contact']" :key="bt">
+          <template x-for="bt in activeBillingTypes()" :key="bt">
             <div class="flex items-center gap-3 border border-gray-800 p-3">
               <div class="w-24 flex-shrink-0">
                 <span class="text-xs font-mono text-gray-400" x-text="bt"></span>
@@ -603,6 +627,7 @@ document.addEventListener('alpine:init', () => {
     modal: null,
     editingId: null,
     targetPkgId: null,
+    currentPricingModel: 'both',
     form: {},
     pricesForm: {},
     featuresForm: [],
@@ -617,16 +642,18 @@ const SERVER_PACKAGES = {{ packages | tojson(default=str) }};
 
 function packageAdmin() {
   return {
-    get modal()         { return Alpine.store('pkgAdmin').modal },
-    set modal(v)        { Alpine.store('pkgAdmin').modal = v },
-    get editingId()     { return Alpine.store('pkgAdmin').editingId },
-    set editingId(v)    { Alpine.store('pkgAdmin').editingId = v },
-    get targetPkgId()   { return Alpine.store('pkgAdmin').targetPkgId },
-    set targetPkgId(v)  { Alpine.store('pkgAdmin').targetPkgId = v },
-    get form()          { return Alpine.store('pkgAdmin').form },
-    set form(v)         { Alpine.store('pkgAdmin').form = v },
-    get pricesForm()    { return Alpine.store('pkgAdmin').pricesForm },
-    set pricesForm(v)   { Alpine.store('pkgAdmin').pricesForm = v },
+    get modal()               { return Alpine.store('pkgAdmin').modal },
+    set modal(v)              { Alpine.store('pkgAdmin').modal = v },
+    get editingId()           { return Alpine.store('pkgAdmin').editingId },
+    set editingId(v)          { Alpine.store('pkgAdmin').editingId = v },
+    get targetPkgId()         { return Alpine.store('pkgAdmin').targetPkgId },
+    set targetPkgId(v)        { Alpine.store('pkgAdmin').targetPkgId = v },
+    get currentPricingModel() { return Alpine.store('pkgAdmin').currentPricingModel },
+    set currentPricingModel(v){ Alpine.store('pkgAdmin').currentPricingModel = v },
+    get form()                { return Alpine.store('pkgAdmin').form },
+    set form(v)               { Alpine.store('pkgAdmin').form = v },
+    get pricesForm()          { return Alpine.store('pkgAdmin').pricesForm },
+    set pricesForm(v)         { Alpine.store('pkgAdmin').pricesForm = v },
     get featuresForm()  { return Alpine.store('pkgAdmin').featuresForm },
     set featuresForm(v) { Alpine.store('pkgAdmin').featuresForm = v },
     get limitsForm()    { return Alpine.store('pkgAdmin').limitsForm },
@@ -671,13 +698,21 @@ function packageAdmin() {
       this.modal = 'pkg';
     },
 
-    openPrices(pkgId, pricesArr) {
+    activeBillingTypes() {
+      const pm = this.currentPricingModel;
+      if (pm === 'one_time')       return ['one_time'];
+      if (pm === 'subscription')   return ['monthly', 'yearly'];
+      if (pm === 'contact_seller') return ['contact'];
+      return ['one_time', 'monthly', 'yearly', 'contact']; // 'both' or unknown
+    },
+
+    openPrices(pkgId, pricesArr, pricingModel) {
       this.targetPkgId = pkgId;
+      this.currentPricingModel = pricingModel || 'both';
       const map = {};
       for (const p of (pricesArr || [])) {
         map[p.billing_type] = { amount: p.amount ?? '', is_active: p.is_active };
       }
-      // Ensure all billing types exist in form
       for (const bt of ['one_time','monthly','yearly','contact']) {
         if (!map[bt]) map[bt] = { amount: '', is_active: false };
       }

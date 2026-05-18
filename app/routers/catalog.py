@@ -7,12 +7,13 @@ Routes:
 """
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import RedirectResponse
-from sqlalchemy import or_
+from sqlalchemy import func, or_
 from sqlalchemy.orm import Session
 
 from app.core.auth import get_current_user
 from app.core.config import settings
 from app.core.database import get_db
+from app.models.package import BillingType, PackagePrice, PackageStatus, ProductPackage
 from app.models.product import Product, ProductStatus, ProductType
 
 router = APIRouter(tags=["catalog"])
@@ -53,15 +54,64 @@ async def catalog(
             )
         )
 
-    if sort == "price_asc":
-        query = query.order_by(Product.price_otf.asc().nullsfirst())
-    elif sort == "price_desc":
-        query = query.order_by(Product.price_otf.desc().nullslast())
+    # Subquery: min active package price per product (excluding contact billing)
+    min_pkg_price_sq = (
+        db.query(
+            ProductPackage.product_id,
+            func.min(PackagePrice.amount).label("min_price"),
+        )
+        .join(PackagePrice, PackagePrice.package_id == ProductPackage.id)
+        .filter(
+            ProductPackage.status == PackageStatus.active,
+            PackagePrice.is_active == True,
+            PackagePrice.amount.isnot(None),
+            PackagePrice.billing_type != BillingType.contact,
+        )
+        .group_by(ProductPackage.product_id)
+        .subquery()
+    )
+
+    if sort in ("price_asc", "price_desc"):
+        query = query.outerjoin(min_pkg_price_sq, min_pkg_price_sq.c.product_id == Product.id)
+        effective_price = func.coalesce(
+            min_pkg_price_sq.c.min_price, Product.price_otf, Product.price_monthly
+        )
+        if sort == "price_asc":
+            query = query.order_by(effective_price.asc().nullsfirst())
+        else:
+            query = query.order_by(effective_price.desc().nullslast())
     else:
         query = query.order_by(Product.sort_order.asc(), Product.created_at.desc())
 
     total = query.count()
     products = query.offset((page - 1) * per_page).limit(per_page).all()
+
+    # Compute min package price per product for catalog card display
+    product_ids = [p.id for p in products]
+    min_prices: dict = {}
+    if product_ids:
+        rows = (
+            db.query(
+                ProductPackage.product_id,
+                func.min(PackagePrice.amount).label("min_price"),
+                PackagePrice.billing_type,
+            )
+            .join(PackagePrice, PackagePrice.package_id == ProductPackage.id)
+            .filter(
+                ProductPackage.product_id.in_(product_ids),
+                ProductPackage.status == PackageStatus.active,
+                PackagePrice.is_active == True,
+                PackagePrice.amount.isnot(None),
+                PackagePrice.billing_type != BillingType.contact,
+            )
+            .group_by(ProductPackage.product_id, PackagePrice.billing_type)
+            .order_by(func.min(PackagePrice.amount).asc())
+            .all()
+        )
+        for r in rows:
+            pid = str(r.product_id)
+            if pid not in min_prices:
+                min_prices[pid] = {"amount": float(r.min_price), "billing_type": r.billing_type.value}
 
     categories = (
         db.query(Product.category)
@@ -87,6 +137,7 @@ async def catalog(
             "sort": sort,
             "categories": categories,
             "product_types": [t.value for t in ProductType],
+            "min_prices": min_prices,
         },
     )
 

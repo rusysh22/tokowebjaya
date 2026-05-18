@@ -119,6 +119,9 @@
           {% endif %}
           <div>
             <div class="text-white font-semibold text-sm mb-1">{{ product['name_' + locale] }}</div>
+            {% if package %}
+            <div class="text-neon text-xs mb-1.5 font-medium">{{ package['name_' + locale] }}</div>
+            {% endif %}
             <div class="badge-gray text-xs mb-2">{{ product.type.value }}</div>
             <div class="text-xs text-gray-500">
               {% if order_type == 'subscription' %}

@@ -192,10 +192,20 @@
 
               <div class="flex items-center justify-between pt-3 border-t border-gray-800">
                 <div>
-                  {% if product.pricing_model.value in ['one_time', 'both'] and product.price_otf %}
+                  {% set mp = min_prices.get(product.id | string) %}
+                  {% if mp %}
+                    <div class="text-neon font-bold text-base">Rp {{ "{:,.0f}".format(mp.amount) }}</div>
+                    <div class="text-gray-600 text-xs">
+                      {% if mp.billing_type == 'monthly' %}{{ t(locale, 'per_month') }}
+                      {% elif mp.billing_type == 'yearly' %}{{ t(locale, 'per_year') }}
+                      {% else %}{{ t(locale, 'price_otf') }}{% endif %}
+                    </div>
+                  {% elif product.pricing_model.value == 'contact_seller' %}
+                    <div class="text-orange-400 font-semibold text-sm">{% if locale == 'id' %}Hubungi Penjual{% else %}Contact Seller{% endif %}</div>
+                  {% elif product.price_otf %}
                     <div class="text-neon font-bold text-base">Rp {{ "{:,.0f}".format(product.price_otf) }}</div>
                     <div class="text-gray-600 text-xs">{{ t(locale, 'price_otf') }}</div>
-                  {% elif product.pricing_model.value == 'subscription' and product.price_monthly %}
+                  {% elif product.price_monthly %}
                     <div class="text-neon font-bold text-base">Rp {{ "{:,.0f}".format(product.price_monthly) }}</div>
                     <div class="text-gray-600 text-xs">{{ t(locale, 'per_month') }}</div>
                   {% endif %}

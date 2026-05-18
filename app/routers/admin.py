@@ -41,6 +41,14 @@ logger = logging.getLogger(__name__)
 router = APIRouter(tags=["admin"])
 
 
+def _pkg_priced(pkg) -> bool:
+    """Package is considered priced if it has ≥1 active price with an amount, or a contact billing type."""
+    return any(
+        pr.is_active and (pr.amount is not None or pr.billing_type.value == "contact")
+        for pr in pkg.prices
+    )
+
+
 def _require_admin(request: Request, db: Session):
     """Verify admin role; raise 403 otherwise."""
     user = get_current_user(request, db)
@@ -56,7 +64,7 @@ async def admin_dashboard(request: Request, locale: str, db: Session = Depends(g
     user = _require_admin(request, db)
     from app.main import templates
 
-    total_revenue = db.query(func.sum(Order.amount)).filter(
+    total_revenue = db.query(func.sum(func.coalesce(Order.final_amount, Order.amount))).filter(
         Order.status == OrderStatus.paid
     ).scalar() or 0
 
@@ -320,6 +328,8 @@ async def admin_product_update(
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
 
+    old_status = product.status.value
+
     if cover_image and cover_image.filename:
         if product.cover_image:
             delete_upload(f"products/images/{product.cover_image}")
@@ -376,6 +386,16 @@ async def admin_product_update(
     product.max_activations       = max_activations or 1
     product.license_duration_days = int(license_duration_days) if license_duration_days else None
     product.webhook_url           = webhook_url or None
+
+    # Prevent publishing via the edit form without going through readiness validation
+    if status == "active" and old_status != "active" and pricing_model != "contact_seller":
+        active_pkgs = [pkg for pkg in product.packages if pkg.status.value == "active"]
+        unpriced = [pkg for pkg in active_pkgs if not _pkg_priced(pkg)]
+        if not active_pkgs or unpriced:
+            raise HTTPException(
+                status_code=400,
+                detail="Produk belum siap dipublish. Tambahkan paket aktif dengan harga, lalu gunakan tombol 'Publish Produk' di halaman Kelola Paket."
+            )
 
     db.commit()
     return RedirectResponse(url=f"/{locale}/admin/products", status_code=303)
@@ -602,7 +622,7 @@ async def admin_reports(
     revenue_rows = (
         db.query(
             func.date_trunc("day", Order.paid_at).label("day"),
-            func.sum(Order.amount).label("total"),
+            func.sum(func.coalesce(Order.final_amount, Order.amount)).label("total"),
         )
         .filter(Order.status == OrderStatus.paid, Order.paid_at >= since)
         .group_by(func.date_trunc("day", Order.paid_at))
@@ -641,7 +661,7 @@ async def admin_reports(
     )
 
     # Summary stats
-    total_revenue = db.query(func.sum(Order.amount)).filter(
+    total_revenue = db.query(func.sum(func.coalesce(Order.final_amount, Order.amount))).filter(
         Order.status == OrderStatus.paid, Order.paid_at >= since
     ).scalar() or 0
 
@@ -1092,10 +1112,7 @@ async def admin_packages_overview(
     # Compute readiness for each product
     def _product_readiness(p) -> dict:
         active_pkgs = [pkg for pkg in p.packages if pkg.status.value == "active"]
-        pkgs_with_price = [
-            pkg for pkg in active_pkgs
-            if any(pr.is_active and pr.amount for pr in pkg.prices)
-        ]
+        pkgs_with_price = [pkg for pkg in active_pkgs if _pkg_priced(pkg)]
         has_cover = bool(p.cover_image)
         has_name = bool(p.name_id and p.name_en)
         has_active_pkg = len(active_pkgs) > 0
@@ -1128,6 +1145,7 @@ async def admin_packages_overview(
 @router.get("/{locale}/admin/products/{product_id}/packages")
 async def admin_packages_list(
     request: Request, locale: str, product_id: str,
+    error: str = "",
     db: Session = Depends(get_db),
 ):
     user = _require_admin(request, db)
@@ -1149,10 +1167,7 @@ async def admin_packages_list(
 
     # Compute readiness in Python to keep template simple
     active_pkgs = [p for p in packages if p.status.value == "active"]
-    pkgs_no_price = [
-        p for p in active_pkgs
-        if not any(pr.is_active and pr.amount for pr in p.prices)
-    ]
+    pkgs_no_price = [p for p in active_pkgs if not _pkg_priced(p)]
     readiness = {
         "check_name": bool(product.name_id and product.name_en),
         "check_cover": bool(product.cover_image),
@@ -1181,6 +1196,7 @@ async def admin_packages_list(
             "billing_types": [b.value for b in BillingType],
             "package_statuses": [s.value for s in PackageStatus],
             "readiness": readiness,
+            "error": error,
         },
     )
 
@@ -1315,6 +1331,18 @@ async def admin_packages_delete(
     if not pkg:
         raise HTTPException(status_code=404)
     product_id = str(pkg.product_id)
+
+    paid_count = db.query(func.count(Order.id)).filter(
+        Order.package_id == package_id,
+        Order.status == OrderStatus.paid,
+    ).scalar() or 0
+    if paid_count:
+        error_msg = f"Paket '{pkg.name_id}' tidak bisa dihapus karena ada {paid_count} order yang sudah dibayar menggunakan paket ini."
+        return RedirectResponse(
+            url=f"/{locale}/admin/products/{product_id}/packages?error={error_msg}",
+            status_code=303,
+        )
+
     db.delete(pkg)
     db.commit()
     return RedirectResponse(url=f"/{locale}/admin/products/{product_id}/packages", status_code=303)
@@ -1336,15 +1364,30 @@ async def admin_product_activate(
     if not active_pkgs:
         return JSONResponse({"ok": False, "error": "Minimal 1 paket harus berstatus Active sebelum produk bisa dipublish."}, status_code=400)
 
-    unpriced = [
-        pkg for pkg in active_pkgs
-        if not any(pr.is_active and pr.amount for pr in pkg.prices)
-    ]
+    unpriced = [pkg for pkg in active_pkgs if not _pkg_priced(pkg)]
     if unpriced:
         names = ", ".join(pkg.name_id for pkg in unpriced)
         return JSONResponse({"ok": False, "error": f"Paket berikut belum memiliki harga aktif: {names}"}, status_code=400)
 
     product.status = ProductStatus.active
+    db.commit()
+    return JSONResponse({"ok": True})
+
+
+@router.post("/{locale}/admin/products/{product_id}/deactivate")
+async def admin_product_deactivate(
+    request: Request, locale: str, product_id: str,
+    db: Session = Depends(get_db),
+):
+    """Set an active product back to draft (pull from catalog)."""
+    from fastapi.responses import JSONResponse
+    _require_admin(request, db)
+    product = db.query(Product).filter(Product.id == product_id).first()
+    if not product:
+        raise HTTPException(status_code=404)
+    if product.status != ProductStatus.active:
+        return JSONResponse({"ok": False, "error": "Produk tidak dalam status active."}, status_code=400)
+    product.status = ProductStatus.draft
     db.commit()
     return JSONResponse({"ok": True})
 
