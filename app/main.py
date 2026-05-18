@@ -7,9 +7,13 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.middleware.sessions import SessionMiddleware
 from contextlib import asynccontextmanager
 from jinja2 import FileSystemLoader, Environment
+from markupsafe import Markup
 from datetime import datetime
 import uuid as _uuid
 import logging
+import json
+import decimal
+import enum
 import os
 
 logger = logging.getLogger(__name__)
@@ -52,6 +56,30 @@ app.add_middleware(
 # Static files
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
+def _json_default(obj):
+    """Serialize types that json.dumps can't handle natively."""
+    if isinstance(obj, enum.Enum):
+        return obj.value
+    if isinstance(obj, (_uuid.UUID, decimal.Decimal)):
+        return str(obj)
+    if isinstance(obj, datetime):
+        return obj.isoformat()
+    if hasattr(obj, "__dict__"):
+        # SQLAlchemy model: serialize mapped column attributes only
+        from sqlalchemy import inspect as sa_inspect
+        try:
+            mapper = sa_inspect(type(obj))
+            return {col.key: _json_default(getattr(obj, col.key))
+                    for col in mapper.column_attrs}
+        except Exception:
+            pass
+    return str(obj)
+
+
+def _tojson_safe(value):
+    return Markup(json.dumps(value, default=_json_default))
+
+
 # Jinja2 with global helpers
 jinja_env = Environment(loader=FileSystemLoader("app/templates"), autoescape=True)
 jinja_env.globals["t"] = t
@@ -60,6 +88,7 @@ jinja_env.globals["settings"] = settings
 jinja_env.globals["format_price"] = format_price
 jinja_env.globals["get_display_prices"] = get_display_prices
 jinja_env.globals["get_vat_rate"] = get_vat_rate
+jinja_env.filters["tojson_safe"] = _tojson_safe
 templates = Jinja2Templates(env=jinja_env)
 
 # Register routers
