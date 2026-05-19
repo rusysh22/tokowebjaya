@@ -254,6 +254,19 @@ async def order_detail(request: Request, locale: str, order_id: str, db: Session
             .first()
         )
 
+    # Load available packages for subscription change plan UI
+    sub_packages = []
+    if linked_sub and linked_sub.status == SubscriptionStatus.active and linked_sub.product_id:
+        sub_packages = (
+            db.query(ProductPackage)
+            .filter(
+                ProductPackage.product_id == linked_sub.product_id,
+                ProductPackage.status == "active",
+            )
+            .order_by(ProductPackage.sort_order)
+            .all()
+        )
+
     from app.main import templates
     return templates.TemplateResponse(
         request, "dashboard/order_detail.html",
@@ -267,6 +280,7 @@ async def order_detail(request: Request, locale: str, order_id: str, db: Session
             "download_url": download_url,
             "refunds": refunds,
             "linked_sub": linked_sub,
+            "sub_packages": sub_packages,
         },
     )
 
@@ -363,9 +377,22 @@ async def dashboard_profile(request: Request, locale: str, db: Session = Depends
     if redirect:
         return redirect
     from app.main import templates
+    keys = (
+        db.query(ApiKey)
+        .filter(ApiKey.user_id == user.id, ApiKey.is_active == True)
+        .order_by(desc(ApiKey.created_at))
+        .all()
+    )
     return templates.TemplateResponse(
         request, "dashboard/profile.html",
-        {"locale": locale, "current_user": user, "active_page": "dashboard"},
+        {
+            "locale": locale,
+            "current_user": user,
+            "active_page": "dashboard",
+            "keys": keys,
+            "scopes": [s.value for s in ApiKeyScope],
+            "new_key": request.query_params.get("new_key"),
+        },
     )
 
 
@@ -434,27 +461,7 @@ async def dashboard_update_password(request: Request, locale: str, db: Session =
 
 @router.get("/{locale}/dashboard/api-keys")
 async def dashboard_api_keys(request: Request, locale: str, db: Session = Depends(get_db)):
-    redirect, user = _require_user(request, db)
-    if redirect:
-        return redirect
-
-    from app.main import templates
-    keys = (
-        db.query(ApiKey)
-        .filter(ApiKey.user_id == user.id, ApiKey.is_active == True)
-        .order_by(desc(ApiKey.created_at))
-        .all()
-    )
-    return templates.TemplateResponse(
-        request, "dashboard/api_keys.html",
-        {
-            "locale": locale,
-            "current_user": user,
-            "keys": keys,
-            "scopes": [s.value for s in ApiKeyScope],
-            "new_key": request.query_params.get("new_key"),
-        },
-    )
+    return RedirectResponse(url=f"/{locale}/dashboard/profile", status_code=301)
 
 
 @router.post("/{locale}/dashboard/api-keys/create")
@@ -485,7 +492,7 @@ async def dashboard_create_api_key(request: Request, locale: str, db: Session = 
 
     # Pass new key once via redirect (flash-style)
     return RedirectResponse(
-        url=f"/{locale}/dashboard/api-keys?new_key={quote(raw_key)}",
+        url=f"/{locale}/dashboard/profile?new_key={quote(raw_key)}",
         status_code=303,
     )
 
@@ -501,7 +508,7 @@ async def dashboard_revoke_api_key(request: Request, locale: str, key_id: str, d
         key.is_active = False
         db.commit()
 
-    return RedirectResponse(url=f"/{locale}/dashboard/api-keys", status_code=303)
+    return RedirectResponse(url=f"/{locale}/dashboard/profile", status_code=303)
 
 
 @router.post("/{locale}/dashboard/subscriptions/{sub_id}/cancel")
@@ -514,6 +521,7 @@ async def cancel_subscription(request: Request, locale: str, sub_id: str, backgr
     sub = db.query(Subscription).filter(
         Subscription.id == sub_id, Subscription.user_id == user.id
     ).first()
+    linked_order_id = None
     if sub and sub.status == SubscriptionStatus.active:
         sub.status = SubscriptionStatus.cancelled
         sub.cancelled_at = datetime.utcnow()
@@ -528,8 +536,27 @@ async def cancel_subscription(request: Request, locale: str, sub_id: str, backgr
             background_tasks.add_task(send_subscription_cancelled, sub, sub.product, user, locale)
         except Exception:
             pass
+        # Find the most recent paid order for this product to redirect back to
+        try:
+            from app.models.order import OrderStatus
+            linked_order = (
+                db.query(Order)
+                .filter(
+                    Order.user_id == user.id,
+                    Order.product_id == sub.product_id,
+                    Order.status == OrderStatus.paid,
+                )
+                .order_by(desc(Order.created_at))
+                .first()
+            )
+            if linked_order:
+                linked_order_id = str(linked_order.id)
+        except Exception:
+            pass
 
-    return RedirectResponse(url=f"/{locale}/dashboard/subscriptions", status_code=303)
+    if linked_order_id:
+        return RedirectResponse(url=f"/{locale}/dashboard/orders/{linked_order_id}", status_code=303)
+    return RedirectResponse(url=f"/{locale}/dashboard/orders", status_code=303)
 
 
 @router.post("/{locale}/dashboard/subscriptions/{sub_id}/schedule-change")

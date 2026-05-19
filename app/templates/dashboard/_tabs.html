@@ -1,31 +1,25 @@
 {#
-  Dashboard navigation tabs — grouped into 3 logical sections.
-  Renders a compact mobile-scrollable tab bar.
-  Groups: Activity | My Products | Developer
+  Dashboard navigation tabs — 3 tabs: Beranda · Pesanan · Akun
 #}
 {% set all_tabs = [
-  {'href': '/' + locale + '/dashboard',               'key': 'overview',       'label': t(locale, 'dashboard_overview'),       'icon': 'bi-grid-1x2'},
-  {'href': '/' + locale + '/dashboard/orders',        'key': 'orders',         'label': t(locale, 'dashboard_orders'),         'icon': 'bi-receipt'},
-  {'href': '/' + locale + '/dashboard/invoices',      'key': 'invoices',       'label': t(locale, 'dashboard_invoices'),       'icon': 'bi-file-earmark-text'},
-  {'href': '/' + locale + '/dashboard/licenses',      'key': 'licenses',       'label': t(locale, 'dashboard_licenses'),       'icon': 'bi-shield-lock'},
-  {'href': '/' + locale + '/dashboard/subscriptions', 'key': 'subscriptions',  'label': t(locale, 'dashboard_subscriptions'),  'icon': 'bi-arrow-repeat'},
-  {'href': '/' + locale + '/appointments',            'key': 'appointments',   'label': t(locale, 'dashboard_appointments'),   'icon': 'bi-calendar-check'},
-  {'href': '/' + locale + '/dashboard/api-keys',      'key': 'api-keys',       'label': t(locale, 'dashboard_api_keys'),       'icon': 'bi-key'},
-  {'href': '/' + locale + '/dashboard/profile',       'key': 'profile',        'label': t(locale, 'dashboard_profile'),        'icon': 'bi-person'},
+  {'href': '/' + locale + '/dashboard',        'key': 'overview', 'label_id': 'Beranda',  'label_en': 'Home',    'icon': 'bi-grid-1x2'},
+  {'href': '/' + locale + '/dashboard/orders', 'key': 'orders',   'label_id': 'Pesanan',  'label_en': 'Orders',  'icon': 'bi-receipt'},
+  {'href': '/' + locale + '/dashboard/profile','key': 'profile',  'label_id': 'Akun',     'label_en': 'Account', 'icon': 'bi-person'},
 ] %}
 
 <nav class="mb-8" aria-label="Dashboard navigation">
   <div class="flex border-b border-gray-800 gap-0 overflow-x-auto no-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0">
     {% for tab in all_tabs %}
-    {% set is_active = (tab.key == 'overview' and (request.url.path.endswith('/dashboard') or request.url.path.endswith('/dashboard/')))
-                    or (tab.key != 'overview' and tab.key in request.url.path) %}
+    {% set path = request.url.path %}
+    {% set is_active = (tab.key == 'overview' and (path.endswith('/dashboard') or path.endswith('/dashboard/')))
+                    or (tab.key == 'orders' and '/dashboard/orders' in path)
+                    or (tab.key == 'profile' and ('/dashboard/profile' in path or '/dashboard/api-keys' in path)) %}
     <a href="{{ tab.href }}"
-       class="flex items-center gap-1.5 px-3 sm:px-4 py-3 text-xs sm:text-sm font-medium whitespace-nowrap border-b-2 transition-colors duration-200 flex-shrink-0
+       class="flex items-center gap-1.5 px-4 sm:px-6 py-3 text-xs sm:text-sm font-medium whitespace-nowrap border-b-2 transition-colors duration-200 flex-shrink-0
               {% if is_active %}border-neon text-white{% else %}border-transparent text-gray-500 hover:text-white hover:border-gray-600{% endif %}"
        {% if is_active %}aria-current="page"{% endif %}>
       <i class="bi {{ tab.icon }} text-xs"></i>
-      <span class="hidden sm:inline">{{ tab.label }}</span>
-      <span class="sm:hidden text-[11px]">{{ tab.label }}</span>
+      <span>{% if locale == 'id' %}{{ tab.label_id }}{% else %}{{ tab.label_en }}{% endif %}</span>
     </a>
     {% endfor %}
   </div>
