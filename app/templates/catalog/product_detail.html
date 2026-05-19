@@ -216,7 +216,7 @@
                   </button>
                   <p x-show="error" x-cloak class="text-xs text-red-400 mb-2" x-text="error"></p>
                   {% else %}
-                  <a href="/{{ locale }}/login" class="btn-secondary w-full justify-center py-3 text-sm block text-center mb-3">
+                  <a href="/{{ locale }}/login?next=/{{ locale }}/product/{{ product.slug }}" class="btn-secondary w-full justify-center py-3 text-sm block text-center mb-3">
                     <i class="bi bi-box-arrow-in-right mr-1"></i>
                     {% if locale == 'id' %}Masuk untuk mengirim permintaan{% else %}Sign in to send request{% endif %}
                   </a>
@@ -294,7 +294,7 @@
 
               {% if not current_user %}
               <p class="text-xs text-gray-600 mt-4 text-center">
-                <a href="/{{ locale }}/login" class="text-neon hover:underline">{% if locale == 'id' %}Masuk{% else %}Sign in{% endif %}</a>
+                <a href="/{{ locale }}/login?next=/{{ locale }}/product/{{ product.slug }}" class="text-neon hover:underline">{% if locale == 'id' %}Masuk{% else %}Sign in{% endif %}</a>
                 {% if locale == 'id' %}untuk melanjutkan pembelian{% else %}to proceed with purchase{% endif %}
               </p>
               {% endif %}
@@ -396,7 +396,7 @@
                         <span x-show="sent" x-cloak>{% if locale == 'id' %}Terkirim!{% else %}Sent!{% endif %}</span>
                       </button>
                       {% else %}
-                      <a href="/{{ locale }}/login"
+                      <a href="/{{ locale }}/login?next=/{{ locale }}/product/{{ product.slug }}"
                          class="{% if pkg.is_popular %}btn-primary{% else %}btn-secondary{% endif %} w-full justify-center py-2.5 text-sm block text-center mb-2">
                         {% if locale == 'id' %}Minta Penawaran{% else %}Request Quote{% endif %}
                       </a>
@@ -435,7 +435,7 @@
 
               {% if not current_user %}
               <p class="text-xs text-gray-600 mt-4 text-center">
-                <a href="/{{ locale }}/login" class="text-neon hover:underline">{% if locale == 'id' %}Masuk{% else %}Sign in{% endif %}</a>
+                <a href="/{{ locale }}/login?next=/{{ locale }}/product/{{ product.slug }}" class="text-neon hover:underline">{% if locale == 'id' %}Masuk{% else %}Sign in{% endif %}</a>
                 {% if locale == 'id' %}untuk melanjutkan pembelian{% else %}to proceed with purchase{% endif %}
               </p>
               {% endif %}
@@ -477,7 +477,7 @@
               {% endif %}
               {% if not current_user %}
               <p class="text-xs text-gray-600 mt-4 text-center">
-                <a href="/{{ locale }}/login" class="text-neon hover:underline">{% if locale == 'id' %}Masuk{% else %}Sign in{% endif %}</a>
+                <a href="/{{ locale }}/login?next=/{{ locale }}/product/{{ product.slug }}" class="text-neon hover:underline">{% if locale == 'id' %}Masuk{% else %}Sign in{% endif %}</a>
                 {% if locale == 'id' %}untuk melanjutkan pembelian{% else %}to proceed with purchase{% endif %}
               </p>
               {% endif %}
@@ -613,7 +613,7 @@
                 </span>
               </button>
               {% else %}
-              <a href="/{{ locale }}/login"
+              <a href="/{{ locale }}/login?next=/{{ locale }}/product/{{ product.slug }}"
                  class="btn-secondary w-full justify-center py-3 text-sm text-center block">
                 <i class="bi bi-box-arrow-in-right mr-1"></i>
                 {% if locale == 'id' %}Masuk untuk membuat janji{% else %}Sign in to book{% endif %}

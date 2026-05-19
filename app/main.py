@@ -89,6 +89,8 @@ jinja_env.globals["format_price"] = format_price
 jinja_env.globals["get_display_prices"] = get_display_prices
 jinja_env.globals["get_vat_rate"] = get_vat_rate
 jinja_env.filters["tojson_safe"] = _tojson_safe
+from urllib.parse import quote as _urlquote
+jinja_env.filters["urlencode_value"] = lambda v: _urlquote(str(v), safe="")
 templates = Jinja2Templates(env=jinja_env)
 
 # Register routers

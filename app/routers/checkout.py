@@ -22,6 +22,7 @@ Pricing contract (IDR):
 import logging
 import uuid
 from datetime import datetime, timedelta
+from urllib.parse import quote as urlquote, urlencode
 
 from fastapi import APIRouter, BackgroundTasks, Depends, Form, HTTPException, Request
 from fastapi.responses import JSONResponse, RedirectResponse
@@ -346,7 +347,13 @@ async def checkout_select_payment(
 
     current_user = get_current_user(request, db)
     if not current_user:
-        return RedirectResponse(url=f"/{locale}/login?next=/{locale}/checkout/{product_id}/select-payment")
+        qs: dict = {"type": type, "cycle": cycle}
+        if package_price_id:
+            qs["package_price_id"] = package_price_id
+        if promo:
+            qs["promo"] = promo
+        next_path = f"/{locale}/checkout/{product_id}/select-payment?" + urlencode(qs)
+        return RedirectResponse(url=f"/{locale}/login?next={urlquote(next_path)}")
 
     product, _, package_price, base_amount, order_type, billing_cycle = _resolve_checkout_pricing(
         product_id, package_price_id, type, cycle, db
@@ -442,7 +449,16 @@ async def checkout_review(
 
     current_user = get_current_user(request, db)
     if not current_user:
-        return RedirectResponse(url=f"/{locale}/login?next=/{locale}/checkout/{product_id}")
+        qs: dict = {}
+        if package_price_id:
+            qs["package_price_id"] = package_price_id
+        if type and type != "one_time":
+            qs["type"] = type
+            qs["cycle"] = cycle
+        next_path = f"/{locale}/checkout/{product_id}"
+        if qs:
+            next_path += "?" + urlencode(qs)
+        return RedirectResponse(url=f"/{locale}/login?next={urlquote(next_path)}")
 
     # Resolve currency
     if not currency or currency not in settings.SUPPORTED_CURRENCIES:
