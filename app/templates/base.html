@@ -77,203 +77,233 @@
 </div>
 
   <!-- ===== NAVBAR ===== -->
-  <header class="fixed top-0 left-0 right-0 z-50 bg-black/80 backdrop-blur-sm" id="navbar">
-    <nav class="container-main flex items-center justify-between h-16">
+  <!-- Floating WhatsApp for Mobile (Top Right) -->
+  <a href="https://wa.me/6281234567890" target="_blank" class="md:hidden fixed top-6 right-6 z-50 w-12 h-12 bg-black text-[#25D366] rounded-full flex items-center justify-center shadow-[0_0_15px_rgba(37,211,102,0.3)] border border-gray-800 hover:scale-110 transition-transform duration-300">
+    <i class="bi bi-whatsapp text-2xl"></i>
+  </a>
 
-      <!-- Logo -->
-      <a href="/{{ locale }}/" class="flex items-center gap-2 group">
-        <div class="w-8 h-8 bg-neon flex items-center justify-center">
-          <span class="text-black font-black text-sm leading-none">TW</span>
-        </div>
-        <span class="font-bold text-white text-sm tracking-wide">Toko Web Jaya</span>
+  <!-- Desktop Header -->
+  <header class="hidden md:block fixed top-6 left-0 right-0 z-50 pointer-events-none" id="navbar-desktop">
+    <div class="container-main mx-auto flex items-start justify-between pointer-events-auto">
+      
+      <!-- Left Logo -->
+      <a href="/{{ locale }}/" class="bg-black text-white h-[60px] px-8 rounded-full flex items-center justify-center hover:scale-105 transition-transform duration-300 shadow-2xl border border-gray-800 group">
+        <span class="font-black text-xl tracking-wider group-hover:text-[#CAFF00] transition-colors">GONLINE</span>
       </a>
 
-      <!-- Desktop Nav -->
-      <div class="hidden md:flex items-center gap-8">
-        <a href="/{{ locale }}/" class="nav-link {% if active_page == 'home' %}text-white{% endif %}">
-          {{ t(locale, 'nav_home') }}
-        </a>
-        <a href="/{{ locale }}/catalog" class="nav-link {% if active_page == 'catalog' %}text-white{% endif %}">
-          {{ t(locale, 'nav_catalog') }}
-        </a>
-        <a href="/{{ locale }}/solutions" class="nav-link {% if active_page == 'solutions' %}text-white{% endif %}">
-          {{ t(locale, 'nav_solutions') }}
-        </a>
-        <a href="/{{ locale }}/about" class="nav-link {% if active_page == 'about' %}text-white{% endif %}">
-          {{ t(locale, 'nav_about') }}
-        </a>
-        <a href="/{{ locale }}/contact" class="nav-link {% if active_page == 'contact' %}text-white{% endif %}">
-          {{ t(locale, 'nav_contact') }}
-        </a>
+      <!-- Center Nav -->
+      <nav class="bg-black text-white h-[60px] px-2 py-2 rounded-full flex items-center gap-1 shadow-2xl border border-gray-800" x-data="{ megaMenuOpen: false }">
+         <a href="/{{ locale }}/" class="px-6 h-full rounded-full flex items-center justify-center text-sm font-semibold transition-all duration-300 {% if active_page == 'home' %}bg-white text-black{% else %}hover:text-gray-300{% endif %}">
+           Home
+         </a>
+
+         <!-- Mega Menu Trigger -->
+         <div class="relative h-full flex items-center" @mouseenter="megaMenuOpen = true" @mouseleave="megaMenuOpen = false">
+           <a href="/{{ locale }}/catalog" class="px-6 h-full rounded-full flex items-center justify-center text-sm font-semibold gap-1.5 transition-all duration-300 {% if active_page == 'catalog' %}bg-white text-black{% else %}hover:text-gray-300{% endif %}">
+             Services
+             <i class="bi transition-transform duration-300 text-[10px]" :class="megaMenuOpen ? 'bi-x-lg rotate-90' : 'bi-plus-lg'"></i>
+           </a>
+
+           <!-- Mega Menu Panel -->
+           <div x-show="megaMenuOpen"
+                x-transition:enter="transition ease-out duration-300"
+                x-transition:enter-start="opacity-0 translate-y-4 scale-95"
+                x-transition:enter-end="opacity-100 translate-y-0 scale-100"
+                x-transition:leave="transition ease-in duration-200"
+                x-transition:leave-start="opacity-100 translate-y-0 scale-100"
+                x-transition:leave-end="opacity-0 translate-y-4 scale-95"
+                class="absolute top-[calc(100%+16px)] left-1/2 -translate-x-1/2 w-[850px] z-50 cursor-default"
+                x-cloak>
+              <div class="bg-black rounded-[2rem] p-4 border border-gray-800 shadow-2xl grid grid-cols-3 gap-4">
+                 
+                 <!-- Col 1: GO Digital -->
+                 <a href="/{{ locale }}/catalog?type=bundle" class="col-span-1 block group border border-gray-800 rounded-3xl overflow-hidden relative min-h-[320px]">
+                    <div class="absolute inset-0 bg-gradient-to-b from-black/20 to-black/90 z-10"></div>
+                    <!-- Wireframe background effect -->
+                    <div class="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-20 group-hover:opacity-40 transition-opacity duration-500"></div>
+                    <div class="absolute inset-0 bg-gradient-to-t from-[#CAFF00]/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                    
+                    <div class="relative z-20 p-6 h-full flex flex-col justify-between">
+                       <div class="flex items-center gap-2 text-white group-hover:text-[#CAFF00] transition-colors">
+                          <i class="bi bi-box-seam text-xl"></i>
+                          <h3 class="font-bold text-lg">GO Digital</h3>
+                       </div>
+                       <p class="text-xs text-gray-400 leading-relaxed group-hover:text-gray-300 transition-colors">A bundled service combining Website Development and Social Media Management to build a complete digital presence for your business.</p>
+                    </div>
+                 </a>
+
+                 <!-- Col 2: GO Website & GO Social -->
+                 <div class="col-span-1 flex flex-col gap-4">
+                    <a href="/{{ locale }}/catalog?type=software" class="flex-1 p-6 rounded-3xl border border-gray-800 hover:border-gray-600 bg-[#0a0a0a] transition-all duration-300 group flex flex-col justify-center hover:scale-[1.02]">
+                       <div class="flex items-center gap-2 mb-2 text-white group-hover:text-white transition-colors">
+                          <i class="bi bi-globe text-lg"></i>
+                          <h4 class="font-bold text-[15px]">GO Website</h4>
+                       </div>
+                       <p class="text-[11px] text-gray-400 leading-relaxed">Professional website development designed to increase credibility and generate more leads for your business.</p>
+                    </a>
+                    <a href="/{{ locale }}/catalog?type=course" class="flex-1 p-6 rounded-3xl border border-gray-800 hover:border-gray-600 bg-[#0a0a0a] transition-all duration-300 group flex flex-col justify-center hover:scale-[1.02]">
+                       <div class="flex items-center gap-2 mb-2 text-white group-hover:text-white transition-colors">
+                          <i class="bi bi-share text-lg"></i>
+                          <h4 class="font-bold text-[15px]">GO Social</h4>
+                       </div>
+                       <p class="text-[11px] text-gray-400 leading-relaxed">End-to-end social media management including content strategy, design, and optimization to grow engagement.</p>
+                    </a>
+                 </div>
+
+                 <!-- Col 3: Promo Card -->
+                 <div class="col-span-1 rounded-3xl bg-white p-1 overflow-hidden relative group">
+                    <img src="/static/og-default.png" alt="Promo" class="w-full h-full object-cover rounded-[20px] group-hover:scale-110 transition-transform duration-700" />
+                    <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent z-10 rounded-[20px]"></div>
+                    <div class="absolute bottom-5 left-5 right-5 z-20">
+                      <span class="bg-red-600 text-white text-[10px] font-black px-2.5 py-1 rounded-md uppercase tracking-wider mb-2 inline-block shadow-lg">Discount 50%</span>
+                      <h4 class="text-white font-bold text-lg leading-tight mb-1">Website Landing Page</h4>
+                      <p class="text-[#CAFF00] font-black text-sm drop-shadow-md">Rp 1.5 JT <strike class="text-gray-400 font-normal text-[10px] ml-1">Rp 3.000.000</strike></p>
+                    </div>
+                 </div>
+
+              </div>
+           </div>
+         </div>
+
+         <a href="/{{ locale }}/about" class="px-6 h-full rounded-full flex items-center justify-center text-sm font-semibold transition-all duration-300 {% if active_page == 'about' %}bg-white text-black{% else %}hover:text-gray-300{% endif %}">
+           About
+         </a>
+         <a href="/{{ locale }}/solutions" class="px-6 h-full rounded-full flex items-center justify-center text-sm font-semibold transition-all duration-300 {% if active_page == 'solutions' %}bg-white text-black{% else %}hover:text-gray-300{% endif %}">
+           Our Works
+         </a>
+         <a href="/{{ locale }}/insight" class="px-6 h-full rounded-full flex items-center justify-center text-sm font-semibold transition-all duration-300 {% if active_page == 'insight' %}bg-white text-black{% else %}hover:text-gray-300{% endif %}">
+           Insight
+         </a>
+         <a href="/{{ locale }}/contact" class="px-6 h-full rounded-full flex items-center justify-center text-sm font-semibold transition-all duration-300 {% if active_page == 'contact' %}bg-white text-black{% else %}hover:text-gray-300{% endif %}">
+           Contact
+         </a>
+      </nav>
+
+      <!-- Right Actions -->
+      <div class="flex items-center gap-2">
+         <!-- Theme / Profile / Lang -->
+         <div class="bg-black text-white h-[60px] px-2 rounded-full flex items-center gap-1 shadow-2xl border border-gray-800">
+            <!-- Language -->
+            <a href="/id{{ request.url.path | replace('/id/', '/', 1) | replace('/en/', '/', 1) or '/' }}" class="w-10 h-10 flex items-center justify-center rounded-full text-xs font-bold transition-colors {% if locale == 'id' %}bg-white text-black{% else %}text-gray-400 hover:text-white{% endif %}">ID</a>
+            <a href="/en{{ request.url.path | replace('/id/', '/', 1) | replace('/en/', '/', 1) or '/' }}" class="w-10 h-10 flex items-center justify-center rounded-full text-xs font-bold transition-colors {% if locale == 'en' %}bg-white text-black{% else %}text-gray-400 hover:text-white{% endif %}">EN</a>
+            
+            <div class="w-px h-6 bg-gray-800 mx-1"></div>
+
+            {% if current_user %}
+              <!-- Dashboard -->
+              <a href="/{{ locale }}/dashboard" class="w-10 h-10 flex items-center justify-center rounded-full text-gray-400 hover:text-white hover:bg-gray-800 transition-colors" title="Dashboard">
+                <i class="bi bi-person-circle text-xl"></i>
+              </a>
+            {% else %}
+              <a href="/{{ locale }}/login" class="px-4 h-10 flex items-center justify-center rounded-full text-xs font-semibold text-gray-300 hover:text-white hover:bg-gray-800 transition-colors">
+                Login
+              </a>
+            {% endif %}
+         </div>
+         
+         <button class="w-[60px] h-[60px] bg-black text-white rounded-full flex items-center justify-center hover:scale-110 transition-transform duration-300 shadow-2xl border border-gray-800 group">
+           <i class="bi bi-sun-fill text-xl group-hover:rotate-90 transition-transform duration-500"></i>
+         </button>
+         
+         <a href="https://wa.me/6281234567890" target="_blank" class="w-[60px] h-[60px] bg-black text-[#25D366] rounded-full flex items-center justify-center hover:scale-110 transition-transform duration-300 shadow-2xl border border-gray-800 group relative">
+           <div class="absolute inset-0 bg-[#25D366] rounded-full blur-md opacity-20 group-hover:opacity-40 transition-opacity"></div>
+           <i class="bi bi-whatsapp text-2xl relative z-10 group-hover:scale-110 transition-transform"></i>
+         </a>
       </div>
 
-      <!-- Right actions -->
-      <div class="hidden md:flex items-center gap-4">
-        <!-- Language toggle -->
-        <div class="flex items-center border border-gray-700 text-xs font-semibold overflow-hidden">
-          <a href="/id{{ request.url.path | replace('/id/', '/', 1) | replace('/en/', '/', 1) or '/' }}"
-             class="px-3 py-1.5 transition-colors duration-200 {% if locale == 'id' %}bg-neon text-black{% else %}text-gray-400 hover:text-white{% endif %}">
-            ID
-          </a>
-          <a href="/en{{ request.url.path | replace('/id/', '/', 1) | replace('/en/', '/', 1) or '/' }}"
-             class="px-3 py-1.5 transition-colors duration-200 {% if locale == 'en' %}bg-neon text-black{% else %}text-gray-400 hover:text-white{% endif %}">
-            EN
-          </a>
-        </div>
-
-        {% if current_user %}
-          <!-- Bell notification icon -->
-          <a href="/{{ locale }}/dashboard/notifications"
-             class="relative text-gray-400 hover:text-white transition-colors"
-             x-data="notifBell()"
-             title="{% if locale == 'id' %}Notifikasi{% else %}Notifications{% endif %}">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
-            </svg>
-            <span x-show="count > 0" x-cloak
-                  class="absolute -top-1.5 -right-1.5 w-4 h-4 bg-neon text-black text-[10px] font-black flex items-center justify-center rounded-full"
-                  x-text="count > 9 ? '9+' : count"></span>
-          </a>
-
-          <!-- User avatar dropdown -->
-          <div class="relative" x-data="{ open: false }" @keydown.escape.window="open = false">
-            <button @click="open = !open"
-                    class="flex items-center gap-2.5 hover:opacity-80 transition-opacity focus:outline-none"
-                    :aria-expanded="open">
-              <!-- Avatar -->
-              {% if current_user.avatar_url %}
-              <img src="{{ current_user.avatar_url }}" alt="{{ current_user.name }}"
-                   class="w-8 h-8 rounded-full object-cover ring-1 ring-gray-700" />
-              {% else %}
-              {% set initials = (current_user.name or 'U')[:2].upper() %}
-              {% set colors = ['bg-violet-600','bg-blue-600','bg-emerald-600','bg-orange-500','bg-pink-600','bg-cyan-600'] %}
-              {% set color = colors[((current_user.name or 'U') | length) % colors | length] %}
-              <span class="w-8 h-8 rounded-full {{ color }} flex items-center justify-center text-white text-xs font-bold ring-1 ring-gray-700 flex-shrink-0">
-                {{ initials }}
-              </span>
-              {% endif %}
-              <!-- Name (truncated) -->
-              <span class="text-white text-xs font-medium max-w-[100px] truncate hidden lg:block">
-                {{ (current_user.name or current_user.email).split(' ')[0] }}
-              </span>
-              <!-- Chevron -->
-              <svg class="w-3.5 h-3.5 text-gray-500 transition-transform duration-200 hidden lg:block"
-                   :class="open ? 'rotate-180' : ''"
-                   fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
-              </svg>
-            </button>
-
-            <!-- Dropdown panel -->
-            <div x-show="open"
-                 x-transition:enter="transition ease-out duration-150"
-                 x-transition:enter-start="opacity-0 scale-95 -translate-y-1"
-                 x-transition:enter-end="opacity-100 scale-100 translate-y-0"
-                 x-transition:leave="transition ease-in duration-100"
-                 x-transition:leave-start="opacity-100 scale-100 translate-y-0"
-                 x-transition:leave-end="opacity-0 scale-95 -translate-y-1"
-                 @click.outside="open = false"
-                 x-cloak
-                 class="absolute right-0 top-full mt-2 w-52 bg-gray-950 border border-gray-800 shadow-xl z-50 origin-top-right">
-
-              <!-- User info header -->
-              <div class="px-4 py-3 border-b border-gray-800">
-                <p class="text-white text-xs font-semibold truncate">{{ current_user.name or 'User' }}</p>
-                <p class="text-gray-500 text-[11px] truncate mt-0.5">{{ current_user.email }}</p>
-              </div>
-
-              <!-- Menu items -->
-              <div class="py-1">
-                <a href="/{{ locale }}/dashboard/profile"
-                   class="flex items-center gap-3 px-4 py-2.5 text-xs text-gray-300 hover:bg-gray-900 hover:text-white transition-colors">
-                  <svg class="w-3.5 h-3.5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
-                  </svg>
-                  {% if locale == 'id' %}Profil Saya{% else %}My Profile{% endif %}
-                </a>
-                <a href="/{{ locale }}/dashboard"
-                   class="flex items-center gap-3 px-4 py-2.5 text-xs text-gray-300 hover:bg-gray-900 hover:text-white transition-colors">
-                  <svg class="w-3.5 h-3.5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7h18M3 12h18M3 17h18"/>
-                  </svg>
-                  Dashboard
-                </a>
-                <a href="/{{ locale }}/dashboard/orders"
-                   class="flex items-center gap-3 px-4 py-2.5 text-xs text-gray-300 hover:bg-gray-900 hover:text-white transition-colors">
-                  <svg class="w-3.5 h-3.5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
-                  </svg>
-                  {% if locale == 'id' %}Pesanan Saya{% else %}My Orders{% endif %}
-                </a>
-              </div>
-
-              <!-- Logout -->
-              <div class="border-t border-gray-800 py-1">
-                <a href="/auth/logout"
-                   class="flex items-center gap-3 px-4 py-2.5 text-xs text-red-400 hover:bg-red-500/5 hover:text-red-300 transition-colors">
-                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
-                  </svg>
-                  {% if locale == 'id' %}Keluar{% else %}Sign Out{% endif %}
-                </a>
-              </div>
-            </div>
-          </div>
-
-        {% else %}
-          <a href="/{{ locale }}/login" class="btn-primary text-xs py-2 px-4">{{ t(locale, 'nav_login') }}</a>
-        {% endif %}
-      </div>
-
-      <!-- Mobile hamburger -->
-      <button class="md:hidden p-2 text-gray-400 hover:text-white" @click="mobileMenuOpen = !mobileMenuOpen" aria-label="Menu">
-        <svg x-show="!mobileMenuOpen" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
-        </svg>
-        <svg x-show="mobileMenuOpen" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-        </svg>
-      </button>
-    </nav>
-
-    <!-- Mobile Menu -->
-    <div x-show="mobileMenuOpen"
-         x-transition:enter="transition ease-out duration-200"
-         x-transition:enter-start="opacity-0 -translate-y-2"
-         x-transition:enter-end="opacity-100 translate-y-0"
-         x-transition:leave="transition ease-in duration-150"
-         x-transition:leave-start="opacity-100 translate-y-0"
-         x-transition:leave-end="opacity-0 -translate-y-2"
-         class="md:hidden border-t border-gray-800 bg-black">
-      <div class="container-main py-4 flex flex-col gap-1">
-        <a href="/{{ locale }}/" class="nav-link py-3 border-b border-gray-900">{{ t(locale, 'nav_home') }}</a>
-        <a href="/{{ locale }}/catalog" class="nav-link py-3 border-b border-gray-900">{{ t(locale, 'nav_catalog') }}</a>
-        <a href="/{{ locale }}/solutions" class="nav-link py-3 border-b border-gray-900">{{ t(locale, 'nav_solutions') }}</a>
-        <a href="/{{ locale }}/about" class="nav-link py-3 border-b border-gray-900">{{ t(locale, 'nav_about') }}</a>
-        <a href="/{{ locale }}/contact" class="nav-link py-3 border-b border-gray-900">{{ t(locale, 'nav_contact') }}</a>
-        <div class="flex items-center gap-3 pt-4">
-          <div class="flex items-center border border-gray-700 text-xs font-semibold overflow-hidden">
-            <a href="/id{{ request.url.path | replace('/id/', '/', 1) | replace('/en/', '/', 1) or '/' }}"
-               class="px-3 py-1.5 {% if locale == 'id' %}bg-neon text-black{% else %}text-gray-400{% endif %}">ID</a>
-            <a href="/en{{ request.url.path | replace('/id/', '/', 1) | replace('/en/', '/', 1) or '/' }}"
-               class="px-3 py-1.5 {% if locale == 'en' %}bg-neon text-black{% else %}text-gray-400{% endif %}">EN</a>
-          </div>
-          {% if current_user %}
-            <a href="/{{ locale }}/dashboard" class="btn-secondary text-xs py-2 px-4">Dashboard</a>
-            <a href="/auth/logout" class="text-xs text-red-400 border border-red-800/50 py-2 px-4 hover:bg-red-500/5 transition-colors">
-              {% if locale == 'id' %}Keluar{% else %}Sign Out{% endif %}
-            </a>
-          {% else %}
-            <a href="/{{ locale }}/login" class="btn-primary text-xs py-2 px-4">{{ t(locale, 'nav_login') }}</a>
-          {% endif %}
-        </div>
-      </div>
     </div>
   </header>
 
+  <!-- Mobile Bottom Nav -->
+  <nav class="md:hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-black/95 backdrop-blur-md p-1.5 rounded-full flex items-center gap-1 shadow-2xl border border-gray-800 w-[92%] max-w-[400px] justify-between">
+    <!-- Home -->
+    <a href="/{{ locale }}/" class="flex items-center gap-2 px-4 py-3.5 rounded-full transition-all duration-300 {% if active_page == 'home' %}bg-white text-black shadow-lg{% else %}text-white hover:bg-gray-800{% endif %} group">
+      <i class="bi bi-house-door-fill text-xl group-hover:scale-110 transition-transform"></i>
+      <span class="text-sm font-bold {% if active_page != 'home' %}hidden{% endif %}">Home</span>
+    </a>
+    
+    <!-- Services -->
+    <a href="/{{ locale }}/catalog" class="flex items-center gap-2 px-4 py-3.5 rounded-full transition-all duration-300 {% if active_page == 'catalog' %}bg-white text-black shadow-lg{% else %}text-white hover:bg-gray-800{% endif %} group">
+      <i class="bi bi-journal-album text-xl group-hover:scale-110 transition-transform"></i>
+      <span class="text-sm font-bold {% if active_page != 'catalog' %}hidden{% endif %}">Services</span>
+    </a>
+
+    <!-- Works -->
+    <a href="/{{ locale }}/solutions" class="flex items-center gap-2 px-4 py-3.5 rounded-full transition-all duration-300 {% if active_page == 'solutions' %}bg-white text-black shadow-lg{% else %}text-white hover:bg-gray-800{% endif %} group">
+      <i class="bi bi-display text-xl group-hover:scale-110 transition-transform"></i>
+      <span class="text-sm font-bold {% if active_page != 'solutions' %}hidden{% endif %}">Works</span>
+    </a>
+
+    <!-- Contact -->
+    <a href="/{{ locale }}/contact" class="flex items-center gap-2 px-4 py-3.5 rounded-full transition-all duration-300 {% if active_page == 'contact' %}bg-white text-black shadow-lg{% else %}text-white hover:bg-gray-800{% endif %} group">
+      <i class="bi bi-telephone-fill text-xl group-hover:scale-110 transition-transform"></i>
+      <span class="text-sm font-bold {% if active_page != 'contact' %}hidden{% endif %}">Call</span>
+    </a>
+
+    <!-- Menu (Plus) -->
+    <button @click="mobileMenuOpen = !mobileMenuOpen" class="flex items-center justify-center w-[52px] h-[52px] rounded-full text-white hover:bg-gray-800 transition-colors">
+      <i class="bi bi-plus-lg text-2xl transition-transform duration-300" :class="mobileMenuOpen ? 'rotate-45 text-[#CAFF00]' : ''"></i>
+    </button>
+  </nav>
+
+  <!-- Mobile Drawer Menu -->
+  <div x-show="mobileMenuOpen"
+       x-transition:enter="transition ease-out duration-300"
+       x-transition:enter-start="opacity-0 translate-y-full"
+       x-transition:enter-end="opacity-100 translate-y-0"
+       x-transition:leave="transition ease-in duration-200"
+       x-transition:leave-start="opacity-100 translate-y-0"
+       x-transition:leave-end="opacity-0 translate-y-full"
+       class="md:hidden fixed inset-0 z-40 bg-black/95 backdrop-blur-xl flex flex-col justify-end pb-32 pt-8 px-6"
+       x-cloak>
+     <div class="flex-1 overflow-y-auto flex flex-col gap-6 scrollbar-hide">
+        <div class="flex items-center justify-between mb-2">
+           <span class="font-black text-2xl text-white tracking-widest">GONLINE</span>
+           <button @click="mobileMenuOpen = false" class="w-10 h-10 bg-gray-900 rounded-full flex items-center justify-center text-white hover:bg-gray-800 transition-colors">
+             <i class="bi bi-x-lg"></i>
+           </button>
+        </div>
+        
+        <div class="grid grid-cols-2 gap-4">
+           <a href="/{{ locale }}/catalog?type=bundle" class="bg-[#0a0a0a] p-5 rounded-[24px] text-white border border-gray-800 active:scale-95 transition-transform">
+             <i class="bi bi-box-seam text-3xl text-[#CAFF00] mb-3 block"></i>
+             <h4 class="font-bold text-sm">GO Digital</h4>
+           </a>
+           <a href="/{{ locale }}/catalog?type=software" class="bg-[#0a0a0a] p-5 rounded-[24px] text-white border border-gray-800 active:scale-95 transition-transform">
+             <i class="bi bi-globe text-3xl text-[#CAFF00] mb-3 block"></i>
+             <h4 class="font-bold text-sm">GO Website</h4>
+           </a>
+           <a href="/{{ locale }}/catalog?type=course" class="bg-[#0a0a0a] p-5 rounded-[24px] text-white border border-gray-800 active:scale-95 transition-transform">
+             <i class="bi bi-share text-3xl text-[#CAFF00] mb-3 block"></i>
+             <h4 class="font-bold text-sm">GO Social</h4>
+           </a>
+           <a href="/{{ locale }}/about" class="bg-[#0a0a0a] p-5 rounded-[24px] text-white border border-gray-800 active:scale-95 transition-transform">
+             <i class="bi bi-info-circle text-3xl text-[#CAFF00] mb-3 block"></i>
+             <h4 class="font-bold text-sm">About Us</h4>
+           </a>
+        </div>
+
+        <div class="mt-auto border-t border-gray-800 pt-6 flex flex-col gap-4">
+           <div class="flex items-center justify-between">
+             <span class="text-xs text-gray-500 uppercase tracking-widest font-bold">Language</span>
+             <div class="flex items-center bg-gray-900 rounded-full p-1">
+               <a href="/id{{ request.url.path | replace('/id/', '/', 1) | replace('/en/', '/', 1) or '/' }}" class="px-5 py-2 rounded-full text-xs font-bold transition-colors {% if locale == 'id' %}bg-white text-black{% else %}text-white{% endif %}">ID</a>
+               <a href="/en{{ request.url.path | replace('/id/', '/', 1) | replace('/en/', '/', 1) or '/' }}" class="px-5 py-2 rounded-full text-xs font-bold transition-colors {% if locale == 'en' %}bg-white text-black{% else %}text-white{% endif %}">EN</a>
+             </div>
+           </div>
+           
+           {% if current_user %}
+             <a href="/{{ locale }}/dashboard" class="w-full py-4 bg-[#CAFF00] text-black font-bold rounded-full text-center text-sm shadow-[0_0_15px_rgba(202,255,0,0.3)]">Dashboard</a>
+             <a href="/auth/logout" class="w-full py-4 bg-red-500/10 text-red-500 font-bold rounded-full text-center text-sm">Sign Out</a>
+           {% else %}
+             <a href="/{{ locale }}/login" class="w-full py-4 bg-white text-black font-bold rounded-full text-center text-sm">Login</a>
+           {% endif %}
+        </div>
+     </div>
+  </div>
+
   <!-- ===== MAIN CONTENT ===== -->
-  <main class="pt-16">
+  <main class="pt-28">
     {% block content %}{% endblock %}
   </main>
 
