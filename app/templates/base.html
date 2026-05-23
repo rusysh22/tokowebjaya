@@ -510,17 +510,18 @@
   </header>
 
   <!-- Mobile Top Nav -->
-  <nav class="md:hidden fixed left-1/2 -translate-x-1/2 z-50 bg-neon p-1 rounded-full flex items-center shadow-2xl border border-black justify-between" style="top:2.5rem; width: 92%; max-width: 360px;">
+  <nav class="md:hidden fixed left-1/2 -translate-x-1/2 z-50 bg-neon p-1 rounded-full flex items-center justify-between"
+       style="top:2.5rem; width: 92%; max-width: 360px; box-shadow: 0 0 0 2px #000;">
     <!-- Home -->
     <a href="/{{ locale }}/" class="mobile-nav-item flex items-center gap-1.5 rounded-full transition-all duration-400 {% if active_page == 'home' %}bg-black text-neon mobile-nav-active{% else %}text-black mobile-nav-inactive{% endif %}" style="padding: 8px 14px;">
       <i class="bi bi-house-door-fill mobile-nav-icon" style="font-size:17px;"></i>
-      <span class="font-bold {% if active_page != 'home' %}hidden{% endif %}" style="font-size:12px;">Home</span>
+      <span class="font-bold {% if active_page != 'home' %}hidden{% endif %}" style="font-size:12px;">{% if locale == 'en' %}Home{% else %}Beranda{% endif %}</span>
     </a>
-    
+
     <!-- Katalog -->
     <a href="/{{ locale }}/catalog" class="mobile-nav-item flex items-center gap-1.5 rounded-full transition-all duration-400 {% if active_page == 'catalog' %}bg-black text-neon mobile-nav-active{% else %}text-black mobile-nav-inactive{% endif %}" style="padding: 8px 14px;">
       <i class="bi bi-bag-check-fill mobile-nav-icon" style="font-size:17px;"></i>
-      <span class="font-bold {% if active_page != 'catalog' %}hidden{% endif %}" style="font-size:12px;">Katalog</span>
+      <span class="font-bold {% if active_page != 'catalog' %}hidden{% endif %}" style="font-size:12px;">{% if locale == 'en' %}Catalog{% else %}Katalog{% endif %}</span>
     </a>
 
     <!-- Insight -->
@@ -532,7 +533,7 @@
     <!-- Contact -->
     <a href="/{{ locale }}/contact" class="mobile-nav-item flex items-center gap-1.5 rounded-full transition-all duration-400 {% if active_page == 'contact' %}bg-black text-neon mobile-nav-active{% else %}text-black mobile-nav-inactive{% endif %}" style="padding: 8px 14px;">
       <i class="bi bi-telephone-fill mobile-nav-icon" style="font-size:17px;"></i>
-      <span class="font-bold {% if active_page != 'contact' %}hidden{% endif %}" style="font-size:12px;">Kontak</span>
+      <span class="font-bold {% if active_page != 'contact' %}hidden{% endif %}" style="font-size:12px;">{% if locale == 'en' %}Contact{% else %}Kontak{% endif %}</span>
     </a>
 
     <!-- Menu (Plus) -->
@@ -558,11 +559,12 @@
              <i class="bi bi-x-lg"></i>
            </button>
         </div>
-        
+
+        <!-- Category grid -->
         <div class="grid grid-cols-2 gap-4">
            <a href="/{{ locale }}/catalog?type=software" class="p-5 text-white border border-gray-800 active:scale-95 transition-transform" style="background-color: #0a0a0a; border-radius: 24px;">
              <i class="bi bi-window-stack text-3xl text-neon mb-3 block"></i>
-             <h4 class="font-bold text-sm">Software SaaS</h4>
+             <h4 class="font-bold text-sm">{% if locale == 'en' %}SaaS Software{% else %}Software SaaS{% endif %}</h4>
            </a>
            <a href="/{{ locale }}/catalog?type=bundle" class="p-5 text-white border border-gray-800 active:scale-95 transition-transform" style="background-color: #0a0a0a; border-radius: 24px;">
              <i class="bi bi-file-code text-3xl text-neon mb-3 block"></i>
@@ -570,15 +572,16 @@
            </a>
            <a href="/{{ locale }}/catalog?type=course" class="p-5 text-white border border-gray-800 active:scale-95 transition-transform" style="background-color: #0a0a0a; border-radius: 24px;">
              <i class="bi bi-book text-3xl text-neon mb-3 block"></i>
-             <h4 class="font-bold text-sm">E-Book & Kursus</h4>
+             <h4 class="font-bold text-sm">{% if locale == 'en' %}E-Book & Courses{% else %}E-Book & Kursus{% endif %}</h4>
            </a>
            <a href="/{{ locale }}/solutions" class="p-5 text-white border border-gray-800 active:scale-95 transition-transform" style="background-color: #0a0a0a; border-radius: 24px;">
              <i class="bi bi-tools text-3xl text-neon mb-3 block"></i>
-             <h4 class="font-bold text-sm">Layanan IT</h4>
+             <h4 class="font-bold text-sm">{% if locale == 'en' %}IT Services{% else %}Layanan IT{% endif %}</h4>
            </a>
         </div>
 
-        <div class="mt-auto border-t border-gray-800 pt-6 flex flex-col gap-4">
+        <div class="mt-auto border-t border-gray-800 pt-6 flex flex-col gap-3">
+           <!-- Language switcher -->
            <div class="flex items-center justify-between">
              <span class="text-xs text-gray-500 uppercase tracking-widest font-bold">Language</span>
              <div class="flex items-center bg-gray-900 rounded-full p-1">
@@ -586,12 +589,19 @@
                <a href="/en{{ request.url.path | replace('/id/', '/', 1) | replace('/en/', '/', 1) or '/' }}" class="px-5 py-2 rounded-full text-xs font-bold transition-colors {% if locale == 'en' %}bg-white text-black{% else %}text-white{% endif %}">EN</a>
              </div>
            </div>
-           
+
            {% if current_user %}
-             <a href="/{{ locale }}/dashboard" class="w-full py-4 bg-neon text-black font-bold rounded-full text-center text-sm shadow-lg">Dashboard</a>
-             <a href="/auth/logout" class="w-full py-4 bg-red-500/10 text-red-500 font-bold rounded-full text-center text-sm">Sign Out</a>
+             <!-- Logged in user actions -->
+             <a href="/{{ locale }}/cart" class="w-full py-3.5 flex items-center justify-center gap-2 font-bold rounded-full text-sm" style="background:#111; border:1px solid #333; color:#fff;">
+               <i class="bi bi-bag-fill text-neon"></i> {% if locale == 'en' %}My Cart{% else %}Keranjang{% endif %}
+             </a>
+             <a href="/{{ locale }}/dashboard/orders" class="w-full py-3.5 flex items-center justify-center gap-2 font-bold rounded-full text-sm" style="background:#111; border:1px solid #333; color:#fff;">
+               <i class="bi bi-bag-check-fill text-neon"></i> {% if locale == 'en' %}My Orders{% else %}Data Pesanan{% endif %}
+             </a>
+             <a href="/{{ locale }}/dashboard" class="w-full py-3.5 bg-neon text-black font-bold rounded-full text-center text-sm">Dashboard</a>
+             <a href="/{{ locale }}/logout" class="w-full py-3.5 text-center font-bold rounded-full text-sm" style="background:rgba(239,68,68,0.1); color:#ef4444;">{% if locale == 'en' %}Sign Out{% else %}Keluar{% endif %}</a>
            {% else %}
-             <a href="/{{ locale }}/login" class="w-full py-4 bg-white text-black font-bold rounded-full text-center text-sm">Login</a>
+             <a href="/{{ locale }}/login" class="w-full py-3.5 bg-white text-black font-bold rounded-full text-center text-sm">Login</a>
            {% endif %}
         </div>
      </div>
@@ -610,8 +620,8 @@
         <!-- Brand -->
         <div class="md:col-span-2">
           <div class="flex items-center gap-2 mb-4">
-            <div class="w-8 h-8 bg-neon flex items-center justify-center">
-              <span class="text-black font-black text-sm">TW</span>
+            <div class="w-8 h-8 bg-neon rounded-full flex items-center justify-center" style="box-shadow: 0 0 0 2px #000; flex-shrink:0;">
+              <span class="text-black font-black text-xs">TW</span>
             </div>
             <span class="font-bold text-white">Toko Web Jaya</span>
           </div>
