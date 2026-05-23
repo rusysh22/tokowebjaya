@@ -92,6 +92,7 @@
            x-data="{
              megaMenuOpen: false,
              hovered: -1,
+             activeTab: 0,
              getT(idx) {
                if (this.hovered < 0) return 'translateX(0px)';
                if (idx === this.hovered) return 'translateX(0px)';
@@ -102,9 +103,9 @@
            }"
            @mouseleave="megaMenuOpen = false; hovered = -1">
 
-        <nav class="bg-neon text-black px-1.5 py-1 flex items-center gap-0.5 border border-black relative z-10"
-             :style="megaMenuOpen ? 'border-radius: 1.25rem 1.25rem 0.4rem 0.4rem; border-bottom-color: transparent;' : 'border-radius: 9999px;'"
-             style="height:42px; transition: border-radius 0.45s cubic-bezier(0.34,1.2,0.64,1), border-bottom-color 0.3s ease;">
+        <nav class="bg-neon text-black px-1.5 py-1 flex items-center gap-0.5 relative z-10"
+             :style="megaMenuOpen ? 'border-radius: 1.25rem 1.25rem 0 0; box-shadow: 0 0 0 2px #000; border-bottom: none;' : 'border-radius: 9999px; box-shadow: 0 0 0 2px #000;'"
+             style="height:42px; transition: border-radius 0.45s cubic-bezier(0.34,1.2,0.64,1);">
 
           <!-- Home (idx=0) -->
           <a href="/{{ locale }}/"
@@ -153,120 +154,239 @@
           </a>
         </nav>
 
-        <!-- Connected Mega Menu — neon background, flush with nav pill -->
+        <!-- Connected Mega Menu: Hover Tab Pattern (Sidebar Tab Mega Menu) -->
         <div x-show="megaMenuOpen"
-             x-transition:enter="transition ease-out duration-350"
-             x-transition:enter-start="opacity-0 -translate-y-2 scale-y-95"
+             x-transition:enter="transition ease-out duration-300"
+             x-transition:enter-start="opacity-0 -translate-y-1 scale-y-95"
              x-transition:enter-end="opacity-100 translate-y-0 scale-y-100"
-             x-transition:leave="transition ease-in duration-220"
+             x-transition:leave="transition ease-in duration-200"
              x-transition:leave-start="opacity-100 translate-y-0 scale-y-100"
-             x-transition:leave-end="opacity-0 -translate-y-2 scale-y-95"
+             x-transition:leave-end="opacity-0 -translate-y-1 scale-y-95"
              class="absolute z-0 cursor-default"
-             style="top: 40px; left: 50%; transform: translateX(-50%); width: 860px; background: #CAFF00; border: 1px solid black; border-top: none; border-radius: 0 0 1.5rem 1.5rem; padding: 1rem; transform-origin: top center;"
+             style="top: 40px; left: 50%; transform: translateX(-50%); width: 860px; background: #CAFF00; box-shadow: 0 0 0 2px #000; clip-path: inset(0 -2px -2px -2px); border-radius: 0 0 1.5rem 1.5rem; transform-origin: top center; overflow: hidden;"
              x-cloak>
 
-          <div class="grid grid-cols-3 gap-3">
-            <!-- Col 1: Digital Produk category card -->
-            <a href="/{{ locale }}/catalog?type=software" class="col-span-1 block group rounded-2xl overflow-hidden relative hover:scale-[1.02] transition-transform duration-300" style="min-height: 280px; background: #000; border: 1px solid #000;">
-               <div class="absolute inset-0 opacity-15 group-hover:opacity-30 transition-opacity duration-500" style="background-image: url('https://www.transparenttextures.com/patterns/cubes.png');"></div>
-               <div class="absolute inset-0 bg-gradient-to-t from-neon/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-               <div class="relative z-10 p-5 h-full flex flex-col justify-between">
-                  <div>
-                    <div class="flex items-center gap-2 text-neon mb-2">
-                       <i class="bi bi-window-stack text-2xl"></i>
-                       <h3 class="font-black text-base">Digital Produk</h3>
-                    </div>
-                    <p class="text-xs text-gray-400 leading-relaxed">Software SaaS, web templates, dan produk digital siap pakai untuk bisnis modern.</p>
-                  </div>
-                  <div class="mt-4">
-                    <span class="text-xs font-black text-neon uppercase tracking-widest">Lihat Semua →</span>
-                  </div>
-               </div>
-            </a>
+          <div class="flex" style="height: 310px;">
 
-            <!-- Col 2: Edukasi & Layanan -->
-            <div class="col-span-1 flex flex-col gap-3">
-               <a href="/{{ locale }}/catalog?type=course" class="flex-1 px-4 py-4 rounded-2xl hover:bg-black/10 transition-all duration-300 group flex flex-col justify-center" style="background: rgba(0,0,0,0.07); border: 1px solid #000;">
-                  <div class="flex items-center gap-2 mb-1" style="color:#000;">
-                     <i class="bi bi-book text-lg"></i>
-                     <h4 class="font-black text-sm">Edukasi Digital</h4>
-                  </div>
-                  <p class="text-xs leading-relaxed" style="color: #000;">E-book &amp; Online Course untuk tingkatkan skill profesional Anda.</p>
-               </a>
-               <a href="/{{ locale }}/solutions" class="flex-1 px-4 py-4 rounded-2xl hover:bg-black/10 transition-all duration-300 group flex flex-col justify-center" style="background: rgba(0,0,0,0.07); border: 1px solid #000;">
-                  <div class="flex items-center gap-2 mb-1" style="color:#000;">
-                     <i class="bi bi-tools text-lg"></i>
-                     <h4 class="font-black text-sm">Layanan IT</h4>
-                  </div>
-                  <p class="text-xs leading-relaxed" style="color: #000;">Konsultasi IT, integrasi sistem, dan web development custom.</p>
-               </a>
+            <!-- LEFT: Hover Category Tabs (185px) -->
+            <div class="flex flex-col gap-1 p-3" style="width:185px; flex-shrink:0;">
+
+              <!-- Tab 1: Digital Produk -->
+              <button @mouseenter="activeTab=0"
+                      class="flex items-start gap-2.5 p-3 rounded-xl text-left w-full transition-all duration-200"
+                      :style="activeTab===0 ? 'background:#000; color:#CAFF00; box-shadow: 0 4px 16px rgba(0,0,0,0.3);' : 'color:#000; background:transparent;'">
+                <i class="bi bi-window-stack flex-shrink-0 mt-0.5" style="font-size:15px;"></i>
+                <div>
+                  <p class="font-black text-sm leading-tight">Digital Produk</p>
+                  <p class="text-xs mt-0.5 leading-tight opacity-70">Software &amp; Templates</p>
+                </div>
+                <i class="bi bi-chevron-right ml-auto flex-shrink-0 self-center text-xs" x-show="activeTab===0"></i>
+              </button>
+
+              <!-- Tab 2: Edukasi Digital -->
+              <button @mouseenter="activeTab=1"
+                      class="flex items-start gap-2.5 p-3 rounded-xl text-left w-full transition-all duration-200"
+                      :style="activeTab===1 ? 'background:#000; color:#CAFF00; box-shadow: 0 4px 16px rgba(0,0,0,0.3);' : 'color:#000; background:transparent;'">
+                <i class="bi bi-book flex-shrink-0 mt-0.5" style="font-size:15px;"></i>
+                <div>
+                  <p class="font-black text-sm leading-tight">Edukasi Digital</p>
+                  <p class="text-xs mt-0.5 leading-tight opacity-70">E-book &amp; Courses</p>
+                </div>
+                <i class="bi bi-chevron-right ml-auto flex-shrink-0 self-center text-xs" x-show="activeTab===1"></i>
+              </button>
+
+              <!-- Tab 3: Layanan IT -->
+              <button @mouseenter="activeTab=2"
+                      class="flex items-start gap-2.5 p-3 rounded-xl text-left w-full transition-all duration-200"
+                      :style="activeTab===2 ? 'background:#000; color:#CAFF00; box-shadow: 0 4px 16px rgba(0,0,0,0.3);' : 'color:#000; background:transparent;'">
+                <i class="bi bi-tools flex-shrink-0 mt-0.5" style="font-size:15px;"></i>
+                <div>
+                  <p class="font-black text-sm leading-tight">Layanan IT</p>
+                  <p class="text-xs mt-0.5 leading-tight opacity-70">Consulting &amp; Dev</p>
+                </div>
+                <i class="bi bi-chevron-right ml-auto flex-shrink-0 self-center text-xs" x-show="activeTab===2"></i>
+              </button>
+
+              <!-- Divider + View All -->
+              <div style="height:1px; background:rgba(0,0,0,0.2); margin: 4px 0;"></div>
+              <a href="/{{ locale }}/catalog" class="flex items-center gap-2 p-3 rounded-xl transition-all duration-200" style="color:#000;" onmouseover="this.style.background='rgba(0,0,0,0.08)'" onmouseout="this.style.background='transparent'">
+                <i class="bi bi-grid-fill" style="font-size:13px;"></i>
+                <span class="font-bold text-xs">Semua Kategori</span>
+              </a>
             </div>
 
-            <!-- Col 3: Featured Product Cards -->
-            <div class="col-span-1 flex flex-col gap-2.5">
-               <p class="text-xs font-black uppercase tracking-widest mb-0.5" style="color: #000;">🔥 Produk Unggulan</p>
+            <!-- Vertical Divider -->
+            <div style="width:1.5px; background:rgba(0,0,0,0.18); margin:16px 0; flex-shrink:0;"></div>
 
-               <!-- Product 1 -->
-               <a href="/{{ locale }}/catalog" class="flex items-center gap-3 p-3 rounded-xl hover:bg-black/10 transition-all duration-200 group" style="border: 1px solid #000;">
-                  <div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style="background:#000; border: 1px solid #000;">
-                    <i class="bi bi-boxes text-neon" style="font-size:18px;"></i>
-                  </div>
-                  <div class="flex-1 min-w-0">
-                    <p class="font-black text-sm leading-tight truncate" style="color:#000;">ERP SaaS Business</p>
-                    <p class="text-xs" style="color: rgba(0,0,0,0.65);">Software · SaaS</p>
-                  </div>
-                  <div class="text-right flex-shrink-0">
-                    <p class="font-black text-sm" style="color:#000;">Rp 2 JT</p>
-                    <p class="text-xs text-red-600 line-through">Rp 4 JT</p>
-                  </div>
-               </a>
+            <!-- CENTER: Reactive Content Panel (flex-1) -->
+            <div class="flex-1 p-4 relative" style="overflow:hidden;">
 
-               <!-- Product 2 -->
-               <a href="/{{ locale }}/catalog" class="flex items-center gap-3 p-3 rounded-xl hover:bg-black/10 transition-all duration-200 group" style="border: 1px solid #000;">
-                  <div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style="background:#000; border: 1px solid #000;">
-                    <i class="bi bi-layout-text-window text-neon" style="font-size:18px;"></i>
-                  </div>
-                  <div class="flex-1 min-w-0">
-                    <p class="font-black text-sm leading-tight truncate" style="color:#000;">Landing Page Pro</p>
-                    <p class="text-xs" style="color: rgba(0,0,0,0.65);">Template · Web</p>
-                  </div>
-                  <div class="text-right flex-shrink-0">
-                    <p class="font-black text-sm" style="color:#000;">Rp 499K</p>
-                    <p class="text-xs text-red-600 line-through">Rp 999K</p>
-                  </div>
-               </a>
+              <!-- Panel 0: Digital Produk -->
+              <div x-show="activeTab===0"
+                   x-transition:enter="transition ease-out duration-200"
+                   x-transition:enter-start="opacity-0 translate-x-4"
+                   x-transition:enter-end="opacity-100 translate-x-0"
+                   x-transition:leave="transition ease-in duration-120"
+                   x-transition:leave-start="opacity-100"
+                   x-transition:leave-end="opacity-0"
+                   class="h-full flex flex-col">
+                <p class="font-black text-base" style="color:#000;">Digital Produk</p>
+                <p class="text-xs mb-3 leading-relaxed" style="color:rgba(0,0,0,0.6);">Software SaaS, web templates, dan produk digital premium siap pakai untuk bisnis modern.</p>
+                <div class="grid grid-cols-2 gap-2 flex-1">
+                  <a href="/{{ locale }}/catalog?type=saas" class="flex items-center gap-2 p-2.5 rounded-xl transition-all duration-200" style="border:1px solid rgba(0,0,0,0.25); color:#000;" onmouseover="this.style.background='rgba(0,0,0,0.08)'" onmouseout="this.style.background='transparent'">
+                    <i class="bi bi-cloud-check" style="font-size:14px;"></i>
+                    <span class="font-bold text-xs">SaaS Platform</span>
+                  </a>
+                  <a href="/{{ locale }}/catalog?type=template" class="flex items-center gap-2 p-2.5 rounded-xl transition-all duration-200" style="border:1px solid rgba(0,0,0,0.25); color:#000;" onmouseover="this.style.background='rgba(0,0,0,0.08)'" onmouseout="this.style.background='transparent'">
+                    <i class="bi bi-layout-text-window" style="font-size:14px;"></i>
+                    <span class="font-bold text-xs">Web Template</span>
+                  </a>
+                  <a href="/{{ locale }}/catalog?type=mobile" class="flex items-center gap-2 p-2.5 rounded-xl transition-all duration-200" style="border:1px solid rgba(0,0,0,0.25); color:#000;" onmouseover="this.style.background='rgba(0,0,0,0.08)'" onmouseout="this.style.background='transparent'">
+                    <i class="bi bi-phone" style="font-size:14px;"></i>
+                    <span class="font-bold text-xs">Mobile App</span>
+                  </a>
+                  <a href="/{{ locale }}/catalog?type=plugin" class="flex items-center gap-2 p-2.5 rounded-xl transition-all duration-200" style="border:1px solid rgba(0,0,0,0.25); color:#000;" onmouseover="this.style.background='rgba(0,0,0,0.08)'" onmouseout="this.style.background='transparent'">
+                    <i class="bi bi-puzzle" style="font-size:14px;"></i>
+                    <span class="font-bold text-xs">Plugin &amp; Script</span>
+                  </a>
+                </div>
+                <a href="/{{ locale }}/catalog" class="mt-3 text-xs font-black" style="color:#000;">Lihat Semua Digital Produk →</a>
+              </div>
 
-               <!-- Product 3 -->
-               <a href="/{{ locale }}/catalog" class="flex items-center gap-3 p-3 rounded-xl hover:bg-black/10 transition-all duration-200 group" style="border: 1px solid #000;">
-                  <div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style="background:#000; border: 1px solid #000;">
-                    <i class="bi bi-phone text-neon" style="font-size:18px;"></i>
-                  </div>
-                  <div class="flex-1 min-w-0">
-                    <p class="font-black text-sm leading-tight truncate" style="color:#000;">Flutter Starter Kit</p>
-                    <p class="text-xs" style="color: rgba(0,0,0,0.65);">Template · Mobile</p>
-                  </div>
-                  <div class="text-right flex-shrink-0">
-                    <p class="font-black text-sm" style="color:#000;">Rp 299K</p>
-                    <p class="text-xs font-bold" style="color: rgba(0,0,0,0.7);">Baru</p>
-                  </div>
-               </a>
+              <!-- Panel 1: Edukasi Digital -->
+              <div x-show="activeTab===1"
+                   x-transition:enter="transition ease-out duration-200"
+                   x-transition:enter-start="opacity-0 translate-x-4"
+                   x-transition:enter-end="opacity-100 translate-x-0"
+                   x-transition:leave="transition ease-in duration-120"
+                   x-transition:leave-start="opacity-100"
+                   x-transition:leave-end="opacity-0"
+                   class="h-full flex flex-col">
+                <p class="font-black text-base" style="color:#000;">Edukasi Digital</p>
+                <p class="text-xs mb-3 leading-relaxed" style="color:rgba(0,0,0,0.6);">E-book premium dan online course untuk meningkatkan skill profesional dan bisnis Anda.</p>
+                <div class="grid grid-cols-2 gap-2 flex-1">
+                  <a href="/{{ locale }}/catalog?type=ebook" class="flex items-center gap-2 p-2.5 rounded-xl transition-all duration-200" style="border:1px solid rgba(0,0,0,0.25); color:#000;" onmouseover="this.style.background='rgba(0,0,0,0.08)'" onmouseout="this.style.background='transparent'">
+                    <i class="bi bi-file-earmark-text" style="font-size:14px;"></i>
+                    <span class="font-bold text-xs">E-Book</span>
+                  </a>
+                  <a href="/{{ locale }}/catalog?type=course" class="flex items-center gap-2 p-2.5 rounded-xl transition-all duration-200" style="border:1px solid rgba(0,0,0,0.25); color:#000;" onmouseover="this.style.background='rgba(0,0,0,0.08)'" onmouseout="this.style.background='transparent'">
+                    <i class="bi bi-play-circle" style="font-size:14px;"></i>
+                    <span class="font-bold text-xs">Online Course</span>
+                  </a>
+                  <a href="/{{ locale }}/catalog?type=workshop" class="flex items-center gap-2 p-2.5 rounded-xl transition-all duration-200" style="border:1px solid rgba(0,0,0,0.25); color:#000;" onmouseover="this.style.background='rgba(0,0,0,0.08)'" onmouseout="this.style.background='transparent'">
+                    <i class="bi bi-person-video3" style="font-size:14px;"></i>
+                    <span class="font-bold text-xs">Workshop</span>
+                  </a>
+                  <a href="/{{ locale }}/catalog?type=bootcamp" class="flex items-center gap-2 p-2.5 rounded-xl transition-all duration-200" style="border:1px solid rgba(0,0,0,0.25); color:#000;" onmouseover="this.style.background='rgba(0,0,0,0.08)'" onmouseout="this.style.background='transparent'">
+                    <i class="bi bi-lightning-charge" style="font-size:14px;"></i>
+                    <span class="font-bold text-xs">Bootcamp</span>
+                  </a>
+                </div>
+                <a href="/{{ locale }}/catalog" class="mt-3 text-xs font-black" style="color:#000;">Lihat Semua Edukasi →</a>
+              </div>
 
-               <!-- View All CTA -->
-               <a href="/{{ locale }}/catalog" class="mt-1 flex items-center justify-center gap-2 py-2.5 rounded-xl font-black text-sm hover:bg-black transition-all duration-300" style="border: 2px solid #000; color: #000;" onmouseover="this.style.color='#CAFF00'" onmouseout="this.style.color='#000'">
-                  <i class="bi bi-grid-fill text-sm"></i>
-                  Lihat Semua Produk
-               </a>
+              <!-- Panel 2: Layanan IT -->
+              <div x-show="activeTab===2"
+                   x-transition:enter="transition ease-out duration-200"
+                   x-transition:enter-start="opacity-0 translate-x-4"
+                   x-transition:enter-end="opacity-100 translate-x-0"
+                   x-transition:leave="transition ease-in duration-120"
+                   x-transition:leave-start="opacity-100"
+                   x-transition:leave-end="opacity-0"
+                   class="h-full flex flex-col">
+                <p class="font-black text-base" style="color:#000;">Layanan IT</p>
+                <p class="text-xs mb-3 leading-relaxed" style="color:rgba(0,0,0,0.6);">Konsultasi IT, pengembangan web custom, dan integrasi sistem oleh tim profesional kami.</p>
+                <div class="grid grid-cols-2 gap-2 flex-1">
+                  <a href="/{{ locale }}/solutions" class="flex items-center gap-2 p-2.5 rounded-xl transition-all duration-200" style="border:1px solid rgba(0,0,0,0.25); color:#000;" onmouseover="this.style.background='rgba(0,0,0,0.08)'" onmouseout="this.style.background='transparent'">
+                    <i class="bi bi-briefcase" style="font-size:14px;"></i>
+                    <span class="font-bold text-xs">IT Consulting</span>
+                  </a>
+                  <a href="/{{ locale }}/solutions" class="flex items-center gap-2 p-2.5 rounded-xl transition-all duration-200" style="border:1px solid rgba(0,0,0,0.25); color:#000;" onmouseover="this.style.background='rgba(0,0,0,0.08)'" onmouseout="this.style.background='transparent'">
+                    <i class="bi bi-code-slash" style="font-size:14px;"></i>
+                    <span class="font-bold text-xs">Web Dev Custom</span>
+                  </a>
+                  <a href="/{{ locale }}/solutions" class="flex items-center gap-2 p-2.5 rounded-xl transition-all duration-200" style="border:1px solid rgba(0,0,0,0.25); color:#000;" onmouseover="this.style.background='rgba(0,0,0,0.08)'" onmouseout="this.style.background='transparent'">
+                    <i class="bi bi-diagram-3" style="font-size:14px;"></i>
+                    <span class="font-bold text-xs">Sistem Integrasi</span>
+                  </a>
+                  <a href="/{{ locale }}/solutions" class="flex items-center gap-2 p-2.5 rounded-xl transition-all duration-200" style="border:1px solid rgba(0,0,0,0.25); color:#000;" onmouseover="this.style.background='rgba(0,0,0,0.08)'" onmouseout="this.style.background='transparent'">
+                    <i class="bi bi-shield-check" style="font-size:14px;"></i>
+                    <span class="font-bold text-xs">IT Security</span>
+                  </a>
+                </div>
+                <a href="/{{ locale }}/solutions" class="mt-3 text-xs font-black" style="color:#000;">Lihat Semua Layanan →</a>
+              </div>
+            </div>
+
+            <!-- Vertical Divider -->
+            <div style="width:1.5px; background:rgba(0,0,0,0.18); margin:16px 0; flex-shrink:0;"></div>
+
+            <!-- RIGHT: Featured Product Cards (220px) -->
+            <div class="flex flex-col p-3" style="width:220px; flex-shrink:0; gap:6px;">
+              <p class="text-xs font-black uppercase tracking-widest" style="color:#000; padding-bottom:2px;">🔥 Produk Unggulan</p>
+
+              <a href="/{{ locale }}/catalog" class="flex items-center gap-2.5 p-2.5 rounded-xl transition-all duration-200" style="border:1.5px solid #000;" onmouseover="this.style.background='rgba(0,0,0,0.1)'" onmouseout="this.style.background='transparent'">
+                <div class="flex items-center justify-center rounded-lg flex-shrink-0" style="width:34px; height:34px; background:#000; min-width:34px;">
+                  <i class="bi bi-boxes" style="color:#CAFF00; font-size:15px;"></i>
+                </div>
+                <div class="flex-1 min-w-0">
+                  <p class="font-black text-xs leading-tight truncate" style="color:#000;">ERP SaaS Business</p>
+                  <p class="text-xs" style="color:rgba(0,0,0,0.55);">Software · SaaS</p>
+                </div>
+                <div class="text-right flex-shrink-0">
+                  <p class="font-black text-xs" style="color:#000;">Rp 2 JT</p>
+                  <p class="text-xs text-red-600 line-through">Rp 4 JT</p>
+                </div>
+              </a>
+
+              <a href="/{{ locale }}/catalog" class="flex items-center gap-2.5 p-2.5 rounded-xl transition-all duration-200" style="border:1.5px solid #000;" onmouseover="this.style.background='rgba(0,0,0,0.1)'" onmouseout="this.style.background='transparent'">
+                <div class="flex items-center justify-center rounded-lg flex-shrink-0" style="width:34px; height:34px; background:#000; min-width:34px;">
+                  <i class="bi bi-layout-text-window" style="color:#CAFF00; font-size:15px;"></i>
+                </div>
+                <div class="flex-1 min-w-0">
+                  <p class="font-black text-xs leading-tight truncate" style="color:#000;">Landing Page Pro</p>
+                  <p class="text-xs" style="color:rgba(0,0,0,0.55);">Template · Web</p>
+                </div>
+                <div class="text-right flex-shrink-0">
+                  <p class="font-black text-xs" style="color:#000;">Rp 499K</p>
+                  <p class="text-xs text-red-600 line-through">Rp 999K</p>
+                </div>
+              </a>
+
+              <a href="/{{ locale }}/catalog" class="flex items-center gap-2.5 p-2.5 rounded-xl transition-all duration-200" style="border:1.5px solid #000;" onmouseover="this.style.background='rgba(0,0,0,0.1)'" onmouseout="this.style.background='transparent'">
+                <div class="flex items-center justify-center rounded-lg flex-shrink-0" style="width:34px; height:34px; background:#000; min-width:34px;">
+                  <i class="bi bi-phone" style="color:#CAFF00; font-size:15px;"></i>
+                </div>
+                <div class="flex-1 min-w-0">
+                  <p class="font-black text-xs leading-tight truncate" style="color:#000;">Flutter Starter Kit</p>
+                  <p class="text-xs" style="color:rgba(0,0,0,0.55);">Template · Mobile</p>
+                </div>
+                <div class="text-right flex-shrink-0">
+                  <p class="font-black text-xs" style="color:#000;">Rp 299K</p>
+                  <p class="font-bold text-xs" style="color:rgba(0,0,0,0.65);">Baru</p>
+                </div>
+              </a>
+
+              <a href="/{{ locale }}/catalog"
+                 class="flex items-center justify-center gap-1.5 py-2 rounded-xl font-black text-xs transition-all duration-250"
+                 style="border:2px solid #000; color:#000; margin-top:auto;"
+                 onmouseover="this.style.background='#000';this.style.color='#CAFF00';"
+                 onmouseout="this.style.background='transparent';this.style.color='#000';">
+                <i class="bi bi-grid-fill"></i> Lihat Semua Produk
+              </a>
             </div>
           </div>
         </div>
       </div>
 
 
+        </div>
+      </div>
 
       <!-- Right Actions -->
       <div class="flex items-center gap-2">
          <!-- Theme / Profile / Lang -->
-         <div class="bg-neon text-black px-1.5 rounded-full flex items-center gap-0.5" style="height:42px; border: 1px solid #000;">
+          <div class="bg-neon text-black px-1.5 rounded-full flex items-center gap-0.5" style="height:42px; box-shadow: 0 0 0 2px #000;">
             <!-- Language -->
             <a href="/id{{ request.url.path | replace('/id/', '/', 1) | replace('/en/', '/', 1) or '/' }}" class="navbar-action-btn flex items-center justify-center rounded-full font-bold transition-all duration-300 {% if locale == 'id' %}bg-black text-neon{% else %}text-black hover:bg-black/15{% endif %}" style="width:34px;height:32px;font-size:11px;">ID</a>
             <a href="/en{{ request.url.path | replace('/id/', '/', 1) | replace('/en/', '/', 1) or '/' }}" class="navbar-action-btn flex items-center justify-center rounded-full font-bold transition-all duration-300 {% if locale == 'en' %}bg-black text-neon{% else %}text-black hover:bg-black/15{% endif %}" style="width:34px;height:32px;font-size:11px;">EN</a>
@@ -284,12 +404,12 @@
             {% endif %}
          </div>
          
-         <button class="navbar-icon-btn bg-neon text-black rounded-full flex items-center justify-center group relative overflow-hidden" style="width:42px;height:42px; border: 1px solid #000;" title="Theme">
+          <button class="navbar-icon-btn bg-neon text-black rounded-full flex items-center justify-center group relative overflow-hidden" style="width:42px;height:42px; box-shadow: 0 0 0 2px #000;" title="Theme">
            <span class="navbar-shimmer-line"></span>
            <i class="bi bi-sun-fill relative z-10 group-hover:rotate-180 transition-transform duration-500" style="font-size:16px;"></i>
          </button>
          
-         <a href="https://wa.me/6281234567890" target="_blank" class="navbar-icon-btn bg-neon text-black rounded-full flex items-center justify-center group relative overflow-hidden" style="width:42px;height:42px; border: 1px solid #000;" title="WhatsApp">
+          <a href="https://wa.me/6281234567890" target="_blank" class="navbar-icon-btn bg-neon text-black rounded-full flex items-center justify-center group relative overflow-hidden" style="width:42px;height:42px; box-shadow: 0 0 0 2px #000;" title="WhatsApp">
            <span class="navbar-shimmer-line"></span>
            <i class="bi bi-whatsapp relative z-10 group-hover:scale-110 group-hover:rotate-12 transition-all duration-300" style="font-size:18px;"></i>
          </a>
