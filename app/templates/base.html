@@ -78,24 +78,24 @@
 
   <!-- ===== NAVBAR ===== -->
   <!-- Desktop Header -->
-  <header class="hidden md:flex fixed top-6 left-0 right-0 z-50 justify-center w-full pointer-events-none" id="navbar-desktop">
+  <header class="hidden md:flex fixed top-8 left-0 right-0 z-50 justify-center w-full pointer-events-none" id="navbar-desktop">
     <div class="container-main pointer-events-auto flex items-start justify-between w-full">
       
       <!-- Left Logo -->
-      <a href="/{{ locale }}/" class="bg-black text-white h-14 px-8 rounded-full flex items-center justify-center hover:scale-105 transition-transform duration-300 shadow-2xl border border-gray-800 group">
-        <span class="font-black text-xl tracking-wider group-hover:text-neon transition-colors">GONLINE</span>
+      <a href="/{{ locale }}/" class="bg-neon text-black h-14 px-8 rounded-full flex items-center justify-center hover:scale-105 transition-transform duration-300 shadow-2xl border border-black group">
+        <span class="font-black text-xl tracking-wider transition-colors">TWJ</span>
       </a>
 
       <!-- Center Nav -->
-      <nav class="bg-black text-white h-14 px-2 py-1 rounded-full flex items-center gap-1 shadow-2xl border border-gray-800" x-data="{ megaMenuOpen: false }">
-         <a href="/{{ locale }}/" class="px-6 h-full rounded-full flex items-center justify-center text-sm font-semibold transition-all duration-300 {% if active_page == 'home' %}bg-white text-black{% else %}hover:text-gray-300{% endif %}">
+      <nav class="bg-neon text-black h-14 px-2 py-1 rounded-full flex items-center gap-1 shadow-2xl border border-black" x-data="{ megaMenuOpen: false }">
+         <a href="/{{ locale }}/" class="px-6 h-full rounded-full flex items-center justify-center text-sm font-semibold transition-all duration-300 {% if active_page == 'home' %}bg-black text-neon{% else %}hover:bg-black/10{% endif %}">
            Home
          </a>
 
          <!-- Mega Menu Trigger -->
          <div class="relative h-full flex items-center" @mouseenter="megaMenuOpen = true" @mouseleave="megaMenuOpen = false">
-           <a href="/{{ locale }}/catalog" class="px-6 h-full rounded-full flex items-center justify-center text-sm font-semibold gap-1.5 transition-all duration-300 {% if active_page == 'catalog' %}bg-white text-black{% else %}hover:text-gray-300{% endif %}">
-             Services
+           <a href="/{{ locale }}/catalog" class="px-6 h-full rounded-full flex items-center justify-center text-sm font-semibold gap-1.5 transition-all duration-300 {% if active_page == 'catalog' %}bg-black text-neon{% else %}hover:bg-black/10{% endif %}">
+             Katalog
              <i class="bi transition-transform duration-300" style="font-size: 10px;" :class="megaMenuOpen ? 'bi-x-lg rotate-90' : 'bi-plus-lg'"></i>
            </a>
 
@@ -110,10 +110,10 @@
                 class="absolute z-50 cursor-default"
                 style="top: calc(100% + 16px); left: 50%; transform: translateX(-50%); width: 850px;"
                 x-cloak>
-              <div class="bg-black p-4 border border-gray-800 shadow-2xl grid grid-cols-3 gap-4" style="border-radius: 2rem;">
+              <div class="bg-gray-950 p-4 border border-neon shadow-2xl grid grid-cols-3 gap-4" style="border-radius: 2rem;">
                  
-                 <!-- Col 1: GO Digital -->
-                 <a href="/{{ locale }}/catalog?type=bundle" class="col-span-1 block group border border-gray-800 rounded-3xl overflow-hidden relative" style="min-height: 320px;">
+                 <!-- Col 1: Software & Template -->
+                 <a href="/{{ locale }}/catalog?type=software" class="col-span-1 block group border border-gray-800 hover:border-neon rounded-3xl overflow-hidden relative" style="min-height: 320px;">
                     <div class="absolute inset-0 bg-gradient-to-b from-black/20 to-black/90 z-10"></div>
                     <!-- Wireframe background effect -->
                     <div class="absolute inset-0 opacity-20 group-hover:opacity-40 transition-opacity duration-500" style="background-image: url('https://www.transparenttextures.com/patterns/cubes.png');"></div>
@@ -121,28 +121,28 @@
                     
                     <div class="relative z-20 p-6 h-full flex flex-col justify-between">
                        <div class="flex items-center gap-2 text-white group-hover:text-neon transition-colors">
-                          <i class="bi bi-box-seam text-xl"></i>
-                          <h3 class="font-bold text-lg">GO Digital</h3>
+                          <i class="bi bi-window-stack text-xl"></i>
+                          <h3 class="font-bold text-lg">Digital Produk</h3>
                        </div>
-                       <p class="text-xs text-gray-400 leading-relaxed group-hover:text-gray-300 transition-colors">A bundled service combining Website Development and Social Media Management to build a complete digital presence for your business.</p>
+                       <p class="text-xs text-gray-400 leading-relaxed group-hover:text-gray-300 transition-colors">Software SaaS, web templates, dan berbagai produk digital siap pakai untuk kebutuhan bisnis Anda.</p>
                     </div>
                  </a>
 
-                 <!-- Col 2: GO Website & GO Social -->
+                 <!-- Col 2: Edukasi & Layanan -->
                  <div class="col-span-1 flex flex-col gap-4">
-                    <a href="/{{ locale }}/catalog?type=software" class="flex-1 p-6 rounded-3xl border border-gray-800 hover:border-gray-600 transition-all duration-300 group flex flex-col justify-center hover:scale-105" style="background-color: #0a0a0a;">
+                    <a href="/{{ locale }}/catalog?type=course" class="flex-1 p-6 rounded-3xl border border-gray-800 hover:border-neon transition-all duration-300 group flex flex-col justify-center hover:scale-105" style="background-color: #0a0a0a;">
                        <div class="flex items-center gap-2 mb-2 text-white group-hover:text-white transition-colors">
-                          <i class="bi bi-globe text-lg"></i>
-                          <h4 class="font-bold text-base">GO Website</h4>
+                          <i class="bi bi-book text-lg"></i>
+                          <h4 class="font-bold text-base">Edukasi Digital</h4>
                        </div>
-                       <p class="text-xs text-gray-400 leading-relaxed">Professional website development designed to increase credibility and generate more leads for your business.</p>
+                       <p class="text-xs text-gray-400 leading-relaxed">E-book premium dan Online Course untuk meningkatkan skill teknis dan manajerial Anda.</p>
                     </a>
-                    <a href="/{{ locale }}/catalog?type=course" class="flex-1 p-6 rounded-3xl border border-gray-800 hover:border-gray-600 transition-all duration-300 group flex flex-col justify-center hover:scale-105" style="background-color: #0a0a0a;">
+                    <a href="/{{ locale }}/solutions" class="flex-1 p-6 rounded-3xl border border-gray-800 hover:border-neon transition-all duration-300 group flex flex-col justify-center hover:scale-105" style="background-color: #0a0a0a;">
                        <div class="flex items-center gap-2 mb-2 text-white group-hover:text-white transition-colors">
-                          <i class="bi bi-share text-lg"></i>
-                          <h4 class="font-bold text-base">GO Social</h4>
+                          <i class="bi bi-tools text-lg"></i>
+                          <h4 class="font-bold text-base">Layanan IT</h4>
                        </div>
-                       <p class="text-xs text-gray-400 leading-relaxed">End-to-end social media management including content strategy, design, and optimization to grow engagement.</p>
+                       <p class="text-xs text-gray-400 leading-relaxed">Konsultasi IT, integrasi sistem, dan pengembangan web custom oleh ahlinya.</p>
                     </a>
                  </div>
 
@@ -151,9 +151,9 @@
                     <img src="/static/og-default.png" alt="Promo" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" style="border-radius: 20px;" />
                     <div class="absolute inset-0 z-10" style="background: linear-gradient(to top, rgba(0,0,0,0.9), rgba(0,0,0,0.2), transparent); border-radius: 20px;"></div>
                     <div class="absolute bottom-5 left-5 right-5 z-20">
-                      <span class="bg-red-600 text-white font-black px-2.5 py-1 rounded-md uppercase tracking-wider mb-2 inline-block shadow-lg" style="font-size: 10px;">Discount 50%</span>
-                      <h4 class="text-white font-bold text-lg leading-tight mb-1">Website Landing Page</h4>
-                      <p class="font-black text-sm drop-shadow-md text-neon">Rp 1.5 JT <strike class="text-gray-400 font-normal ml-1" style="font-size: 10px;">Rp 3.000.000</strike></p>
+                      <span class="bg-red-600 text-white font-black px-2.5 py-1 rounded-md uppercase tracking-wider mb-2 inline-block shadow-lg" style="font-size: 10px;">PROMO</span>
+                      <h4 class="text-white font-bold text-lg leading-tight mb-1">Paket SaaS ERP</h4>
+                      <p class="font-black text-sm drop-shadow-md text-neon">Rp 2 JT <strike class="text-gray-400 font-normal ml-1" style="font-size: 10px;">Rp 4.000.000</strike></p>
                     </div>
                  </div>
 
@@ -161,48 +161,44 @@
            </div>
          </div>
 
-         <a href="/{{ locale }}/about" class="px-6 h-full rounded-full flex items-center justify-center text-sm font-semibold transition-all duration-300 {% if active_page == 'about' %}bg-white text-black{% else %}hover:text-gray-300{% endif %}">
-           About
+         <a href="/{{ locale }}/about" class="px-6 h-full rounded-full flex items-center justify-center text-sm font-semibold transition-all duration-300 {% if active_page == 'about' %}bg-black text-neon{% else %}hover:bg-black/10{% endif %}">
+           Tentang Kami
          </a>
-         <a href="/{{ locale }}/solutions" class="px-6 h-full rounded-full flex items-center justify-center text-sm font-semibold transition-all duration-300 {% if active_page == 'solutions' %}bg-white text-black{% else %}hover:text-gray-300{% endif %}">
-           Our Works
-         </a>
-         <a href="/{{ locale }}/insight" class="px-6 h-full rounded-full flex items-center justify-center text-sm font-semibold transition-all duration-300 {% if active_page == 'insight' %}bg-white text-black{% else %}hover:text-gray-300{% endif %}">
+         <a href="/{{ locale }}/insight" class="px-6 h-full rounded-full flex items-center justify-center text-sm font-semibold transition-all duration-300 {% if active_page == 'insight' %}bg-black text-neon{% else %}hover:bg-black/10{% endif %}">
            Insight
          </a>
-         <a href="/{{ locale }}/contact" class="px-6 h-full rounded-full flex items-center justify-center text-sm font-semibold transition-all duration-300 {% if active_page == 'contact' %}bg-white text-black{% else %}hover:text-gray-300{% endif %}">
-           Contact
+         <a href="/{{ locale }}/contact" class="px-6 h-full rounded-full flex items-center justify-center text-sm font-semibold transition-all duration-300 {% if active_page == 'contact' %}bg-black text-neon{% else %}hover:bg-black/10{% endif %}">
+           Kontak
          </a>
       </nav>
 
       <!-- Right Actions -->
       <div class="flex items-center gap-2">
          <!-- Theme / Profile / Lang -->
-         <div class="bg-black text-white h-14 px-2 rounded-full flex items-center gap-1 shadow-2xl border border-gray-800">
+         <div class="bg-neon text-black h-14 px-2 rounded-full flex items-center gap-1 shadow-2xl border border-black">
             <!-- Language -->
-            <a href="/id{{ request.url.path | replace('/id/', '/', 1) | replace('/en/', '/', 1) or '/' }}" class="w-10 h-10 flex items-center justify-center rounded-full text-xs font-bold transition-colors {% if locale == 'id' %}bg-white text-black{% else %}text-gray-400 hover:text-white{% endif %}">ID</a>
-            <a href="/en{{ request.url.path | replace('/id/', '/', 1) | replace('/en/', '/', 1) or '/' }}" class="w-10 h-10 flex items-center justify-center rounded-full text-xs font-bold transition-colors {% if locale == 'en' %}bg-white text-black{% else %}text-gray-400 hover:text-white{% endif %}">EN</a>
+            <a href="/id{{ request.url.path | replace('/id/', '/', 1) | replace('/en/', '/', 1) or '/' }}" class="w-10 h-10 flex items-center justify-center rounded-full text-xs font-bold transition-colors {% if locale == 'id' %}bg-black text-neon{% else %}text-black hover:bg-black/10{% endif %}">ID</a>
+            <a href="/en{{ request.url.path | replace('/id/', '/', 1) | replace('/en/', '/', 1) or '/' }}" class="w-10 h-10 flex items-center justify-center rounded-full text-xs font-bold transition-colors {% if locale == 'en' %}bg-black text-neon{% else %}text-black hover:bg-black/10{% endif %}">EN</a>
             
-            <div class="w-px h-6 bg-gray-800 mx-1"></div>
+            <div class="w-px h-6 bg-black/20 mx-1"></div>
 
             {% if current_user %}
               <!-- Dashboard -->
-              <a href="/{{ locale }}/dashboard" class="w-10 h-10 flex items-center justify-center rounded-full text-gray-400 hover:text-white hover:bg-gray-800 transition-colors" title="Dashboard">
+              <a href="/{{ locale }}/dashboard" class="w-10 h-10 flex items-center justify-center rounded-full text-black hover:bg-black/10 transition-colors" title="Dashboard">
                 <i class="bi bi-person-circle text-xl"></i>
               </a>
             {% else %}
-              <a href="/{{ locale }}/login" class="px-4 h-10 flex items-center justify-center rounded-full text-xs font-semibold text-gray-300 hover:text-white hover:bg-gray-800 transition-colors">
+              <a href="/{{ locale }}/login" class="px-4 h-10 flex items-center justify-center rounded-full text-xs font-semibold text-black hover:bg-black/10 transition-colors">
                 Login
               </a>
             {% endif %}
          </div>
          
-         <button class="w-14 h-14 bg-black text-white rounded-full flex items-center justify-center hover:scale-110 transition-transform duration-300 shadow-2xl border border-gray-800 group">
+         <button class="w-14 h-14 bg-neon text-black rounded-full flex items-center justify-center hover:scale-110 transition-transform duration-300 shadow-2xl border border-black group">
            <i class="bi bi-sun-fill text-xl group-hover:rotate-90 transition-transform duration-500"></i>
          </button>
          
-         <a href="https://wa.me/6281234567890" target="_blank" class="w-14 h-14 bg-black rounded-full flex items-center justify-center hover:scale-110 transition-transform duration-300 shadow-2xl border border-gray-800 group relative" style="color: #25D366;">
-           <div class="absolute inset-0 rounded-full blur-md opacity-20 group-hover:opacity-40 transition-opacity" style="background-color: #25D366;"></div>
+         <a href="https://wa.me/6281234567890" target="_blank" class="w-14 h-14 bg-neon text-black rounded-full flex items-center justify-center hover:scale-110 transition-transform duration-300 shadow-2xl border border-black group relative">
            <i class="bi bi-whatsapp text-2xl relative z-10 group-hover:scale-110 transition-transform"></i>
          </a>
       </div>
@@ -211,34 +207,34 @@
   </header>
 
   <!-- Mobile Top Nav -->
-  <nav class="md:hidden fixed top-6 left-1/2 -translate-x-1/2 z-50 bg-black p-1.5 rounded-full flex items-center gap-1 shadow-2xl border border-gray-800 justify-between w-11/12 max-w-sm">
+  <nav class="md:hidden fixed top-8 left-1/2 -translate-x-1/2 z-50 bg-neon p-1.5 rounded-full flex items-center gap-1 shadow-2xl border border-black justify-between w-11/12 max-w-sm">
     <!-- Home -->
-    <a href="/{{ locale }}/" class="flex items-center gap-2 px-4 py-3 rounded-full transition-all duration-300 {% if active_page == 'home' %}bg-white text-black shadow-lg{% else %}text-white hover:bg-gray-800{% endif %} group">
+    <a href="/{{ locale }}/" class="flex items-center gap-2 px-4 py-3 rounded-full transition-all duration-300 {% if active_page == 'home' %}bg-black text-neon shadow-lg{% else %}text-black hover:bg-black/10{% endif %} group">
       <i class="bi bi-house-door-fill text-xl group-hover:scale-110 transition-transform"></i>
       <span class="text-sm font-bold {% if active_page != 'home' %}hidden{% endif %}">Home</span>
     </a>
     
-    <!-- Services -->
-    <a href="/{{ locale }}/catalog" class="flex items-center gap-2 px-4 py-3 rounded-full transition-all duration-300 {% if active_page == 'catalog' %}bg-white text-black shadow-lg{% else %}text-white hover:bg-gray-800{% endif %} group">
-      <i class="bi bi-journal-album text-xl group-hover:scale-110 transition-transform"></i>
-      <span class="text-sm font-bold {% if active_page != 'catalog' %}hidden{% endif %}">Services</span>
+    <!-- Katalog -->
+    <a href="/{{ locale }}/catalog" class="flex items-center gap-2 px-4 py-3 rounded-full transition-all duration-300 {% if active_page == 'catalog' %}bg-black text-neon shadow-lg{% else %}text-black hover:bg-black/10{% endif %} group">
+      <i class="bi bi-bag-check-fill text-xl group-hover:scale-110 transition-transform"></i>
+      <span class="text-sm font-bold {% if active_page != 'catalog' %}hidden{% endif %}">Katalog</span>
     </a>
 
-    <!-- Works -->
-    <a href="/{{ locale }}/solutions" class="flex items-center gap-2 px-4 py-3 rounded-full transition-all duration-300 {% if active_page == 'solutions' %}bg-white text-black shadow-lg{% else %}text-white hover:bg-gray-800{% endif %} group">
-      <i class="bi bi-display text-xl group-hover:scale-110 transition-transform"></i>
-      <span class="text-sm font-bold {% if active_page != 'solutions' %}hidden{% endif %}">Works</span>
+    <!-- Insight -->
+    <a href="/{{ locale }}/insight" class="flex items-center gap-2 px-4 py-3 rounded-full transition-all duration-300 {% if active_page == 'insight' %}bg-black text-neon shadow-lg{% else %}text-black hover:bg-black/10{% endif %} group">
+      <i class="bi bi-journals text-xl group-hover:scale-110 transition-transform"></i>
+      <span class="text-sm font-bold {% if active_page != 'insight' %}hidden{% endif %}">Insight</span>
     </a>
 
     <!-- Contact -->
-    <a href="/{{ locale }}/contact" class="flex items-center gap-2 px-4 py-3 rounded-full transition-all duration-300 {% if active_page == 'contact' %}bg-white text-black shadow-lg{% else %}text-white hover:bg-gray-800{% endif %} group">
+    <a href="/{{ locale }}/contact" class="flex items-center gap-2 px-4 py-3 rounded-full transition-all duration-300 {% if active_page == 'contact' %}bg-black text-neon shadow-lg{% else %}text-black hover:bg-black/10{% endif %} group">
       <i class="bi bi-telephone-fill text-xl group-hover:scale-110 transition-transform"></i>
-      <span class="text-sm font-bold {% if active_page != 'contact' %}hidden{% endif %}">Call</span>
+      <span class="text-sm font-bold {% if active_page != 'contact' %}hidden{% endif %}">Kontak</span>
     </a>
 
     <!-- Menu (Plus) -->
-    <button @click="mobileMenuOpen = !mobileMenuOpen" class="flex items-center justify-center w-12 h-12 rounded-full text-white hover:bg-gray-800 transition-colors relative z-50">
-      <i class="bi text-2xl transition-transform duration-300 text-neon" :class="mobileMenuOpen ? 'bi-x-lg rotate-90' : 'bi-plus-lg'"></i>
+    <button @click="mobileMenuOpen = !mobileMenuOpen" class="flex items-center justify-center w-12 h-12 rounded-full text-black hover:bg-black/10 transition-colors relative z-50">
+      <i class="bi text-2xl transition-transform duration-300" :class="mobileMenuOpen ? 'bi-x-lg rotate-90' : 'bi-plus-lg'"></i>
     </button>
   </nav>
 
@@ -254,28 +250,28 @@
        x-cloak>
      <div class="flex-1 overflow-y-auto flex flex-col gap-6" style="scrollbar-width: none;">
         <div class="flex items-center justify-between mb-2">
-           <span class="font-black text-2xl text-white tracking-widest">GONLINE</span>
+           <span class="font-black text-2xl text-white tracking-widest">TWJ</span>
            <button @click="mobileMenuOpen = false" class="w-10 h-10 bg-gray-900 rounded-full flex items-center justify-center text-white hover:bg-gray-800 transition-colors">
              <i class="bi bi-x-lg"></i>
            </button>
         </div>
         
         <div class="grid grid-cols-2 gap-4">
-           <a href="/{{ locale }}/catalog?type=bundle" class="p-5 text-white border border-gray-800 active:scale-95 transition-transform" style="background-color: #0a0a0a; border-radius: 24px;">
-             <i class="bi bi-box-seam text-3xl text-neon mb-3 block"></i>
-             <h4 class="font-bold text-sm">GO Digital</h4>
-           </a>
            <a href="/{{ locale }}/catalog?type=software" class="p-5 text-white border border-gray-800 active:scale-95 transition-transform" style="background-color: #0a0a0a; border-radius: 24px;">
-             <i class="bi bi-globe text-3xl text-neon mb-3 block"></i>
-             <h4 class="font-bold text-sm">GO Website</h4>
+             <i class="bi bi-window-stack text-3xl text-neon mb-3 block"></i>
+             <h4 class="font-bold text-sm">Software SaaS</h4>
+           </a>
+           <a href="/{{ locale }}/catalog?type=bundle" class="p-5 text-white border border-gray-800 active:scale-95 transition-transform" style="background-color: #0a0a0a; border-radius: 24px;">
+             <i class="bi bi-file-code text-3xl text-neon mb-3 block"></i>
+             <h4 class="font-bold text-sm">Web Template</h4>
            </a>
            <a href="/{{ locale }}/catalog?type=course" class="p-5 text-white border border-gray-800 active:scale-95 transition-transform" style="background-color: #0a0a0a; border-radius: 24px;">
-             <i class="bi bi-share text-3xl text-neon mb-3 block"></i>
-             <h4 class="font-bold text-sm">GO Social</h4>
+             <i class="bi bi-book text-3xl text-neon mb-3 block"></i>
+             <h4 class="font-bold text-sm">E-Book & Kursus</h4>
            </a>
-           <a href="/{{ locale }}/about" class="p-5 text-white border border-gray-800 active:scale-95 transition-transform" style="background-color: #0a0a0a; border-radius: 24px;">
-             <i class="bi bi-info-circle text-3xl text-neon mb-3 block"></i>
-             <h4 class="font-bold text-sm">About Us</h4>
+           <a href="/{{ locale }}/solutions" class="p-5 text-white border border-gray-800 active:scale-95 transition-transform" style="background-color: #0a0a0a; border-radius: 24px;">
+             <i class="bi bi-tools text-3xl text-neon mb-3 block"></i>
+             <h4 class="font-bold text-sm">Layanan IT</h4>
            </a>
         </div>
 
