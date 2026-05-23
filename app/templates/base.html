@@ -82,18 +82,18 @@
 
   <!-- ===== NAVBAR ===== -->
   <!-- Desktop Header -->
-  <header class="hidden md:flex fixed left-0 right-0 z-50 justify-center w-full pointer-events-none" id="navbar-desktop" style="top: 2.5rem;">
-    <div class="container-main pointer-events-auto flex items-center justify-between w-full relative" style="height:42px;">
+  <header class="hidden md:flex fixed left-0 right-0 z-50 justify-center w-full pointer-events-none" id="navbar-desktop" style="top: 3rem;">
+    <div class="container-main pointer-events-auto flex items-center justify-between w-full relative" style="height:40px;">
       
       <!-- Left Logo -->
-      <a href="/{{ locale }}/" class="navbar-logo-pill bg-neon text-black rounded-full flex items-center justify-center group relative overflow-hidden" style="height:42px; padding: 0 22px; z-index:30; flex-shrink:0; box-shadow: 0 0 0 2px #000;">
+      <a href="/{{ locale }}/" class="navbar-logo-pill bg-neon text-black rounded-full flex items-center justify-center group relative overflow-hidden" style="height:40px; padding: 0 20px; z-index:30; flex-shrink:0; box-shadow: 0 0 0 2px #000;">
         <span class="navbar-shimmer-line"></span>
-        <span class="font-black tracking-wider relative z-10" style="font-size:15px;">TWJ</span>
+        <span class="font-black tracking-wider relative z-10" style="font-size:14px;">TWJ</span>
       </a>
 
       <!-- Center Nav: Absolutely centered — true 50% of page regardless of logo/actions widths -->
       <div class="pointer-events-none"
-           style="position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); width:860px; z-index:20;"
+           style="position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); width:760px; z-index:20;"
            x-data="{
              megaMenuOpen: false,
              hovered: -1,
@@ -111,16 +111,16 @@
 
         <nav class="bg-neon text-black flex items-center justify-center gap-0.5 mx-auto whitespace-nowrap pointer-events-auto px-2"
              :style="megaMenuOpen
-               ? 'width:860px; border-radius:1.25rem 1.25rem 0 0; box-shadow:0 0 0 2px #000;'
-               : 'width:530px; border-radius:9999px; box-shadow:0 0 0 2px #000;'"
-             style="height:42px; transition: width 0.38s cubic-bezier(0.34,1.1,0.64,1), border-radius 0.38s cubic-bezier(0.34,1.1,0.64,1);">
+               ? 'width:760px; border-radius:1.25rem 1.25rem 0 0; box-shadow:0 0 0 2px #000;'
+               : 'width:500px; border-radius:9999px; box-shadow:0 0 0 2px #000;'"
+             style="height:40px; transition: width 0.38s cubic-bezier(0.34,1.1,0.64,1), border-radius 0.38s cubic-bezier(0.34,1.1,0.64,1);">
 
           <!-- Home (idx=0) -->
           <a href="/{{ locale }}/"
              @mouseenter="hovered=0; megaMenuOpen=false"
              :style="{ transform: getT(0) }"
-             class="navbar-nav-item px-4 rounded-full flex items-center justify-center font-semibold {% if active_page == 'home' %}bg-black text-neon navbar-active{% else %}text-black navbar-inactive{% endif %}"
-             style="height:36px; font-size:13px; transition: transform 0.35s cubic-bezier(0.25,0.46,0.45,0.94), background-color 0.25s ease, color 0.25s ease;">
+             class="navbar-nav-item px-3 rounded-full flex items-center justify-center font-semibold {% if active_page == 'home' %}bg-black text-neon navbar-active{% else %}text-black navbar-inactive{% endif %}"
+             style="height:34px; font-size:12.5px; transition: transform 0.35s cubic-bezier(0.25,0.46,0.45,0.94), background-color 0.25s ease, color 0.25s ease;">
             {% if locale == 'en' %}Home{% else %}Beranda{% endif %}
           </a>
 
@@ -128,8 +128,8 @@
           <a href="/{{ locale }}/catalog"
              @mouseenter="hovered=1; megaMenuOpen=true"
              :style="{ transform: getT(1) }"
-             class="navbar-nav-item px-4 rounded-full flex items-center justify-center font-semibold gap-1.5 {% if active_page == 'catalog' %}bg-black text-neon navbar-active{% else %}text-black navbar-inactive{% endif %}"
-             style="height:36px; font-size:13px; transition: transform 0.35s cubic-bezier(0.25,0.46,0.45,0.94), background-color 0.25s ease, color 0.25s ease;">
+             class="navbar-nav-item px-3 rounded-full flex items-center justify-center font-semibold gap-1.5 {% if active_page == 'catalog' %}bg-black text-neon navbar-active{% else %}text-black navbar-inactive{% endif %}"
+             style="height:34px; font-size:12.5px; transition: transform 0.35s cubic-bezier(0.25,0.46,0.45,0.94), background-color 0.25s ease, color 0.25s ease;">
             {% if locale == 'en' %}Catalog{% else %}Katalog{% endif %}
             <i class="bi text-xs transition-transform duration-300" :class="megaMenuOpen ? 'bi-x-lg rotate-45 scale-75' : 'bi-chevron-down'"></i>
           </a>
@@ -138,8 +138,8 @@
           <a href="/{{ locale }}/about"
              @mouseenter="hovered=2; megaMenuOpen=false"
              :style="{ transform: getT(2) }"
-             class="navbar-nav-item px-4 rounded-full flex items-center justify-center font-semibold {% if active_page == 'about' %}bg-black text-neon navbar-active{% else %}text-black navbar-inactive{% endif %}"
-             style="height:36px; font-size:13px; transition: transform 0.35s cubic-bezier(0.25,0.46,0.45,0.94), background-color 0.25s ease, color 0.25s ease;">
+             class="navbar-nav-item px-3 rounded-full flex items-center justify-center font-semibold {% if active_page == 'about' %}bg-black text-neon navbar-active{% else %}text-black navbar-inactive{% endif %}"
+             style="height:34px; font-size:12.5px; transition: transform 0.35s cubic-bezier(0.25,0.46,0.45,0.94), background-color 0.25s ease, color 0.25s ease;">
             {% if locale == 'en' %}About Us{% else %}Tentang Kami{% endif %}
           </a>
 
@@ -147,8 +147,8 @@
           <a href="/{{ locale }}/insight"
              @mouseenter="hovered=3; megaMenuOpen=false"
              :style="{ transform: getT(3) }"
-             class="navbar-nav-item px-4 rounded-full flex items-center justify-center font-semibold {% if active_page == 'insight' %}bg-black text-neon navbar-active{% else %}text-black navbar-inactive{% endif %}"
-             style="height:36px; font-size:13px; transition: transform 0.35s cubic-bezier(0.25,0.46,0.45,0.94), background-color 0.25s ease, color 0.25s ease;">
+             class="navbar-nav-item px-3 rounded-full flex items-center justify-center font-semibold {% if active_page == 'insight' %}bg-black text-neon navbar-active{% else %}text-black navbar-inactive{% endif %}"
+             style="height:34px; font-size:12.5px; transition: transform 0.35s cubic-bezier(0.25,0.46,0.45,0.94), background-color 0.25s ease, color 0.25s ease;">
             Insight
           </a>
 
@@ -156,8 +156,8 @@
           <a href="/{{ locale }}/contact"
              @mouseenter="hovered=4; megaMenuOpen=false"
              :style="{ transform: getT(4) }"
-             class="navbar-nav-item px-4 rounded-full flex items-center justify-center font-semibold {% if active_page == 'contact' %}bg-black text-neon navbar-active{% else %}text-black navbar-inactive{% endif %}"
-             style="height:36px; font-size:13px; transition: transform 0.35s cubic-bezier(0.25,0.46,0.45,0.94), background-color 0.25s ease, color 0.25s ease;">
+             class="navbar-nav-item px-3 rounded-full flex items-center justify-center font-semibold {% if active_page == 'contact' %}bg-black text-neon navbar-active{% else %}text-black navbar-inactive{% endif %}"
+             style="height:34px; font-size:12.5px; transition: transform 0.35s cubic-bezier(0.25,0.46,0.45,0.94), background-color 0.25s ease, color 0.25s ease;">
             {% if locale == 'en' %}Contact{% else %}Kontak{% endif %}
           </a>
         </nav>
@@ -171,7 +171,7 @@
              x-transition:leave-start="opacity-100"
              x-transition:leave-end="opacity-0"
              class="cursor-default pointer-events-auto"
-             style="display:none; position:absolute; top:42px; left:0; width:860px; background:#CAFF00; box-shadow:0 0 0 2px #000; clip-path:inset(0 -2px -2px -2px); border-radius:0 0 1.5rem 1.5rem; overflow:hidden;"
+             style="display:none; position:absolute; top:40px; left:0; width:760px; background:#CAFF00; box-shadow:0 0 0 2px #000; clip-path:inset(0 -2px -2px -2px); border-radius:0 0 1.5rem 1.5rem; overflow:hidden;"
              x-cloak>
 
           <div class="flex" style="height: 310px;">
@@ -388,48 +388,48 @@
 
       <!-- Right Actions: single unified pill (ID | EN | Cart | Bell | User▼) -->
       <div class="flex items-center gap-2" style="position:relative; z-index:30; flex-shrink:0;">
-        <div class="bg-neon text-black rounded-full flex items-center gap-0.5 px-1.5" style="height:42px; box-shadow:0 0 0 2px #000;">
+        <div class="bg-neon text-black rounded-full flex items-center gap-0.5 px-1.5" style="height:40px; box-shadow:0 0 0 2px #000;">
 
           <!-- Language switcher -->
           <a href="/id{{ request.url.path | replace('/id/', '/', 1) | replace('/en/', '/', 1) or '/' }}"
              class="navbar-action-btn flex items-center justify-center rounded-full font-bold transition-all duration-300 {% if locale == 'id' %}bg-black text-neon{% else %}text-black hover:bg-black/15{% endif %}"
-             style="width:34px;height:32px;font-size:11px;">ID</a>
+             style="width:30px;height:28px;font-size:11px;">ID</a>
           <a href="/en{{ request.url.path | replace('/id/', '/', 1) | replace('/en/', '/', 1) or '/' }}"
              class="navbar-action-btn flex items-center justify-center rounded-full font-bold transition-all duration-300 {% if locale == 'en' %}bg-black text-neon{% else %}text-black hover:bg-black/15{% endif %}"
-             style="width:34px;height:32px;font-size:11px;">EN</a>
+             style="width:30px;height:28px;font-size:11px;">EN</a>
 
-          <div class="w-px h-5 bg-black/20 mx-0.5"></div>
+          <div class="w-px h-4 bg-black/20 mx-0.5"></div>
 
           <!-- Cart icon with badge -->
           <a href="/{{ locale }}/cart"
              class="navbar-action-btn relative flex items-center justify-center rounded-full text-black hover:bg-black/15 transition-all duration-300"
-             style="width:34px;height:32px;" title="Keranjang Belanja">
-            <i class="bi bi-bag-fill" style="font-size:15px;"></i>
+             style="width:32px;height:28px;" title="Keranjang Belanja">
+            <i class="bi bi-bag-fill" style="font-size:14px;"></i>
           </a>
 
           <!-- Notification bell (self-contained, no external dep) -->
           {% if current_user %}
           <div class="navbar-action-btn relative flex items-center justify-center rounded-full text-black hover:bg-black/15 transition-all duration-300 cursor-pointer"
-               style="width:34px;height:32px;" title="Notifikasi"
+               style="width:32px;height:28px;" title="Notifikasi"
                x-data="{ count: 0 }">
-            <i class="bi bi-bell-fill" style="font-size:15px;"></i>
+            <i class="bi bi-bell-fill" style="font-size:14px;"></i>
             <span x-show="count > 0"
                   x-text="count > 9 ? '9+' : count"
                   x-cloak
                   class="absolute flex items-center justify-center font-black"
-                  style="top:2px; right:2px; width:14px; height:14px; border-radius:50%; background:#000; color:#CAFF00; font-size:8px; line-height:1;"></span>
+                  style="top:0px; right:2px; width:14px; height:14px; border-radius:50%; background:#000; color:#CAFF00; font-size:8px; line-height:1;"></span>
           </div>
           {% endif %}
 
-          <div class="w-px h-5 bg-black/20 mx-0.5"></div>
+          <div class="w-px h-4 bg-black/20 mx-0.5"></div>
 
           <!-- User profile dropdown -->
           {% if current_user %}
           <div class="relative" x-data="{ open: false }" @mouseleave="open = false">
             <button @mouseenter="open = true" @click="open = !open"
-                    class="navbar-action-btn flex items-center gap-1.5 rounded-full text-black hover:bg-black/15 transition-all duration-300 font-semibold"
-                    style="padding:0 10px 0 6px; height:32px; font-size:11px;">
-              <i class="bi bi-person-circle" style="font-size:16px;"></i>
+                    class="navbar-action-btn flex items-center gap-1 rounded-full text-black hover:bg-black/15 transition-all duration-300 font-semibold"
+                    style="padding:0 8px 0 6px; height:28px; font-size:11px;">
+              <i class="bi bi-person-circle" style="font-size:15px;"></i>
               <span class="max-w-[80px] truncate">
                 {% if current_user.full_name %}
                   {{ current_user.full_name.split(' ')[0] }}
@@ -498,7 +498,7 @@
           <!-- Not logged in: Login button -->
           <a href="/{{ locale }}/login"
              class="navbar-action-btn flex items-center justify-center rounded-full font-bold text-black hover:bg-black/15 transition-all duration-300"
-             style="padding:0 14px; height:32px; font-size:11px;">
+             style="padding:0 12px; height:28px; font-size:11px;">
             Login
           </a>
           {% endif %}
