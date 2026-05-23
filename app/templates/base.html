@@ -78,25 +78,26 @@
 
   <!-- ===== NAVBAR ===== -->
   <!-- Desktop Header -->
-  <header class="hidden md:flex fixed top-8 left-0 right-0 z-50 justify-center w-full pointer-events-none" id="navbar-desktop">
+  <header class="hidden md:flex fixed left-0 right-0 z-50 justify-center w-full pointer-events-none" id="navbar-desktop" style="top: 2.5rem;">
     <div class="container-main pointer-events-auto flex items-start justify-between w-full">
       
       <!-- Left Logo -->
-      <a href="/{{ locale }}/" class="bg-neon text-black h-14 px-8 rounded-full flex items-center justify-center hover:scale-105 transition-transform duration-300 shadow-2xl border border-black group">
-        <span class="font-black text-xl tracking-wider transition-colors">TWJ</span>
+      <a href="/{{ locale }}/" class="navbar-logo-pill bg-neon text-black rounded-full flex items-center justify-center border border-black group relative overflow-hidden" style="height:42px; padding: 0 22px;">
+        <span class="navbar-shimmer-line"></span>
+        <span class="font-black tracking-wider relative z-10" style="font-size:15px;">TWJ</span>
       </a>
 
       <!-- Center Nav -->
-      <nav class="bg-neon text-black h-14 px-2 py-1 rounded-full flex items-center gap-1 shadow-2xl border border-black" x-data="{ megaMenuOpen: false }">
-         <a href="/{{ locale }}/" class="px-6 h-full rounded-full flex items-center justify-center text-sm font-semibold transition-all duration-300 {% if active_page == 'home' %}bg-black text-neon{% else %}hover:bg-black/10{% endif %}">
+      <nav class="bg-neon text-black px-1.5 py-1 rounded-full flex items-center gap-0.5 shadow-2xl border border-black" style="height:42px;" x-data="{ megaMenuOpen: false }">
+         <a href="/{{ locale }}/" class="navbar-nav-item px-4 rounded-full flex items-center justify-center font-semibold transition-all duration-500 {% if active_page == 'home' %}bg-black text-neon navbar-active{% else %}text-black navbar-inactive{% endif %}" style="height:32px; font-size:13px;">
            Home
          </a>
 
          <!-- Mega Menu Trigger -->
          <div class="relative h-full flex items-center" @mouseenter="megaMenuOpen = true" @mouseleave="megaMenuOpen = false">
-           <a href="/{{ locale }}/catalog" class="px-6 h-full rounded-full flex items-center justify-center text-sm font-semibold gap-1.5 transition-all duration-300 {% if active_page == 'catalog' %}bg-black text-neon{% else %}hover:bg-black/10{% endif %}">
+           <a href="/{{ locale }}/catalog" class="navbar-nav-item px-4 rounded-full flex items-center justify-center font-semibold gap-1 transition-all duration-500 {% if active_page == 'catalog' %}bg-black text-neon navbar-active{% else %}text-black navbar-inactive{% endif %}" style="height:32px; font-size:13px;">
              Katalog
-             <i class="bi transition-transform duration-300" style="font-size: 10px;" :class="megaMenuOpen ? 'bi-x-lg rotate-90' : 'bi-plus-lg'"></i>
+             <i class="bi transition-all duration-300" style="font-size: 9px;" :class="megaMenuOpen ? 'bi-x-lg rotate-90' : 'bi-plus-lg'"></i>
            </a>
 
            <!-- Mega Menu Panel -->
@@ -161,13 +162,13 @@
            </div>
          </div>
 
-         <a href="/{{ locale }}/about" class="px-6 h-full rounded-full flex items-center justify-center text-sm font-semibold transition-all duration-300 {% if active_page == 'about' %}bg-black text-neon{% else %}hover:bg-black/10{% endif %}">
+         <a href="/{{ locale }}/about" class="navbar-nav-item px-4 rounded-full flex items-center justify-center font-semibold transition-all duration-500 {% if active_page == 'about' %}bg-black text-neon navbar-active{% else %}text-black navbar-inactive{% endif %}" style="height:32px; font-size:13px;">
            Tentang Kami
          </a>
-         <a href="/{{ locale }}/insight" class="px-6 h-full rounded-full flex items-center justify-center text-sm font-semibold transition-all duration-300 {% if active_page == 'insight' %}bg-black text-neon{% else %}hover:bg-black/10{% endif %}">
+         <a href="/{{ locale }}/insight" class="navbar-nav-item px-4 rounded-full flex items-center justify-center font-semibold transition-all duration-500 {% if active_page == 'insight' %}bg-black text-neon navbar-active{% else %}text-black navbar-inactive{% endif %}" style="height:32px; font-size:13px;">
            Insight
          </a>
-         <a href="/{{ locale }}/contact" class="px-6 h-full rounded-full flex items-center justify-center text-sm font-semibold transition-all duration-300 {% if active_page == 'contact' %}bg-black text-neon{% else %}hover:bg-black/10{% endif %}">
+         <a href="/{{ locale }}/contact" class="navbar-nav-item px-4 rounded-full flex items-center justify-center font-semibold transition-all duration-500 {% if active_page == 'contact' %}bg-black text-neon navbar-active{% else %}text-black navbar-inactive{% endif %}" style="height:32px; font-size:13px;">
            Kontak
          </a>
       </nav>
@@ -175,31 +176,32 @@
       <!-- Right Actions -->
       <div class="flex items-center gap-2">
          <!-- Theme / Profile / Lang -->
-         <div class="bg-neon text-black h-14 px-2 rounded-full flex items-center gap-1 shadow-2xl border border-black">
+         <div class="bg-neon text-black px-1.5 rounded-full flex items-center gap-0.5 shadow-2xl border border-black" style="height:42px;">
             <!-- Language -->
-            <a href="/id{{ request.url.path | replace('/id/', '/', 1) | replace('/en/', '/', 1) or '/' }}" class="w-10 h-10 flex items-center justify-center rounded-full text-xs font-bold transition-colors {% if locale == 'id' %}bg-black text-neon{% else %}text-black hover:bg-black/10{% endif %}">ID</a>
-            <a href="/en{{ request.url.path | replace('/id/', '/', 1) | replace('/en/', '/', 1) or '/' }}" class="w-10 h-10 flex items-center justify-center rounded-full text-xs font-bold transition-colors {% if locale == 'en' %}bg-black text-neon{% else %}text-black hover:bg-black/10{% endif %}">EN</a>
+            <a href="/id{{ request.url.path | replace('/id/', '/', 1) | replace('/en/', '/', 1) or '/' }}" class="navbar-action-btn flex items-center justify-center rounded-full font-bold transition-all duration-300 {% if locale == 'id' %}bg-black text-neon{% else %}text-black hover:bg-black/15{% endif %}" style="width:34px;height:32px;font-size:11px;">ID</a>
+            <a href="/en{{ request.url.path | replace('/id/', '/', 1) | replace('/en/', '/', 1) or '/' }}" class="navbar-action-btn flex items-center justify-center rounded-full font-bold transition-all duration-300 {% if locale == 'en' %}bg-black text-neon{% else %}text-black hover:bg-black/15{% endif %}" style="width:34px;height:32px;font-size:11px;">EN</a>
             
-            <div class="w-px h-6 bg-black/20 mx-1"></div>
+            <div class="w-px h-5 bg-black/20 mx-0.5"></div>
 
             {% if current_user %}
-              <!-- Dashboard -->
-              <a href="/{{ locale }}/dashboard" class="w-10 h-10 flex items-center justify-center rounded-full text-black hover:bg-black/10 transition-colors" title="Dashboard">
-                <i class="bi bi-person-circle text-xl"></i>
+              <a href="/{{ locale }}/dashboard" class="navbar-action-btn flex items-center justify-center rounded-full text-black hover:bg-black/15 transition-all duration-300" style="width:34px;height:32px;" title="Dashboard">
+                <i class="bi bi-person-circle" style="font-size:16px;"></i>
               </a>
             {% else %}
-              <a href="/{{ locale }}/login" class="px-4 h-10 flex items-center justify-center rounded-full text-xs font-semibold text-black hover:bg-black/10 transition-colors">
+              <a href="/{{ locale }}/login" class="navbar-action-btn flex items-center justify-center rounded-full font-semibold text-black hover:bg-black/15 transition-all duration-300" style="padding:0 12px;height:32px;font-size:11px;">
                 Login
               </a>
             {% endif %}
          </div>
          
-         <button class="w-14 h-14 bg-neon text-black rounded-full flex items-center justify-center hover:scale-110 transition-transform duration-300 shadow-2xl border border-black group">
-           <i class="bi bi-sun-fill text-xl group-hover:rotate-90 transition-transform duration-500"></i>
+         <button class="navbar-icon-btn bg-neon text-black rounded-full flex items-center justify-center shadow-2xl border border-black group relative overflow-hidden" style="width:42px;height:42px;" title="Theme">
+           <span class="navbar-shimmer-line"></span>
+           <i class="bi bi-sun-fill relative z-10 group-hover:rotate-180 transition-transform duration-500" style="font-size:16px;"></i>
          </button>
          
-         <a href="https://wa.me/6281234567890" target="_blank" class="w-14 h-14 bg-neon text-black rounded-full flex items-center justify-center hover:scale-110 transition-transform duration-300 shadow-2xl border border-black group relative">
-           <i class="bi bi-whatsapp text-2xl relative z-10 group-hover:scale-110 transition-transform"></i>
+         <a href="https://wa.me/6281234567890" target="_blank" class="navbar-icon-btn bg-neon text-black rounded-full flex items-center justify-center shadow-2xl border border-black group relative overflow-hidden" style="width:42px;height:42px;" title="WhatsApp">
+           <span class="navbar-shimmer-line"></span>
+           <i class="bi bi-whatsapp relative z-10 group-hover:scale-110 group-hover:rotate-12 transition-all duration-300" style="font-size:18px;"></i>
          </a>
       </div>
 
@@ -207,34 +209,34 @@
   </header>
 
   <!-- Mobile Top Nav -->
-  <nav class="md:hidden fixed top-8 left-1/2 -translate-x-1/2 z-50 bg-neon p-1.5 rounded-full flex items-center gap-1 shadow-2xl border border-black justify-between w-11/12 max-w-sm">
+  <nav class="md:hidden fixed left-1/2 -translate-x-1/2 z-50 bg-neon p-1 rounded-full flex items-center shadow-2xl border border-black justify-between" style="top:2.5rem; width: 92%; max-width: 360px;">
     <!-- Home -->
-    <a href="/{{ locale }}/" class="flex items-center gap-2 px-4 py-3 rounded-full transition-all duration-300 {% if active_page == 'home' %}bg-black text-neon shadow-lg{% else %}text-black hover:bg-black/10{% endif %} group">
-      <i class="bi bi-house-door-fill text-xl group-hover:scale-110 transition-transform"></i>
-      <span class="text-sm font-bold {% if active_page != 'home' %}hidden{% endif %}">Home</span>
+    <a href="/{{ locale }}/" class="mobile-nav-item flex items-center gap-1.5 rounded-full transition-all duration-400 {% if active_page == 'home' %}bg-black text-neon mobile-nav-active{% else %}text-black mobile-nav-inactive{% endif %}" style="padding: 8px 14px;">
+      <i class="bi bi-house-door-fill mobile-nav-icon" style="font-size:17px;"></i>
+      <span class="font-bold {% if active_page != 'home' %}hidden{% endif %}" style="font-size:12px;">Home</span>
     </a>
     
     <!-- Katalog -->
-    <a href="/{{ locale }}/catalog" class="flex items-center gap-2 px-4 py-3 rounded-full transition-all duration-300 {% if active_page == 'catalog' %}bg-black text-neon shadow-lg{% else %}text-black hover:bg-black/10{% endif %} group">
-      <i class="bi bi-bag-check-fill text-xl group-hover:scale-110 transition-transform"></i>
-      <span class="text-sm font-bold {% if active_page != 'catalog' %}hidden{% endif %}">Katalog</span>
+    <a href="/{{ locale }}/catalog" class="mobile-nav-item flex items-center gap-1.5 rounded-full transition-all duration-400 {% if active_page == 'catalog' %}bg-black text-neon mobile-nav-active{% else %}text-black mobile-nav-inactive{% endif %}" style="padding: 8px 14px;">
+      <i class="bi bi-bag-check-fill mobile-nav-icon" style="font-size:17px;"></i>
+      <span class="font-bold {% if active_page != 'catalog' %}hidden{% endif %}" style="font-size:12px;">Katalog</span>
     </a>
 
     <!-- Insight -->
-    <a href="/{{ locale }}/insight" class="flex items-center gap-2 px-4 py-3 rounded-full transition-all duration-300 {% if active_page == 'insight' %}bg-black text-neon shadow-lg{% else %}text-black hover:bg-black/10{% endif %} group">
-      <i class="bi bi-journals text-xl group-hover:scale-110 transition-transform"></i>
-      <span class="text-sm font-bold {% if active_page != 'insight' %}hidden{% endif %}">Insight</span>
+    <a href="/{{ locale }}/insight" class="mobile-nav-item flex items-center gap-1.5 rounded-full transition-all duration-400 {% if active_page == 'insight' %}bg-black text-neon mobile-nav-active{% else %}text-black mobile-nav-inactive{% endif %}" style="padding: 8px 14px;">
+      <i class="bi bi-journals mobile-nav-icon" style="font-size:17px;"></i>
+      <span class="font-bold {% if active_page != 'insight' %}hidden{% endif %}" style="font-size:12px;">Insight</span>
     </a>
 
     <!-- Contact -->
-    <a href="/{{ locale }}/contact" class="flex items-center gap-2 px-4 py-3 rounded-full transition-all duration-300 {% if active_page == 'contact' %}bg-black text-neon shadow-lg{% else %}text-black hover:bg-black/10{% endif %} group">
-      <i class="bi bi-telephone-fill text-xl group-hover:scale-110 transition-transform"></i>
-      <span class="text-sm font-bold {% if active_page != 'contact' %}hidden{% endif %}">Kontak</span>
+    <a href="/{{ locale }}/contact" class="mobile-nav-item flex items-center gap-1.5 rounded-full transition-all duration-400 {% if active_page == 'contact' %}bg-black text-neon mobile-nav-active{% else %}text-black mobile-nav-inactive{% endif %}" style="padding: 8px 14px;">
+      <i class="bi bi-telephone-fill mobile-nav-icon" style="font-size:17px;"></i>
+      <span class="font-bold {% if active_page != 'contact' %}hidden{% endif %}" style="font-size:12px;">Kontak</span>
     </a>
 
     <!-- Menu (Plus) -->
-    <button @click="mobileMenuOpen = !mobileMenuOpen" class="flex items-center justify-center w-12 h-12 rounded-full text-black hover:bg-black/10 transition-colors relative z-50">
-      <i class="bi text-2xl transition-transform duration-300" :class="mobileMenuOpen ? 'bi-x-lg rotate-90' : 'bi-plus-lg'"></i>
+    <button @click="mobileMenuOpen = !mobileMenuOpen" class="mobile-menu-btn flex items-center justify-center rounded-full text-black transition-all duration-300" style="width:36px;height:36px;">
+      <i class="bi transition-transform duration-400" style="font-size:18px;" :class="mobileMenuOpen ? 'bi-x-lg rotate-90' : 'bi-plus-lg'"></i>
     </button>
   </nav>
 
