@@ -93,44 +93,45 @@
 
       <!-- Center Nav: Absolutely centered — true 50% of page regardless of logo/actions widths -->
       <div class="pointer-events-none"
-           style="position:absolute; left:50%; top:0; transform:translateX(-50%); width:860px; z-index:20;"
+           style="position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); width:860px; z-index:20;"
            x-data="{
              megaMenuOpen: false,
              hovered: -1,
              activeTab: 0,
              getT(idx) {
+               if (this.megaMenuOpen) return 'translateX(0px)';
                if (this.hovered < 0) return 'translateX(0px)';
                if (idx === this.hovered) return 'translateX(0px)';
                const d = idx - this.hovered;
-               const m = Math.abs(d) === 1 ? 6 : 3;
+               const m = Math.abs(d) === 1 ? 7 : 3;
                return d < 0 ? ('translateX(-' + m + 'px)') : ('translateX(' + m + 'px)');
              }
            }"
            @mouseleave="megaMenuOpen = false; hovered = -1">
 
-        <nav class="bg-neon text-black flex items-center justify-center gap-0.5 mx-auto whitespace-nowrap pointer-events-auto"
+        <nav class="bg-neon text-black flex items-center justify-center gap-0.5 mx-auto whitespace-nowrap pointer-events-auto px-2"
              :style="megaMenuOpen
                ? 'width:860px; border-radius:1.25rem 1.25rem 0 0; box-shadow:0 0 0 2px #000;'
                : 'width:530px; border-radius:9999px; box-shadow:0 0 0 2px #000;'"
-             style="height:42px; padding:4px 8px; transition: width 0.38s cubic-bezier(0.34,1.1,0.64,1), border-radius 0.38s cubic-bezier(0.34,1.1,0.64,1);">
+             style="height:42px; transition: width 0.38s cubic-bezier(0.34,1.1,0.64,1), border-radius 0.38s cubic-bezier(0.34,1.1,0.64,1);">
 
           <!-- Home (idx=0) -->
           <a href="/{{ locale }}/"
              @mouseenter="hovered=0; megaMenuOpen=false"
              :style="{ transform: getT(0) }"
              class="navbar-nav-item px-4 rounded-full flex items-center justify-center font-semibold {% if active_page == 'home' %}bg-black text-neon navbar-active{% else %}text-black navbar-inactive{% endif %}"
-             style="height:32px; font-size:13px; transition: transform 0.42s cubic-bezier(0.34,1.56,0.64,1), background-color 0.3s ease, color 0.3s ease;">
-            Home
+             style="height:36px; font-size:13px; transition: transform 0.35s cubic-bezier(0.25,0.46,0.45,0.94), background-color 0.25s ease, color 0.25s ease;">
+            {% if locale == 'en' %}Home{% else %}Beranda{% endif %}
           </a>
 
           <!-- Katalog (idx=1) — triggers connected mega menu -->
           <a href="/{{ locale }}/catalog"
              @mouseenter="hovered=1; megaMenuOpen=true"
              :style="{ transform: getT(1) }"
-             class="navbar-nav-item px-4 rounded-full flex items-center justify-center font-semibold gap-1 {% if active_page == 'catalog' %}bg-black text-neon navbar-active{% else %}text-black navbar-inactive{% endif %}"
-             style="height:32px; font-size:13px; transition: transform 0.42s cubic-bezier(0.34,1.56,0.64,1), background-color 0.3s ease, color 0.3s ease;">
-            Katalog
-            <i class="bi text-xs transition-transform duration-300" :class="megaMenuOpen ? 'bi-x-lg rotate-45 scale-75' : 'bi-plus-lg'"></i>
+             class="navbar-nav-item px-4 rounded-full flex items-center justify-center font-semibold gap-1.5 {% if active_page == 'catalog' %}bg-black text-neon navbar-active{% else %}text-black navbar-inactive{% endif %}"
+             style="height:36px; font-size:13px; transition: transform 0.35s cubic-bezier(0.25,0.46,0.45,0.94), background-color 0.25s ease, color 0.25s ease;">
+            {% if locale == 'en' %}Catalog{% else %}Katalog{% endif %}
+            <i class="bi text-xs transition-transform duration-300" :class="megaMenuOpen ? 'bi-x-lg rotate-45 scale-75' : 'bi-chevron-down'"></i>
           </a>
 
           <!-- Tentang Kami (idx=2) -->
@@ -138,8 +139,8 @@
              @mouseenter="hovered=2; megaMenuOpen=false"
              :style="{ transform: getT(2) }"
              class="navbar-nav-item px-4 rounded-full flex items-center justify-center font-semibold {% if active_page == 'about' %}bg-black text-neon navbar-active{% else %}text-black navbar-inactive{% endif %}"
-             style="height:32px; font-size:13px; transition: transform 0.42s cubic-bezier(0.34,1.56,0.64,1), background-color 0.3s ease, color 0.3s ease;">
-            Tentang Kami
+             style="height:36px; font-size:13px; transition: transform 0.35s cubic-bezier(0.25,0.46,0.45,0.94), background-color 0.25s ease, color 0.25s ease;">
+            {% if locale == 'en' %}About Us{% else %}Tentang Kami{% endif %}
           </a>
 
           <!-- Insight (idx=3) -->
@@ -147,7 +148,7 @@
              @mouseenter="hovered=3; megaMenuOpen=false"
              :style="{ transform: getT(3) }"
              class="navbar-nav-item px-4 rounded-full flex items-center justify-center font-semibold {% if active_page == 'insight' %}bg-black text-neon navbar-active{% else %}text-black navbar-inactive{% endif %}"
-             style="height:32px; font-size:13px; transition: transform 0.42s cubic-bezier(0.34,1.56,0.64,1), background-color 0.3s ease, color 0.3s ease;">
+             style="height:36px; font-size:13px; transition: transform 0.35s cubic-bezier(0.25,0.46,0.45,0.94), background-color 0.25s ease, color 0.25s ease;">
             Insight
           </a>
 
@@ -156,8 +157,8 @@
              @mouseenter="hovered=4; megaMenuOpen=false"
              :style="{ transform: getT(4) }"
              class="navbar-nav-item px-4 rounded-full flex items-center justify-center font-semibold {% if active_page == 'contact' %}bg-black text-neon navbar-active{% else %}text-black navbar-inactive{% endif %}"
-             style="height:32px; font-size:13px; transition: transform 0.42s cubic-bezier(0.34,1.56,0.64,1), background-color 0.3s ease, color 0.3s ease;">
-            Kontak
+             style="height:36px; font-size:13px; transition: transform 0.35s cubic-bezier(0.25,0.46,0.45,0.94), background-color 0.25s ease, color 0.25s ease;">
+            {% if locale == 'en' %}Contact{% else %}Kontak{% endif %}
           </a>
         </nav>
 
