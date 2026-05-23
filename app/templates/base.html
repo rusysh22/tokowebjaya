@@ -102,7 +102,7 @@
            }"
            @mouseleave="megaMenuOpen = false; hovered = -1">
 
-        <nav class="bg-neon text-black px-1.5 py-1 flex items-center gap-0.5 shadow-2xl border border-black relative z-10"
+        <nav class="bg-neon text-black px-1.5 py-1 flex items-center gap-0.5 border border-black relative z-10"
              :style="megaMenuOpen ? 'border-radius: 1.25rem 1.25rem 0.4rem 0.4rem; border-bottom-color: transparent;' : 'border-radius: 9999px;'"
              style="height:42px; transition: border-radius 0.45s cubic-bezier(0.34,1.2,0.64,1), border-bottom-color 0.3s ease;">
 
@@ -167,7 +167,7 @@
 
           <div class="grid grid-cols-3 gap-3">
             <!-- Col 1: Digital Produk category card -->
-            <a href="/{{ locale }}/catalog?type=software" class="col-span-1 block group rounded-2xl overflow-hidden relative border border-black hover:scale-[1.02] transition-transform duration-300" style="min-height: 280px; background: #000;">
+            <a href="/{{ locale }}/catalog?type=software" class="col-span-1 block group rounded-2xl overflow-hidden relative hover:scale-[1.02] transition-transform duration-300" style="min-height: 280px; background: #000; border: 1px solid #000;">
                <div class="absolute inset-0 opacity-15 group-hover:opacity-30 transition-opacity duration-500" style="background-image: url('https://www.transparenttextures.com/patterns/cubes.png');"></div>
                <div class="absolute inset-0 bg-gradient-to-t from-neon/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
                <div class="relative z-10 p-5 h-full flex flex-col justify-between">
@@ -186,73 +186,73 @@
 
             <!-- Col 2: Edukasi & Layanan -->
             <div class="col-span-1 flex flex-col gap-3">
-               <a href="/{{ locale }}/catalog?type=course" class="flex-1 px-4 py-4 rounded-2xl border border-black hover:bg-black/10 transition-all duration-300 group flex flex-col justify-center" style="background: rgba(0,0,0,0.07);">
-                  <div class="flex items-center gap-2 mb-1 text-black">
+               <a href="/{{ locale }}/catalog?type=course" class="flex-1 px-4 py-4 rounded-2xl hover:bg-black/10 transition-all duration-300 group flex flex-col justify-center" style="background: rgba(0,0,0,0.07); border: 1px solid #000;">
+                  <div class="flex items-center gap-2 mb-1" style="color:#000;">
                      <i class="bi bi-book text-lg"></i>
                      <h4 class="font-black text-sm">Edukasi Digital</h4>
                   </div>
-                  <p class="text-xs text-black/70 leading-relaxed">E-book & Online Course untuk tingkatkan skill profesional Anda.</p>
+                  <p class="text-xs leading-relaxed" style="color: #000;">E-book &amp; Online Course untuk tingkatkan skill profesional Anda.</p>
                </a>
-               <a href="/{{ locale }}/solutions" class="flex-1 px-4 py-4 rounded-2xl border border-black hover:bg-black/10 transition-all duration-300 group flex flex-col justify-center" style="background: rgba(0,0,0,0.07);">
-                  <div class="flex items-center gap-2 mb-1 text-black">
+               <a href="/{{ locale }}/solutions" class="flex-1 px-4 py-4 rounded-2xl hover:bg-black/10 transition-all duration-300 group flex flex-col justify-center" style="background: rgba(0,0,0,0.07); border: 1px solid #000;">
+                  <div class="flex items-center gap-2 mb-1" style="color:#000;">
                      <i class="bi bi-tools text-lg"></i>
                      <h4 class="font-black text-sm">Layanan IT</h4>
                   </div>
-                  <p class="text-xs text-black/70 leading-relaxed">Konsultasi IT, integrasi sistem, dan web development custom.</p>
+                  <p class="text-xs leading-relaxed" style="color: #000;">Konsultasi IT, integrasi sistem, dan web development custom.</p>
                </a>
             </div>
 
             <!-- Col 3: Featured Product Cards -->
             <div class="col-span-1 flex flex-col gap-2.5">
-               <p class="text-xs font-black uppercase tracking-widest text-black/60 mb-0.5">🔥 Produk Unggulan</p>
+               <p class="text-xs font-black uppercase tracking-widest mb-0.5" style="color: #000;">🔥 Produk Unggulan</p>
 
                <!-- Product 1 -->
-               <a href="/{{ locale }}/catalog" class="flex items-center gap-3 p-3 rounded-xl border border-black hover:bg-black/10 transition-all duration-200 group">
-                  <div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 border border-black" style="background:#000;">
+               <a href="/{{ locale }}/catalog" class="flex items-center gap-3 p-3 rounded-xl hover:bg-black/10 transition-all duration-200 group" style="border: 1px solid #000;">
+                  <div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style="background:#000; border: 1px solid #000;">
                     <i class="bi bi-boxes text-neon" style="font-size:18px;"></i>
                   </div>
                   <div class="flex-1 min-w-0">
-                    <p class="font-black text-black text-sm leading-tight truncate">ERP SaaS Business</p>
-                    <p class="text-xs text-black/60">Software · SaaS</p>
+                    <p class="font-black text-sm leading-tight truncate" style="color:#000;">ERP SaaS Business</p>
+                    <p class="text-xs" style="color: rgba(0,0,0,0.65);">Software · SaaS</p>
                   </div>
                   <div class="text-right flex-shrink-0">
-                    <p class="font-black text-black text-sm">Rp 2 JT</p>
+                    <p class="font-black text-sm" style="color:#000;">Rp 2 JT</p>
                     <p class="text-xs text-red-600 line-through">Rp 4 JT</p>
                   </div>
                </a>
 
                <!-- Product 2 -->
-               <a href="/{{ locale }}/catalog" class="flex items-center gap-3 p-3 rounded-xl border border-black hover:bg-black/10 transition-all duration-200 group">
-                  <div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 border border-black" style="background:#000;">
+               <a href="/{{ locale }}/catalog" class="flex items-center gap-3 p-3 rounded-xl hover:bg-black/10 transition-all duration-200 group" style="border: 1px solid #000;">
+                  <div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style="background:#000; border: 1px solid #000;">
                     <i class="bi bi-layout-text-window text-neon" style="font-size:18px;"></i>
                   </div>
                   <div class="flex-1 min-w-0">
-                    <p class="font-black text-black text-sm leading-tight truncate">Landing Page Pro</p>
-                    <p class="text-xs text-black/60">Template · Web</p>
+                    <p class="font-black text-sm leading-tight truncate" style="color:#000;">Landing Page Pro</p>
+                    <p class="text-xs" style="color: rgba(0,0,0,0.65);">Template · Web</p>
                   </div>
                   <div class="text-right flex-shrink-0">
-                    <p class="font-black text-black text-sm">Rp 499K</p>
+                    <p class="font-black text-sm" style="color:#000;">Rp 499K</p>
                     <p class="text-xs text-red-600 line-through">Rp 999K</p>
                   </div>
                </a>
 
                <!-- Product 3 -->
-               <a href="/{{ locale }}/catalog" class="flex items-center gap-3 p-3 rounded-xl border border-black hover:bg-black/10 transition-all duration-200 group">
-                  <div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 border border-black" style="background:#000;">
+               <a href="/{{ locale }}/catalog" class="flex items-center gap-3 p-3 rounded-xl hover:bg-black/10 transition-all duration-200 group" style="border: 1px solid #000;">
+                  <div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style="background:#000; border: 1px solid #000;">
                     <i class="bi bi-phone text-neon" style="font-size:18px;"></i>
                   </div>
                   <div class="flex-1 min-w-0">
-                    <p class="font-black text-black text-sm leading-tight truncate">Flutter Starter Kit</p>
-                    <p class="text-xs text-black/60">Template · Mobile</p>
+                    <p class="font-black text-sm leading-tight truncate" style="color:#000;">Flutter Starter Kit</p>
+                    <p class="text-xs" style="color: rgba(0,0,0,0.65);">Template · Mobile</p>
                   </div>
                   <div class="text-right flex-shrink-0">
-                    <p class="font-black text-black text-sm">Rp 299K</p>
-                    <p class="text-xs text-black/40">Baru</p>
+                    <p class="font-black text-sm" style="color:#000;">Rp 299K</p>
+                    <p class="text-xs font-bold" style="color: rgba(0,0,0,0.7);">Baru</p>
                   </div>
                </a>
 
                <!-- View All CTA -->
-               <a href="/{{ locale }}/catalog" class="mt-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border-2 border-black font-black text-black text-sm hover:bg-black hover:text-neon transition-all duration-300">
+               <a href="/{{ locale }}/catalog" class="mt-1 flex items-center justify-center gap-2 py-2.5 rounded-xl font-black text-sm hover:bg-black transition-all duration-300" style="border: 2px solid #000; color: #000;" onmouseover="this.style.color='#CAFF00'" onmouseout="this.style.color='#000'">
                   <i class="bi bi-grid-fill text-sm"></i>
                   Lihat Semua Produk
                </a>
@@ -266,7 +266,7 @@
       <!-- Right Actions -->
       <div class="flex items-center gap-2">
          <!-- Theme / Profile / Lang -->
-         <div class="bg-neon text-black px-1.5 rounded-full flex items-center gap-0.5 shadow-2xl border border-black" style="height:42px;">
+         <div class="bg-neon text-black px-1.5 rounded-full flex items-center gap-0.5" style="height:42px; border: 1px solid #000;">
             <!-- Language -->
             <a href="/id{{ request.url.path | replace('/id/', '/', 1) | replace('/en/', '/', 1) or '/' }}" class="navbar-action-btn flex items-center justify-center rounded-full font-bold transition-all duration-300 {% if locale == 'id' %}bg-black text-neon{% else %}text-black hover:bg-black/15{% endif %}" style="width:34px;height:32px;font-size:11px;">ID</a>
             <a href="/en{{ request.url.path | replace('/id/', '/', 1) | replace('/en/', '/', 1) or '/' }}" class="navbar-action-btn flex items-center justify-center rounded-full font-bold transition-all duration-300 {% if locale == 'en' %}bg-black text-neon{% else %}text-black hover:bg-black/15{% endif %}" style="width:34px;height:32px;font-size:11px;">EN</a>
@@ -284,12 +284,12 @@
             {% endif %}
          </div>
          
-         <button class="navbar-icon-btn bg-neon text-black rounded-full flex items-center justify-center shadow-2xl border border-black group relative overflow-hidden" style="width:42px;height:42px;" title="Theme">
+         <button class="navbar-icon-btn bg-neon text-black rounded-full flex items-center justify-center group relative overflow-hidden" style="width:42px;height:42px; border: 1px solid #000;" title="Theme">
            <span class="navbar-shimmer-line"></span>
            <i class="bi bi-sun-fill relative z-10 group-hover:rotate-180 transition-transform duration-500" style="font-size:16px;"></i>
          </button>
          
-         <a href="https://wa.me/6281234567890" target="_blank" class="navbar-icon-btn bg-neon text-black rounded-full flex items-center justify-center shadow-2xl border border-black group relative overflow-hidden" style="width:42px;height:42px;" title="WhatsApp">
+         <a href="https://wa.me/6281234567890" target="_blank" class="navbar-icon-btn bg-neon text-black rounded-full flex items-center justify-center group relative overflow-hidden" style="width:42px;height:42px; border: 1px solid #000;" title="WhatsApp">
            <span class="navbar-shimmer-line"></span>
            <i class="bi bi-whatsapp relative z-10 group-hover:scale-110 group-hover:rotate-12 transition-all duration-300" style="font-size:18px;"></i>
          </a>
