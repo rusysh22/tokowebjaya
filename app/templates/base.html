@@ -86,7 +86,7 @@
     <div class="container-main pointer-events-auto flex items-center justify-between w-full relative" style="height:42px;">
       
       <!-- Left Logo -->
-      <a href="/{{ locale }}/" class="navbar-logo-pill bg-neon text-black rounded-full flex items-center justify-center border border-black group relative overflow-hidden" style="height:42px; padding: 0 22px; z-index:30; flex-shrink:0;">
+      <a href="/{{ locale }}/" class="navbar-logo-pill bg-neon text-black rounded-full flex items-center justify-center group relative overflow-hidden" style="height:42px; padding: 0 22px; z-index:30; flex-shrink:0; box-shadow: 0 0 0 2px #000;">
         <span class="navbar-shimmer-line"></span>
         <span class="font-black tracking-wider relative z-10" style="font-size:15px;">TWJ</span>
       </a>
@@ -407,16 +407,17 @@
             <i class="bi bi-bag-fill" style="font-size:15px;"></i>
           </a>
 
-          <!-- Notification bell -->
+          <!-- Notification bell (self-contained, no external dep) -->
           {% if current_user %}
           <div class="navbar-action-btn relative flex items-center justify-center rounded-full text-black hover:bg-black/15 transition-all duration-300 cursor-pointer"
                style="width:34px;height:32px;" title="Notifikasi"
-               x-data="notifBell()">
+               x-data="{ count: 0 }">
             <i class="bi bi-bell-fill" style="font-size:15px;"></i>
             <span x-show="count > 0"
                   x-text="count > 9 ? '9+' : count"
-                  class="absolute top-0.5 right-0.5 w-4 h-4 rounded-full bg-black text-neon flex items-center justify-center font-black"
-                  style="font-size:9px; line-height:1;"></span>
+                  x-cloak
+                  class="absolute flex items-center justify-center font-black"
+                  style="top:2px; right:2px; width:14px; height:14px; border-radius:50%; background:#000; color:#CAFF00; font-size:8px; line-height:1;"></span>
           </div>
           {% endif %}
 
@@ -429,7 +430,15 @@
                     class="navbar-action-btn flex items-center gap-1.5 rounded-full text-black hover:bg-black/15 transition-all duration-300 font-semibold"
                     style="padding:0 10px 0 6px; height:32px; font-size:11px;">
               <i class="bi bi-person-circle" style="font-size:16px;"></i>
-              <span class="max-w-[70px] truncate">{{ current_user.full_name.split(' ')[0] if current_user.full_name else 'Akun' }}</span>
+              <span class="max-w-[80px] truncate">
+                {% if current_user.full_name %}
+                  {{ current_user.full_name.split(' ')[0] }}
+                {% elif current_user.email %}
+                  {{ current_user.email.split('@')[0] }}
+                {% else %}
+                  Akun
+                {% endif %}
+              </span>
               <i class="bi bi-chevron-down text-xs transition-transform duration-300" :class="open ? 'rotate-180' : ''"></i>
             </button>
 
@@ -445,7 +454,9 @@
                  x-cloak>
               <!-- User info header -->
               <div style="padding:12px 14px 8px; border-bottom:1px solid rgba(0,0,0,0.12);">
-                <p class="font-black text-sm truncate" style="color:#000;">{{ current_user.full_name or 'Pengguna' }}</p>
+                <p class="font-black text-sm truncate" style="color:#000;">
+                  {{ current_user.full_name or current_user.email.split('@')[0] or 'Pengguna' }}
+                </p>
                 <p class="text-xs truncate" style="color:rgba(0,0,0,0.55);">{{ current_user.email }}</p>
               </div>
               <!-- Menu items -->
