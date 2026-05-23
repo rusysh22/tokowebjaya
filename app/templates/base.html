@@ -77,22 +77,17 @@
 </div>
 
   <!-- ===== NAVBAR ===== -->
-  <!-- Floating WhatsApp for Mobile (Top Right) -->
-  <a href="https://wa.me/6281234567890" target="_blank" class="md:hidden fixed top-6 right-6 z-50 w-12 h-12 bg-black text-[#25D366] rounded-full flex items-center justify-center shadow-[0_0_15px_rgba(37,211,102,0.3)] border border-gray-800 hover:scale-110 transition-transform duration-300">
-    <i class="bi bi-whatsapp text-2xl"></i>
-  </a>
-
   <!-- Desktop Header -->
-  <header class="hidden md:block fixed top-6 left-0 right-0 z-50 pointer-events-none" id="navbar-desktop">
-    <div class="container-main mx-auto flex items-start justify-between pointer-events-auto">
+  <header class="hidden md:flex fixed top-6 left-0 right-0 z-50 justify-center w-full pointer-events-none" id="navbar-desktop">
+    <div class="container-main pointer-events-auto flex items-start justify-between w-full">
       
       <!-- Left Logo -->
-      <a href="/{{ locale }}/" class="bg-black text-white h-[60px] px-8 rounded-full flex items-center justify-center hover:scale-105 transition-transform duration-300 shadow-2xl border border-gray-800 group">
-        <span class="font-black text-xl tracking-wider group-hover:text-[#CAFF00] transition-colors">GONLINE</span>
+      <a href="/{{ locale }}/" class="bg-black text-white h-14 px-8 rounded-full flex items-center justify-center hover:scale-105 transition-transform duration-300 shadow-2xl border border-gray-800 group">
+        <span class="font-black text-xl tracking-wider group-hover:text-neon transition-colors">GONLINE</span>
       </a>
 
       <!-- Center Nav -->
-      <nav class="bg-black text-white h-[60px] px-2 py-2 rounded-full flex items-center gap-1 shadow-2xl border border-gray-800" x-data="{ megaMenuOpen: false }">
+      <nav class="bg-black text-white h-14 px-2 py-1 rounded-full flex items-center gap-1 shadow-2xl border border-gray-800" x-data="{ megaMenuOpen: false }">
          <a href="/{{ locale }}/" class="px-6 h-full rounded-full flex items-center justify-center text-sm font-semibold transition-all duration-300 {% if active_page == 'home' %}bg-white text-black{% else %}hover:text-gray-300{% endif %}">
            Home
          </a>
@@ -101,7 +96,7 @@
          <div class="relative h-full flex items-center" @mouseenter="megaMenuOpen = true" @mouseleave="megaMenuOpen = false">
            <a href="/{{ locale }}/catalog" class="px-6 h-full rounded-full flex items-center justify-center text-sm font-semibold gap-1.5 transition-all duration-300 {% if active_page == 'catalog' %}bg-white text-black{% else %}hover:text-gray-300{% endif %}">
              Services
-             <i class="bi transition-transform duration-300 text-[10px]" :class="megaMenuOpen ? 'bi-x-lg rotate-90' : 'bi-plus-lg'"></i>
+             <i class="bi transition-transform duration-300" style="font-size: 10px;" :class="megaMenuOpen ? 'bi-x-lg rotate-90' : 'bi-plus-lg'"></i>
            </a>
 
            <!-- Mega Menu Panel -->
@@ -112,19 +107,20 @@
                 x-transition:leave="transition ease-in duration-200"
                 x-transition:leave-start="opacity-100 translate-y-0 scale-100"
                 x-transition:leave-end="opacity-0 translate-y-4 scale-95"
-                class="absolute top-[calc(100%+16px)] left-1/2 -translate-x-1/2 w-[850px] z-50 cursor-default"
+                class="absolute z-50 cursor-default"
+                style="top: calc(100% + 16px); left: 50%; transform: translateX(-50%); width: 850px;"
                 x-cloak>
-              <div class="bg-black rounded-[2rem] p-4 border border-gray-800 shadow-2xl grid grid-cols-3 gap-4">
+              <div class="bg-black p-4 border border-gray-800 shadow-2xl grid grid-cols-3 gap-4" style="border-radius: 2rem;">
                  
                  <!-- Col 1: GO Digital -->
-                 <a href="/{{ locale }}/catalog?type=bundle" class="col-span-1 block group border border-gray-800 rounded-3xl overflow-hidden relative min-h-[320px]">
+                 <a href="/{{ locale }}/catalog?type=bundle" class="col-span-1 block group border border-gray-800 rounded-3xl overflow-hidden relative" style="min-height: 320px;">
                     <div class="absolute inset-0 bg-gradient-to-b from-black/20 to-black/90 z-10"></div>
                     <!-- Wireframe background effect -->
-                    <div class="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-20 group-hover:opacity-40 transition-opacity duration-500"></div>
-                    <div class="absolute inset-0 bg-gradient-to-t from-[#CAFF00]/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                    <div class="absolute inset-0 opacity-20 group-hover:opacity-40 transition-opacity duration-500" style="background-image: url('https://www.transparenttextures.com/patterns/cubes.png');"></div>
+                    <div class="absolute inset-0 bg-gradient-to-t from-neon/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
                     
                     <div class="relative z-20 p-6 h-full flex flex-col justify-between">
-                       <div class="flex items-center gap-2 text-white group-hover:text-[#CAFF00] transition-colors">
+                       <div class="flex items-center gap-2 text-white group-hover:text-neon transition-colors">
                           <i class="bi bi-box-seam text-xl"></i>
                           <h3 class="font-bold text-lg">GO Digital</h3>
                        </div>
@@ -134,30 +130,30 @@
 
                  <!-- Col 2: GO Website & GO Social -->
                  <div class="col-span-1 flex flex-col gap-4">
-                    <a href="/{{ locale }}/catalog?type=software" class="flex-1 p-6 rounded-3xl border border-gray-800 hover:border-gray-600 bg-[#0a0a0a] transition-all duration-300 group flex flex-col justify-center hover:scale-[1.02]">
+                    <a href="/{{ locale }}/catalog?type=software" class="flex-1 p-6 rounded-3xl border border-gray-800 hover:border-gray-600 transition-all duration-300 group flex flex-col justify-center hover:scale-105" style="background-color: #0a0a0a;">
                        <div class="flex items-center gap-2 mb-2 text-white group-hover:text-white transition-colors">
                           <i class="bi bi-globe text-lg"></i>
-                          <h4 class="font-bold text-[15px]">GO Website</h4>
+                          <h4 class="font-bold text-base">GO Website</h4>
                        </div>
-                       <p class="text-[11px] text-gray-400 leading-relaxed">Professional website development designed to increase credibility and generate more leads for your business.</p>
+                       <p class="text-xs text-gray-400 leading-relaxed">Professional website development designed to increase credibility and generate more leads for your business.</p>
                     </a>
-                    <a href="/{{ locale }}/catalog?type=course" class="flex-1 p-6 rounded-3xl border border-gray-800 hover:border-gray-600 bg-[#0a0a0a] transition-all duration-300 group flex flex-col justify-center hover:scale-[1.02]">
+                    <a href="/{{ locale }}/catalog?type=course" class="flex-1 p-6 rounded-3xl border border-gray-800 hover:border-gray-600 transition-all duration-300 group flex flex-col justify-center hover:scale-105" style="background-color: #0a0a0a;">
                        <div class="flex items-center gap-2 mb-2 text-white group-hover:text-white transition-colors">
                           <i class="bi bi-share text-lg"></i>
-                          <h4 class="font-bold text-[15px]">GO Social</h4>
+                          <h4 class="font-bold text-base">GO Social</h4>
                        </div>
-                       <p class="text-[11px] text-gray-400 leading-relaxed">End-to-end social media management including content strategy, design, and optimization to grow engagement.</p>
+                       <p class="text-xs text-gray-400 leading-relaxed">End-to-end social media management including content strategy, design, and optimization to grow engagement.</p>
                     </a>
                  </div>
 
                  <!-- Col 3: Promo Card -->
                  <div class="col-span-1 rounded-3xl bg-white p-1 overflow-hidden relative group">
-                    <img src="/static/og-default.png" alt="Promo" class="w-full h-full object-cover rounded-[20px] group-hover:scale-110 transition-transform duration-700" />
-                    <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent z-10 rounded-[20px]"></div>
+                    <img src="/static/og-default.png" alt="Promo" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" style="border-radius: 20px;" />
+                    <div class="absolute inset-0 z-10" style="background: linear-gradient(to top, rgba(0,0,0,0.9), rgba(0,0,0,0.2), transparent); border-radius: 20px;"></div>
                     <div class="absolute bottom-5 left-5 right-5 z-20">
-                      <span class="bg-red-600 text-white text-[10px] font-black px-2.5 py-1 rounded-md uppercase tracking-wider mb-2 inline-block shadow-lg">Discount 50%</span>
+                      <span class="bg-red-600 text-white font-black px-2.5 py-1 rounded-md uppercase tracking-wider mb-2 inline-block shadow-lg" style="font-size: 10px;">Discount 50%</span>
                       <h4 class="text-white font-bold text-lg leading-tight mb-1">Website Landing Page</h4>
-                      <p class="text-[#CAFF00] font-black text-sm drop-shadow-md">Rp 1.5 JT <strike class="text-gray-400 font-normal text-[10px] ml-1">Rp 3.000.000</strike></p>
+                      <p class="font-black text-sm drop-shadow-md text-neon">Rp 1.5 JT <strike class="text-gray-400 font-normal ml-1" style="font-size: 10px;">Rp 3.000.000</strike></p>
                     </div>
                  </div>
 
@@ -182,7 +178,7 @@
       <!-- Right Actions -->
       <div class="flex items-center gap-2">
          <!-- Theme / Profile / Lang -->
-         <div class="bg-black text-white h-[60px] px-2 rounded-full flex items-center gap-1 shadow-2xl border border-gray-800">
+         <div class="bg-black text-white h-14 px-2 rounded-full flex items-center gap-1 shadow-2xl border border-gray-800">
             <!-- Language -->
             <a href="/id{{ request.url.path | replace('/id/', '/', 1) | replace('/en/', '/', 1) or '/' }}" class="w-10 h-10 flex items-center justify-center rounded-full text-xs font-bold transition-colors {% if locale == 'id' %}bg-white text-black{% else %}text-gray-400 hover:text-white{% endif %}">ID</a>
             <a href="/en{{ request.url.path | replace('/id/', '/', 1) | replace('/en/', '/', 1) or '/' }}" class="w-10 h-10 flex items-center justify-center rounded-full text-xs font-bold transition-colors {% if locale == 'en' %}bg-white text-black{% else %}text-gray-400 hover:text-white{% endif %}">EN</a>
@@ -201,12 +197,12 @@
             {% endif %}
          </div>
          
-         <button class="w-[60px] h-[60px] bg-black text-white rounded-full flex items-center justify-center hover:scale-110 transition-transform duration-300 shadow-2xl border border-gray-800 group">
+         <button class="w-14 h-14 bg-black text-white rounded-full flex items-center justify-center hover:scale-110 transition-transform duration-300 shadow-2xl border border-gray-800 group">
            <i class="bi bi-sun-fill text-xl group-hover:rotate-90 transition-transform duration-500"></i>
          </button>
          
-         <a href="https://wa.me/6281234567890" target="_blank" class="w-[60px] h-[60px] bg-black text-[#25D366] rounded-full flex items-center justify-center hover:scale-110 transition-transform duration-300 shadow-2xl border border-gray-800 group relative">
-           <div class="absolute inset-0 bg-[#25D366] rounded-full blur-md opacity-20 group-hover:opacity-40 transition-opacity"></div>
+         <a href="https://wa.me/6281234567890" target="_blank" class="w-14 h-14 bg-black rounded-full flex items-center justify-center hover:scale-110 transition-transform duration-300 shadow-2xl border border-gray-800 group relative" style="color: #25D366;">
+           <div class="absolute inset-0 rounded-full blur-md opacity-20 group-hover:opacity-40 transition-opacity" style="background-color: #25D366;"></div>
            <i class="bi bi-whatsapp text-2xl relative z-10 group-hover:scale-110 transition-transform"></i>
          </a>
       </div>
@@ -214,49 +210,49 @@
     </div>
   </header>
 
-  <!-- Mobile Bottom Nav -->
-  <nav class="md:hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-black/95 backdrop-blur-md p-1.5 rounded-full flex items-center gap-1 shadow-2xl border border-gray-800 w-[92%] max-w-[400px] justify-between">
+  <!-- Mobile Top Nav -->
+  <nav class="md:hidden fixed top-6 left-1/2 -translate-x-1/2 z-50 bg-black p-1.5 rounded-full flex items-center gap-1 shadow-2xl border border-gray-800 justify-between w-11/12 max-w-sm">
     <!-- Home -->
-    <a href="/{{ locale }}/" class="flex items-center gap-2 px-4 py-3.5 rounded-full transition-all duration-300 {% if active_page == 'home' %}bg-white text-black shadow-lg{% else %}text-white hover:bg-gray-800{% endif %} group">
+    <a href="/{{ locale }}/" class="flex items-center gap-2 px-4 py-3 rounded-full transition-all duration-300 {% if active_page == 'home' %}bg-white text-black shadow-lg{% else %}text-white hover:bg-gray-800{% endif %} group">
       <i class="bi bi-house-door-fill text-xl group-hover:scale-110 transition-transform"></i>
       <span class="text-sm font-bold {% if active_page != 'home' %}hidden{% endif %}">Home</span>
     </a>
     
     <!-- Services -->
-    <a href="/{{ locale }}/catalog" class="flex items-center gap-2 px-4 py-3.5 rounded-full transition-all duration-300 {% if active_page == 'catalog' %}bg-white text-black shadow-lg{% else %}text-white hover:bg-gray-800{% endif %} group">
+    <a href="/{{ locale }}/catalog" class="flex items-center gap-2 px-4 py-3 rounded-full transition-all duration-300 {% if active_page == 'catalog' %}bg-white text-black shadow-lg{% else %}text-white hover:bg-gray-800{% endif %} group">
       <i class="bi bi-journal-album text-xl group-hover:scale-110 transition-transform"></i>
       <span class="text-sm font-bold {% if active_page != 'catalog' %}hidden{% endif %}">Services</span>
     </a>
 
     <!-- Works -->
-    <a href="/{{ locale }}/solutions" class="flex items-center gap-2 px-4 py-3.5 rounded-full transition-all duration-300 {% if active_page == 'solutions' %}bg-white text-black shadow-lg{% else %}text-white hover:bg-gray-800{% endif %} group">
+    <a href="/{{ locale }}/solutions" class="flex items-center gap-2 px-4 py-3 rounded-full transition-all duration-300 {% if active_page == 'solutions' %}bg-white text-black shadow-lg{% else %}text-white hover:bg-gray-800{% endif %} group">
       <i class="bi bi-display text-xl group-hover:scale-110 transition-transform"></i>
       <span class="text-sm font-bold {% if active_page != 'solutions' %}hidden{% endif %}">Works</span>
     </a>
 
     <!-- Contact -->
-    <a href="/{{ locale }}/contact" class="flex items-center gap-2 px-4 py-3.5 rounded-full transition-all duration-300 {% if active_page == 'contact' %}bg-white text-black shadow-lg{% else %}text-white hover:bg-gray-800{% endif %} group">
+    <a href="/{{ locale }}/contact" class="flex items-center gap-2 px-4 py-3 rounded-full transition-all duration-300 {% if active_page == 'contact' %}bg-white text-black shadow-lg{% else %}text-white hover:bg-gray-800{% endif %} group">
       <i class="bi bi-telephone-fill text-xl group-hover:scale-110 transition-transform"></i>
       <span class="text-sm font-bold {% if active_page != 'contact' %}hidden{% endif %}">Call</span>
     </a>
 
     <!-- Menu (Plus) -->
-    <button @click="mobileMenuOpen = !mobileMenuOpen" class="flex items-center justify-center w-[52px] h-[52px] rounded-full text-white hover:bg-gray-800 transition-colors">
-      <i class="bi bi-plus-lg text-2xl transition-transform duration-300" :class="mobileMenuOpen ? 'rotate-45 text-[#CAFF00]' : ''"></i>
+    <button @click="mobileMenuOpen = !mobileMenuOpen" class="flex items-center justify-center w-12 h-12 rounded-full text-white hover:bg-gray-800 transition-colors relative z-50">
+      <i class="bi text-2xl transition-transform duration-300 text-neon" :class="mobileMenuOpen ? 'bi-x-lg rotate-90' : 'bi-plus-lg'"></i>
     </button>
   </nav>
 
   <!-- Mobile Drawer Menu -->
   <div x-show="mobileMenuOpen"
        x-transition:enter="transition ease-out duration-300"
-       x-transition:enter-start="opacity-0 translate-y-full"
+       x-transition:enter-start="opacity-0 -translate-y-4"
        x-transition:enter-end="opacity-100 translate-y-0"
        x-transition:leave="transition ease-in duration-200"
        x-transition:leave-start="opacity-100 translate-y-0"
-       x-transition:leave-end="opacity-0 translate-y-full"
-       class="md:hidden fixed inset-0 z-40 bg-black/95 backdrop-blur-xl flex flex-col justify-end pb-32 pt-8 px-6"
+       x-transition:leave-end="opacity-0 -translate-y-4"
+       class="md:hidden fixed inset-0 z-40 bg-black flex flex-col pt-28 pb-8 px-6"
        x-cloak>
-     <div class="flex-1 overflow-y-auto flex flex-col gap-6 scrollbar-hide">
+     <div class="flex-1 overflow-y-auto flex flex-col gap-6" style="scrollbar-width: none;">
         <div class="flex items-center justify-between mb-2">
            <span class="font-black text-2xl text-white tracking-widest">GONLINE</span>
            <button @click="mobileMenuOpen = false" class="w-10 h-10 bg-gray-900 rounded-full flex items-center justify-center text-white hover:bg-gray-800 transition-colors">
@@ -265,20 +261,20 @@
         </div>
         
         <div class="grid grid-cols-2 gap-4">
-           <a href="/{{ locale }}/catalog?type=bundle" class="bg-[#0a0a0a] p-5 rounded-[24px] text-white border border-gray-800 active:scale-95 transition-transform">
-             <i class="bi bi-box-seam text-3xl text-[#CAFF00] mb-3 block"></i>
+           <a href="/{{ locale }}/catalog?type=bundle" class="p-5 text-white border border-gray-800 active:scale-95 transition-transform" style="background-color: #0a0a0a; border-radius: 24px;">
+             <i class="bi bi-box-seam text-3xl text-neon mb-3 block"></i>
              <h4 class="font-bold text-sm">GO Digital</h4>
            </a>
-           <a href="/{{ locale }}/catalog?type=software" class="bg-[#0a0a0a] p-5 rounded-[24px] text-white border border-gray-800 active:scale-95 transition-transform">
-             <i class="bi bi-globe text-3xl text-[#CAFF00] mb-3 block"></i>
+           <a href="/{{ locale }}/catalog?type=software" class="p-5 text-white border border-gray-800 active:scale-95 transition-transform" style="background-color: #0a0a0a; border-radius: 24px;">
+             <i class="bi bi-globe text-3xl text-neon mb-3 block"></i>
              <h4 class="font-bold text-sm">GO Website</h4>
            </a>
-           <a href="/{{ locale }}/catalog?type=course" class="bg-[#0a0a0a] p-5 rounded-[24px] text-white border border-gray-800 active:scale-95 transition-transform">
-             <i class="bi bi-share text-3xl text-[#CAFF00] mb-3 block"></i>
+           <a href="/{{ locale }}/catalog?type=course" class="p-5 text-white border border-gray-800 active:scale-95 transition-transform" style="background-color: #0a0a0a; border-radius: 24px;">
+             <i class="bi bi-share text-3xl text-neon mb-3 block"></i>
              <h4 class="font-bold text-sm">GO Social</h4>
            </a>
-           <a href="/{{ locale }}/about" class="bg-[#0a0a0a] p-5 rounded-[24px] text-white border border-gray-800 active:scale-95 transition-transform">
-             <i class="bi bi-info-circle text-3xl text-[#CAFF00] mb-3 block"></i>
+           <a href="/{{ locale }}/about" class="p-5 text-white border border-gray-800 active:scale-95 transition-transform" style="background-color: #0a0a0a; border-radius: 24px;">
+             <i class="bi bi-info-circle text-3xl text-neon mb-3 block"></i>
              <h4 class="font-bold text-sm">About Us</h4>
            </a>
         </div>
@@ -293,7 +289,7 @@
            </div>
            
            {% if current_user %}
-             <a href="/{{ locale }}/dashboard" class="w-full py-4 bg-[#CAFF00] text-black font-bold rounded-full text-center text-sm shadow-[0_0_15px_rgba(202,255,0,0.3)]">Dashboard</a>
+             <a href="/{{ locale }}/dashboard" class="w-full py-4 bg-neon text-black font-bold rounded-full text-center text-sm shadow-lg">Dashboard</a>
              <a href="/auth/logout" class="w-full py-4 bg-red-500/10 text-red-500 font-bold rounded-full text-center text-sm">Sign Out</a>
            {% else %}
              <a href="/{{ locale }}/login" class="w-full py-4 bg-white text-black font-bold rounded-full text-center text-sm">Login</a>
