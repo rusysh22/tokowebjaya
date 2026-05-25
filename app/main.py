@@ -15,6 +15,7 @@ import json
 import decimal
 import enum
 import os
+import time as _time
 
 logger = logging.getLogger(__name__)
 
@@ -92,6 +93,75 @@ jinja_env.filters["tojson_safe"] = _tojson_safe
 from urllib.parse import quote as _urlquote
 jinja_env.filters["urlencode_value"] = lambda v: _urlquote(str(v), safe="")
 templates = Jinja2Templates(env=jinja_env)
+
+# --- Cached global helpers for header context ---
+
+_featured_cache: dict = {"data": [], "ts": 0.0}
+
+def _get_featured_products() -> list:
+    now = _time.monotonic()
+    if now - _featured_cache["ts"] > 300:
+        try:
+            from app.core.database import SessionLocal
+            from app.models.product import Product, ProductStatus
+            db = SessionLocal()
+            try:
+                _featured_cache["data"] = (
+                    db.query(Product)
+                    .filter(Product.is_featured == True, Product.status == ProductStatus.active)
+                    .order_by(Product.sort_order.asc(), Product.created_at.desc())
+                    .limit(3)
+                    .all()
+                )
+                _featured_cache["ts"] = now
+            finally:
+                db.close()
+        except Exception:
+            pass
+    return _featured_cache["data"]
+
+
+_promo_cache: dict = {"data": None, "ts": 0.0}
+
+def _get_active_promo() -> dict | None:
+    now = _time.monotonic()
+    if now - _promo_cache["ts"] > 300:
+        try:
+            from app.core.database import SessionLocal
+            from app.models.promo import PromoCode
+            from sqlalchemy import or_
+            db = SessionLocal()
+            try:
+                now_dt = datetime.utcnow()
+                promo = (
+                    db.query(PromoCode)
+                    .filter(
+                        PromoCode.is_active == True,
+                        PromoCode.description.isnot(None),
+                        or_(PromoCode.valid_until.is_(None), PromoCode.valid_until > now_dt),
+                    )
+                    .order_by(PromoCode.created_at.desc())
+                    .first()
+                )
+                if promo:
+                    _promo_cache["data"] = {
+                        "code": promo.code,
+                        "description": promo.description,
+                        "discount_type": promo.discount_type.value,
+                        "discount_value": int(promo.discount_value),
+                    }
+                else:
+                    _promo_cache["data"] = None
+                _promo_cache["ts"] = now
+            finally:
+                db.close()
+        except Exception:
+            pass
+    return _promo_cache["data"]
+
+
+jinja_env.globals["get_featured_products"] = _get_featured_products
+jinja_env.globals["get_active_promo"] = _get_active_promo
 
 # Register routers
 from app.routers import auth, landing, catalog, admin, checkout, dashboard, api_v1, notifications, appointments, licenses  # noqa: E402

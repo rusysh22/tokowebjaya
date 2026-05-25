@@ -60,9 +60,149 @@
   <script src="https://cdn.jsdelivr.net/npm/htmx.org@2.0.4/dist/htmx.min.js"></script>
 
   {% block extra_head %}{% endblock %}
+
+  {% set active_promo = get_active_promo() %}
+  <script>
+    window._promoCode = {{ (active_promo.code | tojson_safe) if active_promo else 'null' }};
+    function siteApp() {
+      return {
+        mobileMenuOpen: false,
+        mobileSearchOpen: false,
+        mobileSearchQ: '',
+        searchOpen: false,
+        barVisible: window._promoCode ? localStorage.getItem('bar-' + window._promoCode) !== '1' : false,
+        dismissBar() {
+          if (window._promoCode) localStorage.setItem('bar-' + window._promoCode, '1');
+          this.barVisible = false;
+        },
+        submitMobileSearch() {
+          const q = this.mobileSearchQ.trim();
+          if (q) window.location.href = '/{{ locale }}/catalog?q=' + encodeURIComponent(q);
+        },
+        initKeyboardSearch() {
+          document.addEventListener('keydown', (e) => {
+            if (e.key === '/' && !['INPUT','TEXTAREA'].includes(document.activeElement?.tagName)) {
+              e.preventDefault();
+              this.searchOpen = true;
+              setTimeout(() => document.getElementById('search-overlay-input')?.focus(), 50);
+            }
+            if (e.key === 'Escape') { this.searchOpen = false; this.mobileSearchOpen = false; }
+          });
+        }
+      };
+    }
+    function notifPanel() {
+      return {
+        count: 0,
+        open: false,
+        notifications: [],
+        loaded: false,
+        init() { this.fetchCount(); setInterval(() => this.fetchCount(), 60000); },
+        async fetchCount() {
+          try {
+            const r = await fetch('/api/notifications/unread-count');
+            const d = await r.json();
+            this.count = d.count || 0;
+          } catch(e) {}
+        },
+        async toggle() {
+          this.open = !this.open;
+          if (this.open && !this.loaded) await this.load();
+        },
+        async load() {
+          try {
+            const r = await fetch('/api/notifications/recent');
+            const d = await r.json();
+            this.notifications = d.notifications || [];
+            this.count = d.unread || 0;
+            this.loaded = true;
+          } catch(e) {}
+        },
+        timeAgo(iso) {
+          if (!iso) return '';
+          const diff = Math.floor((Date.now() - new Date(iso + 'Z')) / 1000);
+          if (diff < 60) return diff + 's';
+          if (diff < 3600) return Math.floor(diff / 60) + 'm';
+          if (diff < 86400) return Math.floor(diff / 3600) + 'j';
+          return Math.floor(diff / 86400) + 'h';
+        },
+        iconFor(type) {
+          const m = {
+            order_paid: 'bi-check-circle-fill', order_failed: 'bi-x-circle-fill',
+            invoice_created: 'bi-receipt', subscription_new: 'bi-star-fill',
+            subscription_renewal: 'bi-arrow-repeat', subscription_expiring: 'bi-exclamation-triangle-fill',
+            subscription_cancelled: 'bi-x-octagon-fill', refund_requested: 'bi-arrow-counterclockwise',
+            refund_approved: 'bi-check-circle', refund_rejected: 'bi-x-circle',
+            refund_processed: 'bi-cash-coin',
+          };
+          return m[type] || 'bi-bell-fill';
+        }
+      };
+    }
+  </script>
 </head>
 
-<body class="bg-black text-white font-sans antialiased" x-data="{ mobileMenuOpen: false }">
+<body class="bg-black text-white font-sans antialiased" x-data="siteApp()" x-init="initKeyboardSearch()" :style="barVisible ? '--bar-h:36px' : '--bar-h:0px'">
+
+<!-- ===== ANNOUNCEMENT BAR ===== -->
+{% set active_promo = get_active_promo() %}
+{% if active_promo %}
+<div x-show="barVisible"
+     x-transition:enter="transition ease-out duration-300"
+     x-transition:enter-start="opacity-0 -translate-y-full"
+     x-transition:enter-end="opacity-100 translate-y-0"
+     x-transition:leave="transition ease-in duration-200"
+     x-transition:leave-start="opacity-100 translate-y-0"
+     x-transition:leave-end="opacity-0 -translate-y-full"
+     x-cloak
+     class="fixed left-0 right-0 z-[60] flex items-center justify-center gap-3 px-4"
+     style="top:0; height:36px; background:#CAFF00;">
+  <i class="bi bi-tag-fill text-black" style="font-size:12px;"></i>
+  <span class="text-black font-semibold text-xs">{{ active_promo.description }}</span>
+  <span class="font-black text-xs px-2 py-0.5 rounded-full" style="background:#000; color:#CAFF00; letter-spacing:0.05em;">{{ active_promo.code }}</span>
+  <button @click="dismissBar()"
+          class="absolute right-3 flex items-center justify-center rounded-full text-black transition-colors hover:bg-black/10"
+          style="width:24px; height:24px;"
+          aria-label="Tutup">
+    <i class="bi bi-x-lg" style="font-size:11px;"></i>
+  </button>
+</div>
+{% endif %}
+
+<!-- ===== SEARCH OVERLAY ===== -->
+<div x-show="searchOpen"
+     x-cloak
+     x-transition:enter="transition ease-out duration-200"
+     x-transition:enter-start="opacity-0"
+     x-transition:enter-end="opacity-100"
+     x-transition:leave="transition ease-in duration-150"
+     x-transition:leave-start="opacity-100"
+     x-transition:leave-end="opacity-0"
+     class="fixed inset-0 z-[80] flex items-start justify-center"
+     style="background:rgba(0,0,0,0.88); backdrop-filter:blur(6px); padding-top: calc(15vh + var(--bar-h, 0px));"
+     @click.self="searchOpen = false">
+  <div style="width:100%; max-width:580px; padding:0 20px;">
+    <form @submit.prevent="const q = document.getElementById('search-overlay-input').value.trim(); if(q) { searchOpen=false; window.location.href='/{{ locale }}/catalog?q='+encodeURIComponent(q); }">
+      <div class="flex items-center gap-3 px-5 py-4" style="background:#111; border:2px solid #CAFF00; border-radius:18px;">
+        <i class="bi bi-search flex-shrink-0" style="color:#CAFF00; font-size:18px;"></i>
+        <input id="search-overlay-input"
+               type="text"
+               placeholder="{% if locale == 'en' %}Search products, categories...{% else %}Cari produk, kategori...{% endif %}"
+               class="flex-1 bg-transparent border-none outline-none text-white font-medium"
+               style="font-size:15px;"
+               autocomplete="off" />
+        <button type="button" @click="searchOpen = false"
+                class="flex-shrink-0 text-gray-500 hover:text-white transition-colors"
+                aria-label="Tutup">
+          <i class="bi bi-x-lg" style="font-size:15px;"></i>
+        </button>
+      </div>
+    </form>
+    <p class="text-xs text-gray-600 mt-3 text-center">
+      {% if locale == 'en' %}Enter to search &middot; ESC to close &middot; Press <kbd class="px-1.5 py-0.5 rounded text-gray-500" style="background:#222; border:1px solid #333;">/</kbd> to open{% else %}Enter untuk cari &middot; ESC untuk tutup &middot; Tekan <kbd class="px-1.5 py-0.5 rounded text-gray-500" style="background:#222; border:1px solid #333;">/</kbd> untuk buka{% endif %}
+    </p>
+  </div>
+</div>
 
 <!-- ===== PAGE LOADER (bata ditumpuk) ===== -->
 <div id="page-loader">
@@ -82,7 +222,7 @@
 
   <!-- ===== NAVBAR ===== -->
   <!-- Desktop Header -->
-  <header class="hidden md:flex fixed left-0 right-0 z-50 justify-center w-full pointer-events-none" id="navbar-desktop" style="top: 3rem;">
+  <header class="hidden md:flex fixed left-0 right-0 z-50 justify-center w-full pointer-events-none" id="navbar-desktop" style="top: calc(3rem + var(--bar-h, 0px));">
     <div class="container-main pointer-events-auto flex items-center justify-between w-full relative" style="height:40px;">
       
       <!-- Left Logo -->
@@ -219,7 +359,7 @@
               <div style="height:1px; background:rgba(0,0,0,0.2); margin: 4px 0;"></div>
               <a href="/{{ locale }}/catalog" class="flex items-center gap-2 p-3 rounded-xl transition-all duration-200" style="color:#000;" onmouseover="this.style.background='rgba(0,0,0,0.08)'" onmouseout="this.style.background='transparent'">
                 <i class="bi bi-grid-fill" style="font-size:13px;"></i>
-                <span class="font-bold text-xs">Semua Kategori</span>
+                <span class="font-bold text-xs">{% if locale == 'en' %}All Categories{% else %}Semua Kategori{% endif %}</span>
               </a>
             </div>
 
@@ -258,7 +398,7 @@
                     <span class="font-bold text-xs">Plugin &amp; Script</span>
                   </a>
                 </div>
-                <a href="/{{ locale }}/catalog" class="mt-3 text-xs font-black" style="color:#000;">Lihat Semua Digital Produk →</a>
+                <a href="/{{ locale }}/catalog" class="mt-3 text-xs font-black" style="color:#000;">{% if locale == 'en' %}View All Digital Products →{% else %}Lihat Semua Digital Produk →{% endif %}</a>
               </div>
 
               <!-- Panel 1: Edukasi Digital -->
@@ -290,7 +430,7 @@
                     <span class="font-bold text-xs">Bootcamp</span>
                   </a>
                 </div>
-                <a href="/{{ locale }}/catalog" class="mt-3 text-xs font-black" style="color:#000;">Lihat Semua Edukasi →</a>
+                <a href="/{{ locale }}/catalog" class="mt-3 text-xs font-black" style="color:#000;">{% if locale == 'en' %}View All Education →{% else %}Lihat Semua Edukasi →{% endif %}</a>
               </div>
 
               <!-- Panel 2: Layanan IT -->
@@ -322,183 +462,234 @@
                     <span class="font-bold text-xs">IT Security</span>
                   </a>
                 </div>
-                <a href="/{{ locale }}/solutions" class="mt-3 text-xs font-black" style="color:#000;">Lihat Semua Layanan →</a>
+                <a href="/{{ locale }}/solutions" class="mt-3 text-xs font-black" style="color:#000;">{% if locale == 'en' %}View All Services →{% else %}Lihat Semua Layanan →{% endif %}</a>
               </div>
             </div>
 
             <!-- Vertical Divider -->
             <div style="width:1.5px; background:rgba(0,0,0,0.18); margin:16px 0; flex-shrink:0;"></div>
 
-            <!-- RIGHT: Featured Product Cards (220px) -->
-            <div class="flex flex-col p-3" style="width:220px; flex-shrink:0; gap:6px;">
-              <p class="text-xs font-black uppercase tracking-widest" style="color:#000; padding-bottom:2px;">🔥 Produk Unggulan</p>
+            <!-- RIGHT: Featured Products (dynamic from DB) -->
+            {% set featured = get_featured_products() %}
+            <div class="flex flex-col p-3" style="width:215px; flex-shrink:0; gap:5px;">
+              <div class="flex items-center gap-1.5 pb-1">
+                <i class="bi bi-star-fill" style="color:#000; font-size:10px;"></i>
+                <span class="text-xs font-black uppercase tracking-widest" style="color:#000;">{% if locale == 'en' %}Featured{% else %}Unggulan{% endif %}</span>
+              </div>
 
-              <a href="/{{ locale }}/catalog" class="flex items-center gap-2.5 p-2.5 rounded-xl transition-all duration-200" style="border:1.5px solid #000;" onmouseover="this.style.background='rgba(0,0,0,0.1)'" onmouseout="this.style.background='transparent'">
-                <div class="flex items-center justify-center rounded-lg flex-shrink-0" style="width:34px; height:34px; background:#000; min-width:34px;">
-                  <i class="bi bi-boxes" style="color:#CAFF00; font-size:15px;"></i>
+              {% if featured %}
+                {% for product in featured %}
+                <a href="/{{ locale }}/catalog/{{ product.slug }}"
+                   class="flex items-center gap-2.5 p-2.5 rounded-xl transition-colors hover:bg-black/10"
+                   style="border:1px solid rgba(0,0,0,0.2);">
+                  <div class="flex items-center justify-center rounded-lg flex-shrink-0" style="width:32px; height:32px; background:#000; min-width:32px;">
+                    <i class="bi bi-box-seam" style="color:#CAFF00; font-size:13px;"></i>
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <p class="font-black text-xs leading-tight truncate" style="color:#000;">
+                      {% if locale == 'en' %}{{ product.name_en or product.name_id }}{% else %}{{ product.name_id or product.name_en }}{% endif %}
+                    </p>
+                    <p class="text-xs" style="color:rgba(0,0,0,0.5);">{{ product.type.value if product.type else '' }}</p>
+                  </div>
+                  {% if product.price_otf %}
+                  <p class="font-black text-xs flex-shrink-0" style="color:#000;">{{ format_price(product.price_otf, 'IDR') }}</p>
+                  {% elif product.price_monthly %}
+                  <p class="font-black text-xs flex-shrink-0" style="color:#000;">{{ format_price(product.price_monthly, 'IDR') }}/bl</p>
+                  {% endif %}
+                </a>
+                {% endfor %}
+              {% else %}
+                <div class="flex flex-col items-center justify-center py-6 gap-2 rounded-xl" style="border:1px dashed rgba(0,0,0,0.2);">
+                  <i class="bi bi-star" style="color:rgba(0,0,0,0.3); font-size:20px;"></i>
+                  <p class="text-xs text-center" style="color:rgba(0,0,0,0.4);">{% if locale == 'en' %}No featured products yet{% else %}Belum ada produk unggulan{% endif %}</p>
                 </div>
-                <div class="flex-1 min-w-0">
-                  <p class="font-black text-xs leading-tight truncate" style="color:#000;">ERP SaaS Business</p>
-                  <p class="text-xs" style="color:rgba(0,0,0,0.55);">Software · SaaS</p>
-                </div>
-                <div class="text-right flex-shrink-0">
-                  <p class="font-black text-xs" style="color:#000;">Rp 2 JT</p>
-                  <p class="text-xs text-red-600 line-through">Rp 4 JT</p>
-                </div>
-              </a>
-
-              <a href="/{{ locale }}/catalog" class="flex items-center gap-2.5 p-2.5 rounded-xl transition-all duration-200" style="border:1.5px solid #000;" onmouseover="this.style.background='rgba(0,0,0,0.1)'" onmouseout="this.style.background='transparent'">
-                <div class="flex items-center justify-center rounded-lg flex-shrink-0" style="width:34px; height:34px; background:#000; min-width:34px;">
-                  <i class="bi bi-layout-text-window" style="color:#CAFF00; font-size:15px;"></i>
-                </div>
-                <div class="flex-1 min-w-0">
-                  <p class="font-black text-xs leading-tight truncate" style="color:#000;">Landing Page Pro</p>
-                  <p class="text-xs" style="color:rgba(0,0,0,0.55);">Template · Web</p>
-                </div>
-                <div class="text-right flex-shrink-0">
-                  <p class="font-black text-xs" style="color:#000;">Rp 499K</p>
-                  <p class="text-xs text-red-600 line-through">Rp 999K</p>
-                </div>
-              </a>
-
-              <a href="/{{ locale }}/catalog" class="flex items-center gap-2.5 p-2.5 rounded-xl transition-all duration-200" style="border:1.5px solid #000;" onmouseover="this.style.background='rgba(0,0,0,0.1)'" onmouseout="this.style.background='transparent'">
-                <div class="flex items-center justify-center rounded-lg flex-shrink-0" style="width:34px; height:34px; background:#000; min-width:34px;">
-                  <i class="bi bi-phone" style="color:#CAFF00; font-size:15px;"></i>
-                </div>
-                <div class="flex-1 min-w-0">
-                  <p class="font-black text-xs leading-tight truncate" style="color:#000;">Flutter Starter Kit</p>
-                  <p class="text-xs" style="color:rgba(0,0,0,0.55);">Template · Mobile</p>
-                </div>
-                <div class="text-right flex-shrink-0">
-                  <p class="font-black text-xs" style="color:#000;">Rp 299K</p>
-                  <p class="font-bold text-xs" style="color:rgba(0,0,0,0.65);">Baru</p>
-                </div>
-              </a>
+              {% endif %}
 
               <a href="/{{ locale }}/catalog"
-                 class="flex items-center justify-center gap-1.5 py-2 rounded-xl font-black text-xs transition-all duration-250"
-                 style="border:2px solid #000; color:#000; margin-top:auto;"
-                 onmouseover="this.style.background='#000';this.style.color='#CAFF00';"
-                <i class="bi bi-grid-fill"></i> Lihat Semua Produk
+                 class="flex items-center justify-center gap-1.5 py-2 rounded-xl font-black text-xs transition-colors hover:bg-black hover:text-neon mt-auto"
+                 style="border:1.5px solid #000; color:#000;">
+                <i class="bi bi-grid-fill"></i>
+                {% if locale == 'en' %}All Products{% else %}Semua Produk{% endif %}
               </a>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Right Actions: single unified pill (ID | EN | Cart | Bell | User▼) -->
+      <!-- Right Actions Pill: [ID|EN | search | bell | user] -->
       <div class="flex items-center gap-2" style="position:relative; z-index:30; flex-shrink:0;">
         <div class="bg-neon text-black rounded-full flex items-center gap-0.5 px-1.5" style="height:40px; box-shadow:0 0 0 2px #000;">
 
           <!-- Language switcher -->
           <a href="/id{{ request.url.path | replace('/id/', '/', 1) | replace('/en/', '/', 1) or '/' }}"
              class="navbar-action-btn flex items-center justify-center rounded-full font-bold transition-all duration-300 {% if locale == 'id' %}bg-black text-neon{% else %}text-black hover:bg-black/15{% endif %}"
-             style="width:30px;height:28px;font-size:11px;">ID</a>
+             style="width:30px;height:28px;font-size:11px;" aria-label="Bahasa Indonesia">ID</a>
           <a href="/en{{ request.url.path | replace('/id/', '/', 1) | replace('/en/', '/', 1) or '/' }}"
              class="navbar-action-btn flex items-center justify-center rounded-full font-bold transition-all duration-300 {% if locale == 'en' %}bg-black text-neon{% else %}text-black hover:bg-black/15{% endif %}"
-             style="width:30px;height:28px;font-size:11px;">EN</a>
+             style="width:30px;height:28px;font-size:11px;" aria-label="English">EN</a>
 
           <div class="w-px h-4 bg-black/20 mx-0.5"></div>
 
-          <!-- Cart icon with badge -->
-          <a href="/{{ locale }}/cart"
-             class="navbar-action-btn relative flex items-center justify-center rounded-full text-black hover:bg-black/15 transition-all duration-300"
-             style="width:32px;height:28px;" title="Keranjang Belanja">
-            <i class="bi bi-bag-fill" style="font-size:14px;"></i>
-          </a>
+          <!-- Search icon -->
+          <button @click="searchOpen = true; $nextTick(() => document.getElementById('search-overlay-input')?.focus())"
+                  class="navbar-action-btn flex items-center justify-center rounded-full text-black hover:bg-black/15 transition-all duration-300"
+                  style="width:32px;height:28px;"
+                  aria-label="{% if locale == 'en' %}Search products{% else %}Cari produk{% endif %}">
+            <i class="bi bi-search" style="font-size:13px;"></i>
+          </button>
 
-          <!-- Notification bell (self-contained, no external dep) -->
+          <!-- Notification bell + dropdown -->
           {% if current_user %}
-          <div class="navbar-action-btn relative flex items-center justify-center rounded-full text-black hover:bg-black/15 transition-all duration-300 cursor-pointer"
-               style="width:32px;height:28px;" title="Notifikasi"
-               x-data="{ count: 0 }">
-            <i class="bi bi-bell-fill" style="font-size:14px;"></i>
-            <span x-show="count > 0"
-                  x-text="count > 9 ? '9+' : count"
-                  x-cloak
-                  class="absolute flex items-center justify-center font-black"
-                  style="top:0px; right:2px; width:14px; height:14px; border-radius:50%; background:#000; color:#CAFF00; font-size:8px; line-height:1;"></span>
-          </div>
-          {% endif %}
-
-          <div class="w-px h-4 bg-black/20 mx-0.5"></div>
-
-          <!-- User profile dropdown -->
-          {% if current_user %}
-          <div class="relative" x-data="{ open: false }" @mouseleave="open = false">
-            <button @mouseenter="open = true" @click="open = !open"
-                    class="navbar-action-btn flex items-center gap-1 rounded-full text-black hover:bg-black/15 transition-all duration-300 font-semibold"
-                    style="padding:0 8px 0 6px; height:28px; font-size:11px;">
-              <i class="bi bi-person-circle" style="font-size:15px;"></i>
-              <span class="max-w-[80px] truncate">
-                {% if current_user.full_name %}
-                  {{ current_user.full_name.split(' ')[0] }}
-                {% elif current_user.email %}
-                  {{ current_user.email.split('@')[0] }}
-                {% else %}
-                  Akun
-                {% endif %}
-              </span>
-              <i class="bi bi-chevron-down text-xs transition-transform duration-300" :class="open ? 'rotate-180' : ''"></i>
+          <div class="relative" x-data="notifPanel()" x-init="init()" @click.outside="open = false">
+            <button @click="toggle()"
+                    class="navbar-action-btn relative flex items-center justify-center rounded-full text-black hover:bg-black/15 transition-all duration-300"
+                    style="width:32px;height:28px;"
+                    aria-label="{% if locale == 'en' %}Notifications{% else %}Notifikasi{% endif %}">
+              <i class="bi bi-bell-fill" style="font-size:14px;"></i>
+              <span x-show="count > 0" x-text="count > 9 ? '9+' : count" x-cloak
+                    class="absolute flex items-center justify-center font-black"
+                    style="top:-1px; right:0px; min-width:14px; height:14px; padding:0 3px; border-radius:7px; background:#000; color:#CAFF00; font-size:8px; line-height:1;"></span>
             </button>
 
-            <!-- Dropdown menu -->
-            <div x-show="open"
+            <!-- Notification dropdown -->
+            <div x-show="open" x-cloak
                  x-transition:enter="transition ease-out duration-200"
                  x-transition:enter-start="opacity-0 -translate-y-1"
                  x-transition:enter-end="opacity-100 translate-y-0"
                  x-transition:leave="transition ease-in duration-150"
                  x-transition:leave-start="opacity-100"
                  x-transition:leave-end="opacity-0"
-                 style="display:none; position:absolute; top:calc(100% + 10px); right:0; min-width:200px; background:#CAFF00; border-radius:1rem; box-shadow:0 0 0 2px #000, 0 8px 32px rgba(0,0,0,0.25); overflow:hidden; z-index:100;"
-                 x-cloak>
-              <!-- User info header -->
-              <div style="padding:12px 14px 8px; border-bottom:1px solid rgba(0,0,0,0.12);">
-                <p class="font-black text-sm truncate" style="color:#000;">
-                  {{ current_user.full_name or current_user.email.split('@')[0] or 'Pengguna' }}
-                </p>
-                <p class="text-xs truncate" style="color:rgba(0,0,0,0.55);">{{ current_user.email }}</p>
+                 style="display:none; position:absolute; top:calc(100% + 10px); right:-55px; width:296px; background:#111; border:1px solid #1f1f1f; border-radius:1.25rem; overflow:hidden; box-shadow:0 20px 48px rgba(0,0,0,0.7); z-index:100;">
+              <div class="flex items-center justify-between px-4 py-3" style="border-bottom:1px solid #1f1f1f;">
+                <span class="font-black text-sm text-white">{% if locale == 'en' %}Notifications{% else %}Notifikasi{% endif %}</span>
+                <a href="/{{ locale }}/dashboard/notifications" class="text-xs font-semibold text-neon hover:underline">
+                  {% if locale == 'en' %}See all{% else %}Lihat semua{% endif %}
+                </a>
               </div>
-              <!-- Menu items -->
-              <div style="padding:6px;">
+              <div style="max-height:272px; overflow-y:auto;">
+                <template x-if="!loaded">
+                  <div class="flex items-center justify-center py-10">
+                    <i class="bi bi-arrow-repeat text-neon" style="font-size:20px; animation:spin 1s linear infinite;"></i>
+                  </div>
+                </template>
+                <template x-if="loaded && notifications.length === 0">
+                  <div class="flex flex-col items-center justify-center py-10 gap-2">
+                    <i class="bi bi-bell-slash text-gray-700" style="font-size:26px;"></i>
+                    <p class="text-xs text-gray-500">{% if locale == 'en' %}No notifications{% else %}Belum ada notifikasi{% endif %}</p>
+                  </div>
+                </template>
+                <template x-for="n in notifications" :key="n.id">
+                  <a :href="n.link || '/{{ locale }}/dashboard/notifications'"
+                     class="flex items-start gap-3 px-4 py-3 transition-colors hover:bg-white/5"
+                     :style="!n.is_read ? 'background:rgba(202,255,0,0.04);' : ''">
+                    <div class="flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center mt-0.5"
+                         :style="!n.is_read ? 'background:rgba(202,255,0,0.15);' : 'background:#1f1f1f;'">
+                      <i :class="'bi ' + iconFor(n.type)"
+                         :style="!n.is_read ? 'color:#CAFF00; font-size:12px;' : 'color:#555; font-size:12px;'"></i>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                      <p class="text-xs font-semibold leading-snug" :class="!n.is_read ? 'text-white' : 'text-gray-400'" x-text="n.title"></p>
+                      <p class="text-xs text-gray-600 mt-0.5" x-text="timeAgo(n.created_at)"></p>
+                    </div>
+                    <span x-show="!n.is_read" class="flex-shrink-0 w-1.5 h-1.5 rounded-full mt-2" style="background:#CAFF00;"></span>
+                  </a>
+                </template>
+              </div>
+              <div class="px-3 py-2.5" style="border-top:1px solid #1f1f1f;">
+                <a href="/{{ locale }}/dashboard/notifications"
+                   class="flex items-center justify-center gap-1.5 w-full py-2 rounded-xl text-xs font-semibold text-gray-500 hover:text-white hover:bg-white/5 transition-colors">
+                  <i class="bi bi-bell"></i>
+                  {% if locale == 'en' %}All notifications{% else %}Semua notifikasi{% endif %}
+                </a>
+              </div>
+            </div>
+          </div>
+          {% endif %}
+
+          <div class="w-px h-4 bg-black/20 mx-0.5"></div>
+
+          <!-- User dropdown -->
+          {% if current_user %}
+          <div class="relative" x-data="{ open: false }" @mouseleave="open = false" @click.outside="open = false">
+            <button @mouseenter="open = true" @click="open = !open"
+                    class="navbar-action-btn flex items-center gap-1.5 rounded-full font-semibold transition-all duration-300"
+                    :class="open ? 'bg-black text-neon' : 'text-black hover:bg-black/15'"
+                    style="padding:0 10px 0 6px; height:28px; font-size:11px;">
+              {% if current_user.role == 'admin' %}
+                <i class="bi bi-shield-fill" style="font-size:12px;"></i>
+              {% else %}
+                <i class="bi bi-person-circle" style="font-size:14px;"></i>
+              {% endif %}
+              <span class="max-w-[68px] truncate">
+                {% if current_user.full_name %}{{ current_user.full_name.split(' ')[0] }}
+                {% elif current_user.email %}{{ current_user.email.split('@')[0] }}
+                {% else %}Akun{% endif %}
+              </span>
+              {% if current_user.role == 'admin' %}
+              <span class="font-black px-1.5 rounded" style="background:#000; color:#CAFF00; font-size:9px;">ADM</span>
+              {% endif %}
+              <i class="bi bi-chevron-down transition-transform duration-200" style="font-size:9px;" :class="open ? 'rotate-180' : ''"></i>
+            </button>
+
+            <!-- User dropdown panel -->
+            <div x-show="open" x-cloak
+                 x-transition:enter="transition ease-out duration-200"
+                 x-transition:enter-start="opacity-0 -translate-y-1"
+                 x-transition:enter-end="opacity-100 translate-y-0"
+                 x-transition:leave="transition ease-in duration-150"
+                 x-transition:leave-start="opacity-100"
+                 x-transition:leave-end="opacity-0"
+                 style="display:none; position:absolute; top:calc(100% + 10px); right:0; min-width:215px; background:#111; border:1px solid #1f1f1f; border-radius:1.25rem; overflow:hidden; box-shadow:0 20px 48px rgba(0,0,0,0.7); z-index:100;">
+              <div class="px-4 py-3" style="border-bottom:1px solid #1f1f1f;">
+                {% if current_user.role == 'admin' %}
+                <div class="flex items-center gap-1.5 mb-1.5">
+                  <i class="bi bi-shield-fill text-neon" style="font-size:10px;"></i>
+                  <span class="font-black text-neon uppercase tracking-widest" style="font-size:9px;">Administrator</span>
+                </div>
+                {% endif %}
+                <p class="font-black text-sm text-white truncate">{{ current_user.full_name or current_user.email.split('@')[0] or 'Pengguna' }}</p>
+                <p class="text-xs text-gray-500 truncate">{{ current_user.email }}</p>
+              </div>
+              <div class="p-1.5">
                 <a href="/{{ locale }}/dashboard/orders"
-                   class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl font-semibold text-sm transition-all duration-200"
-                   style="color:#000;"
-                   onmouseover="this.style.background='rgba(0,0,0,0.08)'" onmouseout="this.style.background='transparent'">
-                  <i class="bi bi-bag-check-fill" style="font-size:14px;"></i>
-                  Data Pesanan
+                   class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors text-gray-300 hover:text-white hover:bg-white/5">
+                  <i class="bi bi-bag-check-fill text-neon" style="font-size:13px;"></i>
+                  {% if locale == 'en' %}My Orders{% else %}Data Pesanan{% endif %}
                 </a>
                 <a href="/{{ locale }}/dashboard"
-                   class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl font-semibold text-sm transition-all duration-200"
-                   style="color:#000;"
-                   onmouseover="this.style.background='rgba(0,0,0,0.08)'" onmouseout="this.style.background='transparent'">
-                  <i class="bi bi-grid-1x2-fill" style="font-size:14px;"></i>
+                   class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors text-gray-300 hover:text-white hover:bg-white/5">
+                  <i class="bi bi-grid-1x2-fill text-neon" style="font-size:13px;"></i>
                   Dashboard
                 </a>
                 <a href="/{{ locale }}/dashboard/profile"
-                   class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl font-semibold text-sm transition-all duration-200"
-                   style="color:#000;"
-                   onmouseover="this.style.background='rgba(0,0,0,0.08)'" onmouseout="this.style.background='transparent'">
-                  <i class="bi bi-person-gear" style="font-size:14px;"></i>
-                  Edit Profil
+                   class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors text-gray-300 hover:text-white hover:bg-white/5">
+                  <i class="bi bi-person-gear text-neon" style="font-size:13px;"></i>
+                  {% if locale == 'en' %}Edit Profile{% else %}Edit Profil{% endif %}
                 </a>
-                <div style="height:1px; background:rgba(0,0,0,0.1); margin:4px 0;"></div>
+                {% if current_user.role == 'admin' %}
+                <div style="height:1px; background:#1f1f1f; margin:4px 6px;"></div>
+                <a href="/{{ locale }}/admin"
+                   class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-semibold transition-colors hover:bg-neon/10"
+                   style="color:#CAFF00;">
+                  <i class="bi bi-shield-lock-fill" style="font-size:13px;"></i>
+                  Admin Panel
+                  <i class="bi bi-arrow-up-right ml-auto text-xs opacity-50"></i>
+                </a>
+                {% endif %}
+                <div style="height:1px; background:#1f1f1f; margin:4px 6px;"></div>
                 <a href="/{{ locale }}/logout"
-                   class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl font-bold text-sm transition-all duration-200"
-                   style="color:#000;"
-                   onmouseover="this.style.background='rgba(0,0,0,0.1)'" onmouseout="this.style.background='transparent'">
-                  <i class="bi bi-box-arrow-right" style="font-size:14px;"></i>
-                  Logout
+                   class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors text-red-400 hover:text-red-300 hover:bg-red-500/10">
+                  <i class="bi bi-box-arrow-right" style="font-size:13px;"></i>
+                  {% if locale == 'en' %}Sign Out{% else %}Keluar{% endif %}
                 </a>
               </div>
             </div>
           </div>
 
           {% else %}
-          <!-- Not logged in: Login button -->
           <a href="/{{ locale }}/login"
              class="navbar-action-btn flex items-center justify-center rounded-full font-bold text-black hover:bg-black/15 transition-all duration-300"
-             style="padding:0 12px; height:28px; font-size:11px;">
+             style="padding:0 14px; height:28px; font-size:11px;">
             Login
           </a>
           {% endif %}
@@ -509,103 +700,233 @@
     </div>
   </header>
 
-  <!-- Mobile Top Nav -->
+  <!-- Admin Quick-Bar (desktop, admins only) -->
+  {% if current_user and current_user.role == 'admin' %}
+  <div class="hidden md:flex fixed left-0 right-0 z-40 justify-center pointer-events-none"
+       style="top: calc(3rem + 40px + 10px + var(--bar-h, 0px));">
+    <div class="pointer-events-auto flex items-center gap-0.5 px-3 rounded-full"
+         style="height:28px; background:#0d0d0d; border:1px solid #222; box-shadow:0 4px 16px rgba(0,0,0,0.5);">
+      <i class="bi bi-lightning-fill text-neon mr-1" style="font-size:9px;"></i>
+      <span class="text-gray-600 font-bold pr-2 mr-1" style="border-right:1px solid #2a2a2a; font-size:10px;">Admin</span>
+      <a href="/{{ locale }}/admin" class="admin-qbar-link {% if active_page == 'admin' %}text-neon{% else %}text-gray-500 hover:text-white{% endif %}">
+        <i class="bi bi-speedometer2"></i> Dashboard
+      </a>
+      <a href="/{{ locale }}/admin/products/create" class="admin-qbar-link text-gray-500 hover:text-neon">
+        <i class="bi bi-plus-lg"></i> {% if locale == 'en' %}New Product{% else %}Produk Baru{% endif %}
+      </a>
+      <a href="/{{ locale }}/admin/orders" class="admin-qbar-link text-gray-500 hover:text-white">
+        <i class="bi bi-bag-check"></i> Orders
+      </a>
+      <a href="/{{ locale }}/admin/promos" class="admin-qbar-link text-gray-500 hover:text-white">
+        <i class="bi bi-tag"></i> Promo
+      </a>
+      <a href="/{{ locale }}/admin/customers" class="admin-qbar-link text-gray-500 hover:text-white">
+        <i class="bi bi-people"></i> {% if locale == 'en' %}Customers{% else %}Pelanggan{% endif %}
+      </a>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Mobile Nav Pill -->
   <nav class="md:hidden fixed left-1/2 -translate-x-1/2 z-50 bg-neon p-1 rounded-full flex items-center justify-between"
-       style="top:2.5rem; width: 92%; max-width: 360px; box-shadow: 0 0 0 2px #000;">
-    <!-- Home -->
-    <a href="/{{ locale }}/" class="mobile-nav-item flex items-center gap-1.5 rounded-full transition-all duration-400 {% if active_page == 'home' %}bg-black text-neon mobile-nav-active{% else %}text-black mobile-nav-inactive{% endif %}" style="padding: 8px 14px;">
-      <i class="bi bi-house-door-fill mobile-nav-icon" style="font-size:17px;"></i>
-      <span class="font-bold {% if active_page != 'home' %}hidden{% endif %}" style="font-size:12px;">{% if locale == 'en' %}Home{% else %}Beranda{% endif %}</span>
+       style="top: calc(2.5rem + var(--bar-h, 0px)); width:92%; max-width:360px; box-shadow:0 0 0 2px #000;">
+
+    <a href="/{{ locale }}/" class="mobile-nav-item flex items-center gap-1.5 rounded-full {% if active_page == 'home' %}bg-black text-neon mobile-nav-active{% else %}text-black mobile-nav-inactive{% endif %}" style="padding:7px 12px;">
+      <i class="bi bi-house-door-fill mobile-nav-icon" style="font-size:16px;"></i>
+      <span class="font-bold {% if active_page != 'home' %}hidden{% endif %}" style="font-size:11px;">{% if locale == 'en' %}Home{% else %}Beranda{% endif %}</span>
     </a>
 
-    <!-- Katalog -->
-    <a href="/{{ locale }}/catalog" class="mobile-nav-item flex items-center gap-1.5 rounded-full transition-all duration-400 {% if active_page == 'catalog' %}bg-black text-neon mobile-nav-active{% else %}text-black mobile-nav-inactive{% endif %}" style="padding: 8px 14px;">
-      <i class="bi bi-bag-check-fill mobile-nav-icon" style="font-size:17px;"></i>
-      <span class="font-bold {% if active_page != 'catalog' %}hidden{% endif %}" style="font-size:12px;">{% if locale == 'en' %}Catalog{% else %}Katalog{% endif %}</span>
+    <a href="/{{ locale }}/catalog" class="mobile-nav-item flex items-center gap-1.5 rounded-full {% if active_page == 'catalog' %}bg-black text-neon mobile-nav-active{% else %}text-black mobile-nav-inactive{% endif %}" style="padding:7px 12px;">
+      <i class="bi bi-grid-fill mobile-nav-icon" style="font-size:16px;"></i>
+      <span class="font-bold {% if active_page != 'catalog' %}hidden{% endif %}" style="font-size:11px;">{% if locale == 'en' %}Catalog{% else %}Katalog{% endif %}</span>
     </a>
 
-    <!-- Insight -->
-    <a href="/{{ locale }}/insight" class="mobile-nav-item flex items-center gap-1.5 rounded-full transition-all duration-400 {% if active_page == 'insight' %}bg-black text-neon mobile-nav-active{% else %}text-black mobile-nav-inactive{% endif %}" style="padding: 8px 14px;">
-      <i class="bi bi-journals mobile-nav-icon" style="font-size:17px;"></i>
-      <span class="font-bold {% if active_page != 'insight' %}hidden{% endif %}" style="font-size:12px;">Insight</span>
+    <button @click="mobileSearchOpen = !mobileSearchOpen; if(mobileSearchOpen) $nextTick(() => document.getElementById('mobile-search-input')?.focus())"
+            class="mobile-nav-item flex items-center justify-center rounded-full text-black"
+            :class="mobileSearchOpen ? 'bg-black text-neon mobile-nav-active' : 'mobile-nav-inactive'"
+            style="padding:7px 12px;"
+            aria-label="{% if locale == 'en' %}Search{% else %}Cari{% endif %}">
+      <i class="bi mobile-nav-icon transition-transform duration-200" :class="mobileSearchOpen ? 'bi-x-lg' : 'bi-search'" style="font-size:16px;"></i>
+    </button>
+
+    <a href="/{{ locale }}/insight" class="mobile-nav-item flex items-center gap-1.5 rounded-full {% if active_page == 'insight' %}bg-black text-neon mobile-nav-active{% else %}text-black mobile-nav-inactive{% endif %}" style="padding:7px 12px;">
+      <i class="bi bi-journals mobile-nav-icon" style="font-size:16px;"></i>
+      <span class="font-bold {% if active_page != 'insight' %}hidden{% endif %}" style="font-size:11px;">Insight</span>
     </a>
 
-    <!-- Contact -->
-    <a href="/{{ locale }}/contact" class="mobile-nav-item flex items-center gap-1.5 rounded-full transition-all duration-400 {% if active_page == 'contact' %}bg-black text-neon mobile-nav-active{% else %}text-black mobile-nav-inactive{% endif %}" style="padding: 8px 14px;">
-      <i class="bi bi-telephone-fill mobile-nav-icon" style="font-size:17px;"></i>
-      <span class="font-bold {% if active_page != 'contact' %}hidden{% endif %}" style="font-size:12px;">{% if locale == 'en' %}Contact{% else %}Kontak{% endif %}</span>
-    </a>
-
-    <!-- Menu (Plus) -->
-    <button @click="mobileMenuOpen = !mobileMenuOpen" class="mobile-menu-btn flex items-center justify-center rounded-full text-black transition-all duration-300" style="width:36px;height:36px;">
-      <i class="bi transition-transform duration-400" style="font-size:18px;" :class="mobileMenuOpen ? 'bi-x-lg rotate-90' : 'bi-plus-lg'"></i>
+    <button @click="mobileMenuOpen = !mobileMenuOpen; if(mobileMenuOpen) mobileSearchOpen = false"
+            class="mobile-menu-btn flex items-center justify-center rounded-full text-black"
+            style="width:34px;height:34px;"
+            :aria-expanded="mobileMenuOpen"
+            aria-label="Menu">
+      <i class="bi transition-transform duration-300" style="font-size:17px;" :class="mobileMenuOpen ? 'bi-x-lg rotate-90' : 'bi-list'"></i>
     </button>
   </nav>
 
-  <!-- Mobile Drawer Menu -->
-  <div x-show="mobileMenuOpen"
-       x-transition:enter="transition ease-out duration-300"
-       x-transition:enter-start="opacity-0 -translate-y-4"
+  <!-- Mobile Search Bar -->
+  <div x-show="mobileSearchOpen" x-cloak
+       x-transition:enter="transition ease-out duration-250"
+       x-transition:enter-start="opacity-0 -translate-y-2"
        x-transition:enter-end="opacity-100 translate-y-0"
        x-transition:leave="transition ease-in duration-200"
-       x-transition:leave-start="opacity-100 translate-y-0"
-       x-transition:leave-end="opacity-0 -translate-y-4"
-       class="md:hidden fixed inset-0 z-40 bg-black flex flex-col pt-28 pb-8 px-6"
-       x-cloak>
-     <div class="flex-1 overflow-y-auto flex flex-col gap-6" style="scrollbar-width: none;">
-        <div class="flex items-center justify-between mb-2">
-           <span class="font-black text-2xl text-white tracking-widest">TWJ</span>
-           <button @click="mobileMenuOpen = false" class="w-10 h-10 bg-gray-900 rounded-full flex items-center justify-center text-white hover:bg-gray-800 transition-colors">
-             <i class="bi bi-x-lg"></i>
-           </button>
-        </div>
-
-        <!-- Category grid -->
-        <div class="grid grid-cols-2 gap-4">
-           <a href="/{{ locale }}/catalog?type=software" class="p-5 text-white border border-gray-800 active:scale-95 transition-transform" style="background-color: #0a0a0a; border-radius: 24px;">
-             <i class="bi bi-window-stack text-3xl text-neon mb-3 block"></i>
-             <h4 class="font-bold text-sm">{% if locale == 'en' %}SaaS Software{% else %}Software SaaS{% endif %}</h4>
-           </a>
-           <a href="/{{ locale }}/catalog?type=bundle" class="p-5 text-white border border-gray-800 active:scale-95 transition-transform" style="background-color: #0a0a0a; border-radius: 24px;">
-             <i class="bi bi-file-code text-3xl text-neon mb-3 block"></i>
-             <h4 class="font-bold text-sm">Web Template</h4>
-           </a>
-           <a href="/{{ locale }}/catalog?type=course" class="p-5 text-white border border-gray-800 active:scale-95 transition-transform" style="background-color: #0a0a0a; border-radius: 24px;">
-             <i class="bi bi-book text-3xl text-neon mb-3 block"></i>
-             <h4 class="font-bold text-sm">{% if locale == 'en' %}E-Book & Courses{% else %}E-Book & Kursus{% endif %}</h4>
-           </a>
-           <a href="/{{ locale }}/solutions" class="p-5 text-white border border-gray-800 active:scale-95 transition-transform" style="background-color: #0a0a0a; border-radius: 24px;">
-             <i class="bi bi-tools text-3xl text-neon mb-3 block"></i>
-             <h4 class="font-bold text-sm">{% if locale == 'en' %}IT Services{% else %}Layanan IT{% endif %}</h4>
-           </a>
-        </div>
-
-        <div class="mt-auto border-t border-gray-800 pt-6 flex flex-col gap-3">
-           <!-- Language switcher -->
-           <div class="flex items-center justify-between">
-             <span class="text-xs text-gray-500 uppercase tracking-widest font-bold">Language</span>
-             <div class="flex items-center bg-gray-900 rounded-full p-1">
-               <a href="/id{{ request.url.path | replace('/id/', '/', 1) | replace('/en/', '/', 1) or '/' }}" class="px-5 py-2 rounded-full text-xs font-bold transition-colors {% if locale == 'id' %}bg-white text-black{% else %}text-white{% endif %}">ID</a>
-               <a href="/en{{ request.url.path | replace('/id/', '/', 1) | replace('/en/', '/', 1) or '/' }}" class="px-5 py-2 rounded-full text-xs font-bold transition-colors {% if locale == 'en' %}bg-white text-black{% else %}text-white{% endif %}">EN</a>
-             </div>
-           </div>
-
-           {% if current_user %}
-             <!-- Logged in user actions -->
-             <a href="/{{ locale }}/cart" class="w-full py-3.5 flex items-center justify-center gap-2 font-bold rounded-full text-sm" style="background:#111; border:1px solid #333; color:#fff;">
-               <i class="bi bi-bag-fill text-neon"></i> {% if locale == 'en' %}My Cart{% else %}Keranjang{% endif %}
-             </a>
-             <a href="/{{ locale }}/dashboard/orders" class="w-full py-3.5 flex items-center justify-center gap-2 font-bold rounded-full text-sm" style="background:#111; border:1px solid #333; color:#fff;">
-               <i class="bi bi-bag-check-fill text-neon"></i> {% if locale == 'en' %}My Orders{% else %}Data Pesanan{% endif %}
-             </a>
-             <a href="/{{ locale }}/dashboard" class="w-full py-3.5 bg-neon text-black font-bold rounded-full text-center text-sm">Dashboard</a>
-             <a href="/{{ locale }}/logout" class="w-full py-3.5 text-center font-bold rounded-full text-sm" style="background:rgba(239,68,68,0.1); color:#ef4444;">{% if locale == 'en' %}Sign Out{% else %}Keluar{% endif %}</a>
-           {% else %}
-             <a href="/{{ locale }}/login" class="w-full py-3.5 bg-white text-black font-bold rounded-full text-center text-sm">Login</a>
-           {% endif %}
-        </div>
-     </div>
+       x-transition:leave-start="opacity-100"
+       x-transition:leave-end="opacity-0 -translate-y-2"
+       class="md:hidden fixed left-0 right-0 z-40 px-4"
+       style="top: calc(2.5rem + 46px + var(--bar-h, 0px));">
+    <form @submit.prevent="submitMobileSearch()"
+          class="flex items-center gap-3 px-4 py-3 rounded-full"
+          style="background:#111; border:2px solid #CAFF00; box-shadow:0 10px 28px rgba(0,0,0,0.6);">
+      <i class="bi bi-search text-neon flex-shrink-0" style="font-size:14px;"></i>
+      <input x-model="mobileSearchQ" type="text" id="mobile-search-input"
+             placeholder="{% if locale == 'en' %}Search products...{% else %}Cari produk...{% endif %}"
+             class="flex-1 bg-transparent border-none outline-none text-white font-medium"
+             style="font-size:14px;" autocomplete="off" />
+      <button type="submit" class="flex-shrink-0 text-neon" aria-label="Cari">
+        <i class="bi bi-arrow-right" style="font-size:15px;"></i>
+      </button>
+    </form>
   </div>
+
+  <!-- Mobile Drawer -->
+  <div x-show="mobileMenuOpen" x-cloak
+       x-transition:enter="transition ease-out duration-300"
+       x-transition:enter-start="opacity-0 translate-y-3"
+       x-transition:enter-end="opacity-100 translate-y-0"
+       x-transition:leave="transition ease-in duration-200"
+       x-transition:leave-start="opacity-100"
+       x-transition:leave-end="opacity-0 translate-y-3"
+       class="md:hidden fixed inset-0 z-40 bg-black flex flex-col pb-8 px-5 overflow-y-auto"
+       :style="barVisible ? 'padding-top:130px' : 'padding-top:100px'">
+
+    <div class="flex flex-col gap-5">
+
+      <!-- Header row -->
+      <div class="flex items-center justify-between">
+        <span class="font-black text-xl text-white tracking-widest">TWJ</span>
+        <div class="flex items-center gap-2">
+          <div class="flex items-center rounded-full p-0.5" style="background:#111; border:1px solid #222;">
+            <a href="/id{{ request.url.path | replace('/id/', '/', 1) | replace('/en/', '/', 1) or '/' }}"
+               class="px-4 py-1.5 rounded-full text-xs font-bold transition-colors {% if locale == 'id' %}bg-neon text-black{% else %}text-gray-500{% endif %}">ID</a>
+            <a href="/en{{ request.url.path | replace('/id/', '/', 1) | replace('/en/', '/', 1) or '/' }}"
+               class="px-4 py-1.5 rounded-full text-xs font-bold transition-colors {% if locale == 'en' %}bg-neon text-black{% else %}text-gray-500{% endif %}">EN</a>
+          </div>
+          <button @click="mobileMenuOpen = false"
+                  class="w-9 h-9 rounded-full flex items-center justify-center text-gray-400 hover:text-white transition-colors"
+                  style="background:#111; border:1px solid #222;" aria-label="Tutup">
+            <i class="bi bi-x-lg" style="font-size:13px;"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Main nav links -->
+      <div class="flex flex-col gap-1">
+        <a href="/{{ locale }}/" @click="mobileMenuOpen = false"
+           class="flex items-center gap-3 px-4 py-3.5 rounded-2xl font-bold text-base transition-colors {% if active_page == 'home' %}bg-neon text-black{% else %}text-white hover:bg-gray-900{% endif %}">
+          <i class="bi bi-house-door-fill" style="font-size:17px;"></i>
+          {% if locale == 'en' %}Home{% else %}Beranda{% endif %}
+        </a>
+        <a href="/{{ locale }}/catalog" @click="mobileMenuOpen = false"
+           class="flex items-center gap-3 px-4 py-3.5 rounded-2xl font-bold text-base transition-colors {% if active_page == 'catalog' %}bg-neon text-black{% else %}text-white hover:bg-gray-900{% endif %}">
+          <i class="bi bi-grid-fill" style="font-size:17px;"></i>
+          {% if locale == 'en' %}Catalog{% else %}Katalog{% endif %}
+        </a>
+        <a href="/{{ locale }}/about" @click="mobileMenuOpen = false"
+           class="flex items-center gap-3 px-4 py-3.5 rounded-2xl font-bold text-base transition-colors {% if active_page == 'about' %}bg-neon text-black{% else %}text-white hover:bg-gray-900{% endif %}">
+          <i class="bi bi-info-circle-fill" style="font-size:17px;"></i>
+          {% if locale == 'en' %}About Us{% else %}Tentang Kami{% endif %}
+        </a>
+        <a href="/{{ locale }}/insight" @click="mobileMenuOpen = false"
+           class="flex items-center gap-3 px-4 py-3.5 rounded-2xl font-bold text-base transition-colors {% if active_page == 'insight' %}bg-neon text-black{% else %}text-white hover:bg-gray-900{% endif %}">
+          <i class="bi bi-journals" style="font-size:17px;"></i>
+          Insight
+        </a>
+        <a href="/{{ locale }}/contact" @click="mobileMenuOpen = false"
+           class="flex items-center gap-3 px-4 py-3.5 rounded-2xl font-bold text-base transition-colors {% if active_page == 'contact' %}bg-neon text-black{% else %}text-white hover:bg-gray-900{% endif %}">
+          <i class="bi bi-telephone-fill" style="font-size:17px;"></i>
+          {% if locale == 'en' %}Contact{% else %}Kontak{% endif %}
+        </a>
+      </div>
+
+      <!-- Category shortcuts -->
+      <div>
+        <p class="text-xs text-gray-600 font-bold uppercase tracking-widest px-1 mb-2.5">{% if locale == 'en' %}Categories{% else %}Kategori{% endif %}</p>
+        <div class="grid grid-cols-2 gap-2">
+          <a href="/{{ locale }}/catalog?type=software" class="flex items-center gap-2 p-3 rounded-xl font-semibold text-sm text-white active:scale-95 transition-transform" style="background:#111; border:1px solid #222;">
+            <i class="bi bi-window-stack text-neon"></i> Software SaaS
+          </a>
+          <a href="/{{ locale }}/catalog?type=template" class="flex items-center gap-2 p-3 rounded-xl font-semibold text-sm text-white active:scale-95 transition-transform" style="background:#111; border:1px solid #222;">
+            <i class="bi bi-layout-text-window text-neon"></i> Web Template
+          </a>
+          <a href="/{{ locale }}/catalog?type=course" class="flex items-center gap-2 p-3 rounded-xl font-semibold text-sm text-white active:scale-95 transition-transform" style="background:#111; border:1px solid #222;">
+            <i class="bi bi-mortarboard text-neon"></i> {% if locale == 'en' %}Courses{% else %}Kursus{% endif %}
+          </a>
+          <a href="/{{ locale }}/solutions" class="flex items-center gap-2 p-3 rounded-xl font-semibold text-sm text-white active:scale-95 transition-transform" style="background:#111; border:1px solid #222;">
+            <i class="bi bi-tools text-neon"></i> {% if locale == 'en' %}IT Services{% else %}Layanan IT{% endif %}
+          </a>
+        </div>
+      </div>
+
+      <!-- User section -->
+      <div class="flex flex-col gap-2">
+        {% if current_user %}
+          <div class="flex items-center gap-3 p-3.5 rounded-2xl" style="background:#111; border:1px solid #222;">
+            <div class="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" style="background:#CAFF00;">
+              {% if current_user.role == 'admin' %}
+              <i class="bi bi-shield-fill text-black" style="font-size:17px;"></i>
+              {% else %}
+              <i class="bi bi-person-fill text-black" style="font-size:17px;"></i>
+              {% endif %}
+            </div>
+            <div class="min-w-0 flex-1">
+              <p class="font-black text-white text-sm truncate">{{ current_user.full_name or current_user.email.split('@')[0] or 'Pengguna' }}</p>
+              <p class="text-xs text-gray-500 truncate">{{ current_user.email }}</p>
+            </div>
+            {% if current_user.role == 'admin' %}
+            <span class="text-xs font-black px-2 py-0.5 rounded-full flex-shrink-0" style="background:#CAFF00; color:#000;">ADM</span>
+            {% endif %}
+          </div>
+
+          <div class="grid grid-cols-2 gap-2">
+            <a href="/{{ locale }}/dashboard/orders" @click="mobileMenuOpen = false"
+               class="flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-sm text-white"
+               style="background:#111; border:1px solid #222;">
+              <i class="bi bi-bag-check-fill text-neon"></i>
+              {% if locale == 'en' %}My Orders{% else %}Pesanan{% endif %}
+            </a>
+            <a href="/{{ locale }}/dashboard" @click="mobileMenuOpen = false"
+               class="flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-sm text-white"
+               style="background:#111; border:1px solid #222;">
+              <i class="bi bi-grid-1x2-fill text-neon"></i>
+              Dashboard
+            </a>
+          </div>
+
+          {% if current_user.role == 'admin' %}
+          <a href="/{{ locale }}/admin" @click="mobileMenuOpen = false"
+             class="flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm"
+             style="background:rgba(202,255,0,0.1); border:1px solid rgba(202,255,0,0.25); color:#CAFF00;">
+            <i class="bi bi-shield-lock-fill"></i>
+            Admin Panel
+          </a>
+          {% endif %}
+
+          <a href="/{{ locale }}/logout"
+             class="flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm"
+             style="background:rgba(239,68,68,0.08); border:1px solid rgba(239,68,68,0.2); color:#ef4444;">
+            <i class="bi bi-box-arrow-right"></i>
+            {% if locale == 'en' %}Sign Out{% else %}Keluar{% endif %}
+          </a>
+
+        {% else %}
+          <a href="/{{ locale }}/login" @click="mobileMenuOpen = false"
+             class="flex items-center justify-center gap-2 py-3.5 rounded-xl font-bold text-sm text-black bg-neon">
+            <i class="bi bi-person-fill"></i> Login
+          </a>
+        {% endif %}
+      </div>
+
+    </div>
+  </div>  </div>
 
   <!-- ===== MAIN CONTENT ===== -->
   <main class="pt-28">
@@ -666,8 +987,8 @@
           &copy; {{ now().year if now is defined else "2025" }} Toko Web Jaya. {{ t(locale, 'footer_rights') }}.
         </p>
         <div class="flex items-center gap-6">
-          <a href="/{{ locale }}/privacy" class="text-xs text-gray-600 hover:text-gray-400 transition-colors">Privacy Policy</a>
-          <a href="/{{ locale }}/terms" class="text-xs text-gray-600 hover:text-gray-400 transition-colors">Terms of Service</a>
+          <a href="/{{ locale }}/privacy" class="text-xs text-gray-600 hover:text-gray-400 transition-colors">{% if locale == 'en' %}Privacy Policy{% else %}Kebijakan Privasi{% endif %}</a>
+          <a href="/{{ locale }}/terms" class="text-xs text-gray-600 hover:text-gray-400 transition-colors">{% if locale == 'en' %}Terms of Service{% else %}Ketentuan Layanan{% endif %}</a>
         </div>
       </div>
     </div>
@@ -709,6 +1030,21 @@
     // Expose globally for Alpine.js button loaders
     window.showBrickLoader = showLoader;
     window.hideBrickLoader = () => loader.classList.remove('active');
+  })();
+
+  // Scroll-aware header: add shadow when page is scrolled
+  (function() {
+    const nav = document.getElementById('navbar-desktop');
+    if (!nav) return;
+    function onScroll() {
+      if (window.scrollY > 20) {
+        nav.classList.add('navbar-scrolled');
+      } else {
+        nav.classList.remove('navbar-scrolled');
+      }
+    }
+    window.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
   })();
   </script>
   {% block extra_scripts %}{% endblock %}

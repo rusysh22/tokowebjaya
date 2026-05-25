@@ -92,3 +92,32 @@ async def unread_count(request: Request, db: Session = Depends(get_db)):
         Notification.is_read == False,
     ).count()
     return JSONResponse({"count": count})
+
+
+@router.get("/api/notifications/recent")
+async def recent_notifications(request: Request, db: Session = Depends(get_db)):
+    """AJAX endpoint — returns last 5 notifications for dropdown preview."""
+    user = get_current_user(request, db)
+    if not user:
+        return JSONResponse({"notifications": [], "unread": 0})
+    notifs = (
+        db.query(Notification)
+        .filter(Notification.user_id == user.id)
+        .order_by(desc(Notification.created_at))
+        .limit(5)
+        .all()
+    )
+    unread = sum(1 for n in notifs if not n.is_read)
+    result = [
+        {
+            "id": str(n.id),
+            "type": n.type.value if n.type else "general",
+            "title": n.title,
+            "body": n.body or "",
+            "link": n.link or "",
+            "is_read": n.is_read,
+            "created_at": n.created_at.isoformat() if n.created_at else None,
+        }
+        for n in notifs
+    ]
+    return JSONResponse({"notifications": result, "unread": unread})
